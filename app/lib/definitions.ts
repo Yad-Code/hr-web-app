@@ -66,7 +66,7 @@ export type RegisterFormInput = {
   departmentId: string; // The user selects their department/team
 };
 
-export const placeholderTimesheets = [
+export const Timesheets = [
   // --- YAD'S TIMESHEETS ---
   {
     id: "time-row-1",

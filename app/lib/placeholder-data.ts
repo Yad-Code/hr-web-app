@@ -114,3 +114,48 @@ export const EmployeeProfiles = [
     hireDate: null, // Still pending, so no official hire date yet
   },
 ];
+
+// Add this at the bottom of your placeholder-data.ts file:
+
+export const Timesheets = [
+  {
+    id: 'time-row-1',
+    employeeId: 'user-emp-yad',
+    date: new Date('2026-07-15T00:00:00Z'),
+    clockIn: new Date('2026-07-15T09:00:00Z'),
+    clockOut: new Date('2026-07-15T17:00:00Z'),
+    breakDurationMinutes: 60,
+    status: 'APPROVED',
+    notes: 'Worked on Next.js setup.',
+  },
+  {
+    id: 'time-row-2',
+    employeeId: 'user-mgr-alice',
+    date: new Date('2026-07-15T00:00:00Z'),
+    clockIn: new Date('2026-07-15T08:30:00Z'),
+    clockOut: new Date('2026-07-15T16:30:00Z'),
+    breakDurationMinutes: 45,
+    status: 'APPROVED',
+    notes: 'Conducted interviews and code reviews.',
+  },
+  {
+    id: 'time-row-3',
+    employeeId: 'user-mgr-bob',
+    date: new Date('2026-07-15T00:00:00Z'),
+    clockIn: new Date('2026-07-15T09:15:00Z'),
+    clockOut: new Date('2026-07-15T17:15:00Z'),
+    breakDurationMinutes: 60,
+    status: 'APPROVED',
+    notes: 'Processed payroll and sorted pending approvals.',
+  },
+  {
+    id: 'time-row-4',
+    employeeId: 'user-emp-yad',
+    date: new Date('2026-07-16T00:00:00Z'),
+    clockIn: new Date('2026-07-16T09:00:00Z'),
+    clockOut: null,
+    breakDurationMinutes: 0,
+    status: 'PENDING_APPROVAL',
+    notes: 'Building definitions.ts and mock data.',
+  }
+];
