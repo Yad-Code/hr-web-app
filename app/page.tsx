@@ -3,7 +3,7 @@ import Image from "next/image";
 import styles from "@/app/ui/home.module.css";
 import { lusitana } from "@/app/ui/fonts";
 import { ArrowRightIcon } from "@heroicons/react/24/outline";
-import YadLogo from "@/app/ui/yad-logo"; // Imported your custom logo component
+import YadLogo from "@/app/ui/yad-logo";
 
 export default function Home() {
   return (
@@ -11,29 +11,25 @@ export default function Home() {
       {/* PART 1: LEFT SIDE (Full Height Company Photo) */}
       <section className="relative h-[40vh] w-full lg:h-screen lg:w-1/2 bg-zinc-900 border-b lg:border-b-0 lg:border-r border-zinc-800">
         <Image
-          src="/company-photo.jpg" // Replace with your actual image path in the public folder
+          src="/yad-corp.png"
           alt="Yad Corp Workspace"
           fill
           className="object-cover opacity-70"
           priority
         />
-        {/* Subtle dark overlay gradient */}
         <div className="absolute inset-0 bg-linear-to-t lg:bg-linear-to-r from-transparent to-dark-bg/30" />
       </section>
 
-      {/* RIGHT SIDE CONTENT CONTAINER (Split into Upper Intro and Bottom Elements) */}
+      {/* RIGHT SIDE CONTENT CONTAINER */}
       <div className="flex flex-col justify-between flex-1 p-8 md:p-16 lg:p-24 h-auto lg:h-screen">
         {/* PART 2: UPPER PART (Introduction with Logo) */}
         <header className="flex flex-col gap-4 max-w-xl">
           <div className="flex flex-wrap items-baseline gap-4 mb-2">
-            <p
-              className={`${lusitana.className} text-xl md:text-2xl text-zinc-400 leading-relaxed`}
-            >
+            <p className={`${lusitana.className} text-xl md:text-2xl text-zinc-400 leading-relaxed`}>
               <strong className="text-white font-medium block text-3xl md:text-4xl tracking-tight">
                 Welcome to Yad Corp.
               </strong>
             </p>
-            {/* Logo injected directly here to line up beautifully on the right */}
             <div className="transform scale-75 origin-left md:scale-90">
               <YadLogo />
             </div>
@@ -46,11 +42,20 @@ export default function Home() {
           <h1 className="text-lg md:text-xl font-light tracking-wider text-zinc-400 uppercase mt-2">
             Enterprise Portal
           </h1>
+
+          {/* Sized down to max-w-md, compact layout spacing */}
+          <div className="relative w-full max-w-md aspect-video mt-2 rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/50 shadow-xl">
+            <Image
+              src="/desktop.png"
+              alt="Yad Corp Dashboard Preview"
+              fill
+              className="object-cover opacity-90 transition-opacity duration-300 hover:opacity-100"
+            />
+          </div>
         </header>
 
         {/* PART 3: BOTTOM PART (Example Image/Shape & Action Button) */}
-        <footer className="flex flex-col sm:flex-row sm:items-center justify-between gap-8 border-t border-zinc-800/60 pt-8 mt-12">
-          {/* Example Shape/Visual element on the left side of the bottom row */}
+        <footer className="flex flex-col sm:flex-row sm:items-center justify-between gap-8 border-t border-zinc-800/60 pt-8 mt-8">
           <div className="flex items-center gap-4">
             <div className={`${styles.shape} opacity-90 scale-90`} />
             <span className="text-xs tracking-widest text-zinc-500 uppercase font-mono">
@@ -58,7 +63,6 @@ export default function Home() {
             </span>
           </div>
 
-          {/* Action Button on the right side of the bottom row */}
           <div className="w-full sm:w-auto">
             <Link
               href="/login"
