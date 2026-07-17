@@ -17,10 +17,10 @@ export default function Page() {
 
       {/* Top Summary Cards Grid */}
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <Card title="Total Employees" value="112" type="users" />
-        <Card title="Avg Engagement" value="84.5%" type="pending" />
-        <Card title="Retention YTD" value="99.1%" type="positions" />
-        <Card title="Active Timesheets" value="48" type="attendance" />
+        <Card title="Total HeadCount" value="247" type="users" trend={<span className="text-green-500">+4.5% this month</span>} />
+        <Card title="Open Positions" value="18" type="pending" trend={<span className="text-green-500">+1.2%</span>} />
+        <Card title="Pending Requests" value="34" type="positions" trend={<span className="text-green-500">+0.8%</span>} />
+        <Card title="Avg. Attendance Rate" value="48" type="attendance" trend={<span className="text-green-500">+3%</span>} />
       </div>
 
       {/* Main Analytics Content Layout */}

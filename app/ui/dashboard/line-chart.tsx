@@ -18,7 +18,7 @@ export function RetentionEngagementChart() {
   const [activeRange, setActiveRange] = React.useState("YTD")
 
   return (
-    <Card className="w-full max-w-[650px] border border-gray-100 rounded-2xl shadow-sm bg-white p-2">
+    <Card className="w-full max-w-162.5 border border-gray-100 rounded-2xl shadow-sm bg-white p-2">
       {/* Header Container with Title and Buttons aligned horizontally */}
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-6">
         <div>
@@ -49,7 +49,7 @@ export function RetentionEngagementChart() {
       </CardHeader>
 
       <CardContent className="pb-2">
-        <div className="h-[240px] w-full">
+        <div className="h-60 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={chartData}
