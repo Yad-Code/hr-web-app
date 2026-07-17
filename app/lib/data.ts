@@ -52,3 +52,16 @@ function getRelativeTimeString(date: Date): string {
   if (hours < 24) return `${hours}h ago`;
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
+
+// Add this helper to your existing lib/data.ts file
+export async function getCurrentUserRole(): Promise<'admin' | 'employee'> {
+  try {
+    // Replace this with your actual Auth session verification (e.g., NextAuth, Lucide, or standard JWT cookies)
+    // For now, we fetch the first user to establish a stable default fallback
+    const rows = await sql`SELECT role FROM users LIMIT 1`;
+    return rows[0]?.role || 'employee';
+  } catch (error) {
+    console.error("Error fetching session role:", error);
+    return 'employee';
+  }
+}

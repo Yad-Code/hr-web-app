@@ -1,69 +1,85 @@
 "use client";
-import {
-  DocumentDuplicateIcon,
-  UserGroupIcon,
-} from "@heroicons/react/24/outline";
-import { HomeIcon, TimelineIcon } from "lucide-react";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
+import { 
+  LayoutGrid, 
+  Users, 
+  TrendingUp, 
+  Clock, 
+  FolderLock, 
+  Settings 
+} from "lucide-react";
 
 const links = {
   admin: [
-    { name: "Home", href: "/dashboard", icon: HomeIcon },
-    { name: "Employees", href: "/dashboard/employees", icon: UserGroupIcon },
-    {
-      name: "performance",
-      href: "/dashboard/performance",
-      icon: DocumentDuplicateIcon,
-    },
-    {
-      name: "time-&-attendance",
-      href: "/dashboard/time-&-attendance",
-      icon: TimelineIcon,
-    },
+    { name: "Dashboard", sub: "Overview & KPIs", href: "/dashboard", icon: LayoutGrid },
+    { name: "Employee Directory", sub: "All team members", href: "/dashboard/employees", icon: Users },
+    { name: "Performance", sub: "Reviews & goals", href: "/dashboard/performance", icon: TrendingUp },
+    { name: "Time & Attendance", sub: "Check-ins & hours", href: "/dashboard/time-&-attendance", icon: Clock },
+    { name: "Document Vault", sub: "Policies & records", href: "/dashboard/documents", icon: FolderLock },
+    { name: "Settings", sub: "Workspace config", href: "/dashboard/settings", icon: Settings },
   ],
   employee: [
-    { name: "My Profile", href: "/dashboard", icon: HomeIcon },
-    {
-      name: "My Attendance",
-      href: "/dashboard/employees",
-      icon: UserGroupIcon,
-    },
-    {
-      name: "My Document",
-      href: "/dashboard/performance",
-      icon: DocumentDuplicateIcon,
-    },
-    {
-      name: "Team Directory",
-      href: "/dashboard/time-&-attendance",
-      icon: TimelineIcon,
-    },
+    { name: "My Profile", sub: "Personal portal", href: "/dashboard", icon: LayoutGrid },
+    { name: "My Attendance", sub: "Check-ins & logs", href: "/dashboard/employees", icon: Clock },
+    { name: "My Documents", sub: "Personal records", href: "/dashboard/performance", icon: FolderLock },
+    { name: "Team Directory", sub: "All team members", href: "/dashboard/time-&-attendance", icon: Users },
   ],
 };
 
-export default function NavLinks() {
+interface NavLinksProps {
+  role: 'admin' | 'employee';
+}
+
+export default function NavLinks({ role }: NavLinksProps) {
   const pathname = usePathname();
-  
+  const activeLinks = links[role] || links.employee;
+
   return (
     <>
-      {links.admin.map((link) => {
+      {activeLinks.map((link) => {
         const LinkIcon = link.icon;
+        const isActive = pathname === link.href;
+
         return (
           <Link
             key={link.name}
             href={link.href}
             className={clsx(
-              "flex h-12 grow items-center justify-center gap-2 rounded-md bg-gray-50 p-3 text-sm font-medium hover:bg-sky-100 hover:text-blue-600 md:flex-none md:justify-start md:p-2 md:px-3",
+              "flex items-center gap-4 px-3 py-2.5 rounded-xl text-left transition-all duration-150 group",
               {
-                "bg-sky-100 text-blue-600": pathname === link.href,
-              },
+                // Active configuration matching the bright teal tint accent
+                "bg-[#eaf8f5] text-[#007a64]": isActive,
+                // Clean default state
+                "bg-transparent text-slate-700 hover:bg-slate-50": !isActive,
+              }
             )}
           >
-            <LinkIcon className="w-6" />
-            <p className="hidden md:block">{link.name}</p>
+            {/* Left aligned navigation icon */}
+            <LinkIcon 
+              className={clsx("w-5 h-5 flex-shrink-0 transition-colors", {
+                "text-[#009473] stroke-[2.25]": isActive,
+                "text-slate-400 group-hover:text-slate-600 stroke-[1.75]": !isActive,
+              })} 
+            />
+
+            {/* Stacked title and subtext label */}
+            <div className="flex flex-col leading-tight min-w-0">
+              <span className={clsx("text-sm font-bold tracking-tight", {
+                "text-[#005c4b]": isActive,
+                "text-slate-900": !isActive
+              })}>
+                {link.name}
+              </span>
+              <span className={clsx("text-xs font-normal mt-0.5 truncate", {
+                "text-[#007a64]/70": isActive,
+                "text-slate-500": !isActive
+              })}>
+                {link.sub}
+              </span>
+            </div>
           </Link>
         );
       })}

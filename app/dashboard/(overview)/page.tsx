@@ -1,73 +1,114 @@
 import { Card } from "@/app/ui/dashboard/cards";
 import { RetentionEngagementChart } from "@/app/ui/dashboard/line-chart";
+import { WorkingDaysCalendar } from "@/app/ui/dashboard/calendar"; // Ensure correct import path
 import { lusitana } from "@/app/ui/fonts";
+import { getCurrentUserRole } from "@/app/lib/data";
 
-export default function Page() {
+export default async function Page() {
+  // 1. Fetch current user role securely on the server
+  const role = await getCurrentUserRole();
+  const isAdmin = role === "employee";
+
   const titles = [
     "Total HeadCount",
     "Open Positions",
     "Pending Requests",
     "Avg. Attendance Rate",
   ];
+
   return (
-    <main className="p-6 max-w-7xl mx-auto space-y-8 animate-fadeIn">
+    <main className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-fadeIn">
       {/* Dashboard Title Header */}
-      <div className="border-b border-gray-100 pb-5">
+      <div className="border-b border-slate-100 pb-5 text-left">
         <h1
-          className={`${lusitana.className} text-2xl md:text-3xl font-bold tracking-tight text-slate-900`}
+          className={`${lusitana.className} text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-slate-900`}
         >
-          Dashboard Overview
+          {isAdmin ? "Dashboard Overview" : "My Workspace"}
         </h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Real-time metrics and company workforce analytics trends.
+        <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          {isAdmin
+            ? "Real-time metrics and company workforce analytics trends."
+            : "Your personal operational summary and active schedules."}
         </p>
       </div>
 
-      {/* Top Summary Cards Grid */}
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Top Summary Cards Grid - Optimized for Mobile Thumb Scrolling */}
+      <div className="grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card
           title={titles[0]}
           value="247"
           type="users"
-          trend={<span className="text-green-500">+4.5% This month</span>}
+          trend={
+            <span className="text-emerald-600 font-semibold text-xs">
+              +4.5% This month
+            </span>
+          }
         />
         <Card
           title={titles[1]}
           value="18"
           type="positions"
-          trend={<span className="text-green-500">+2 This month</span>}
+          trend={
+            <span className="text-emerald-600 font-semibold text-xs">
+              +2 This month
+            </span>
+          }
         />
         <Card
           title={titles[2]}
           value="34"
           type="pending"
-          trend={<span className="text-green-500">+9 Pending</span>}
+          trend={
+            <span className="text-emerald-600 font-semibold text-xs">
+              +9 Pending
+            </span>
+          }
         />
         <Card
           title={titles[3]}
           value="48"
           type="attendance"
-          trend={<span className="text-green-500">+3% This Season</span>}
+          trend={
+            <span className="text-emerald-600 font-semibold text-xs">
+              +3% This Season
+            </span>
+          }
         />
       </div>
 
-      {/* Main Analytics Content Layout */}
+      {/* Main Analytics & Schedule Content Layout */}
       <div className="grid gap-6 grid-cols-1 xl:grid-cols-3">
-        {/* Chart takes up 2 columns on large screens for ideal rendering size */}
-        <div className="xl:col-span-2 flex flex-col justify-between">
-          <RetentionEngagementChart />
+        {/* Conditional Panel: Admins see the Line Chart, Employees see the Working Days Calendar */}
+        <div className="xl:col-span-2 flex flex-col justify-between w-full">
+          {isAdmin ? (
+            <RetentionEngagementChart />
+          ) : (
+            <div className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col">
+              <div className="mb-4 text-left">
+                <h3 className="text-sm font-bold text-slate-900 tracking-tight">
+                  Working Days Schedule
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Track your assigned dynamic shifts and logged workdays.
+                </p>
+              </div>
+              <WorkingDaysCalendar />
+            </div>
+          )}
         </div>
 
-        {/* Placeholder panel for upcoming features (e.g., Quick Actions, Recent Activity Logs) */}
-        <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex flex-col justify-center items-center text-center">
-          <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3">
-            <span className="text-slate-400 text-lg">⚡</span>
+        {/* Right Sidebar Widget Panel */}
+        <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm flex flex-col justify-center items-center text-center min-h-[260px]">
+          <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3 text-lg border border-slate-100 shadow-sm select-none">
+            ⚡
           </div>
-          <h3 className="text-sm font-semibold text-slate-800">
+          <h3 className="text-sm font-bold text-slate-800 tracking-tight">
             Quick Operations
           </h3>
-          <p className="text-xs text-slate-400 max-w-[200px] mt-1">
-            Approvals, dynamic reports, and employee shifts will appear here.
+          <p className="text-xs text-slate-400 max-w-[220px] mt-1 leading-normal font-medium">
+            {isAdmin
+              ? "Approvals, dynamic reports, and employee shifts will appear here."
+              : "Leave requests, shift swaps, and formal document approvals will appear here."}
           </p>
         </div>
       </div>

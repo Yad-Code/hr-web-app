@@ -1,26 +1,42 @@
 import Link from "next/link";
 import NavLinks from "./nav-links";
-import YadLogo from "../yad-logo";
-import { PowerIcon } from "lucide-react";
+import { Building2 } from "lucide-react";
 
-export default function SideNav() {
+interface SideNavProps {
+  role: 'admin' | 'employee';
+}
+
+export default function SideNav({ role }: SideNavProps) {
   return (
-    <div className="flex h-full flex-col px-3 py-4 md:px-2">
-      <Link
-        className="mb-2 flex h-20 items-end justify-start rounded-md bg-blue-600 p-4 md:h-40"
-        href="/"
-      >
-        <div className="w-32 text-white md:w-40 ">
-          <YadLogo />
+    <div className="flex h-full flex-col justify-between bg-white border-r border-slate-100 p-4 w-full">
+      <div className="space-y-6">
+        {/* Header App Identity Banner */}
+        <div className="flex items-center gap-3 px-2 py-2 border-b border-slate-50 pb-5">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#009473] text-white shadow-sm shadow-emerald-800/10 flex-shrink-0">
+            <Building2 className="w-6 h-6 stroke-[1.75]" />
+          </div>
+          <div className="text-left leading-tight">
+            <h2 className="text-base font-bold text-slate-900 tracking-tight">Razga</h2>
+            <p className="text-xs font-medium text-slate-400">HR Operations Suite</p>
+          </div>
         </div>
-      </Link>
-      <div className="flex grow flex-row justify-between space-x-2 md:flex-col md:space-x-0 md:space-y-2">
-        <NavLinks />
-        <div className="hidden h-auto w-full grow rounded-md bg-gray-50 md:block"></div>
-        <button>
-          <PowerIcon className="w-6" />
-          <div className="hidden md:block">Sign Out</div>
-        </button>
+
+        {/* Content Navigation Block */}
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase px-3 mb-3">
+            Workspace
+          </span>
+          <nav className="space-y-1">
+            <NavLinks role={role} />
+          </nav>
+        </div>
+      </div>
+
+      {/* Bottom Profile Anchor / Footer Context */}
+      <div className="pt-4 px-2">
+        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-800 text-slate-200 text-sm font-semibold tracking-wide border border-slate-700 shadow-inner select-none cursor-pointer hover:bg-slate-700 transition-colors">
+          N
+        </div>
       </div>
     </div>
   );
