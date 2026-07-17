@@ -9,26 +9,47 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 
-const links = [
-  { name: "Home", href: "/dashboard", icon: HomeIcon },
-  { name: "Employees", href: "/dashboard/employees", icon: UserGroupIcon },
-  {
-    name: "performance",
-    href: "/dashboard/performance",
-    icon: DocumentDuplicateIcon,
-  },
-  {
-    name: "time-&-attendance",
-    href: "/dashboard/time-&-attendance",
-    icon: TimelineIcon,
-  },
-];
+const links = {
+  admin: [
+    { name: "Home", href: "/dashboard", icon: HomeIcon },
+    { name: "Employees", href: "/dashboard/employees", icon: UserGroupIcon },
+    {
+      name: "performance",
+      href: "/dashboard/performance",
+      icon: DocumentDuplicateIcon,
+    },
+    {
+      name: "time-&-attendance",
+      href: "/dashboard/time-&-attendance",
+      icon: TimelineIcon,
+    },
+  ],
+  employee: [
+    { name: "My Profile", href: "/dashboard", icon: HomeIcon },
+    {
+      name: "My Attendance",
+      href: "/dashboard/employees",
+      icon: UserGroupIcon,
+    },
+    {
+      name: "My Document",
+      href: "/dashboard/performance",
+      icon: DocumentDuplicateIcon,
+    },
+    {
+      name: "Team Directory",
+      href: "/dashboard/time-&-attendance",
+      icon: TimelineIcon,
+    },
+  ],
+};
 
 export default function NavLinks() {
   const pathname = usePathname();
+  
   return (
     <>
-      {links.map((link) => {
+      {links.admin.map((link) => {
         const LinkIcon = link.icon;
         return (
           <Link
