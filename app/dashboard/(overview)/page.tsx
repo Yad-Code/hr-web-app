@@ -1,8 +1,12 @@
+//Don't forget to add Suspense for the components taht fetch data
+
 import { Card } from "@/app/ui/dashboard/cards";
 import { RetentionEngagementChart } from "@/app/ui/dashboard/line-chart";
 import { WorkingDaysCalendar } from "@/app/ui/dashboard/calendar"; // Ensure correct import path
 import { lusitana } from "@/app/ui/fonts";
 import { getCurrentUserRole } from "@/app/lib/data";
+import { Suspense } from "react";
+import { RetentionEngagementChartSkeleton } from "@/app/ui/skeletons";
 
 export default async function Page() {
   // 1. Fetch current user role securely on the server
@@ -80,21 +84,23 @@ export default async function Page() {
       <div className="grid gap-6 grid-cols-1 xl:grid-cols-3">
         {/* Conditional Panel: Admins see the Line Chart, Employees see the Working Days Calendar */}
         <div className="xl:col-span-2 flex flex-col justify-between w-full">
-          {isAdmin ? (
-            <RetentionEngagementChart />
-          ) : (
-            <div className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col">
-              <div className="mb-4 text-left">
-                <h3 className="text-sm font-bold text-slate-900 tracking-tight">
-                  Working Days Schedule
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Track your assigned dynamic shifts and logged workdays.
-                </p>
+          <Suspense fallback={<RetentionEngagementChartSkeleton />}>
+            {isAdmin ? (
+              <RetentionEngagementChart />
+            ) : (
+              <div className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col">
+                <div className="mb-4 text-left">
+                  <h3 className="text-sm font-bold text-slate-900 tracking-tight">
+                    Working Days Schedule
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Track your assigned dynamic shifts and logged workdays.
+                  </p>
+                </div>
+                <WorkingDaysCalendar />
               </div>
-              <WorkingDaysCalendar />
-            </div>
-          )}
+            )}
+          </Suspense>
         </div>
 
         {/* Right Sidebar Widget Panel */}

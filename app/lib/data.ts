@@ -2,7 +2,10 @@
 //1- fetchEmployeeStatusList
 //2- getRelativeTimeString
 //3- getCurrentUserRole
+//4- fetchPendingAdminRequests
 // DON'T FORGET TO ADD Promise.all().
+// what is the Promise((resolve) => setTimeout(resolve, 3000));
+
 
 import postgres from "postgres";
 
@@ -71,5 +74,46 @@ export async function getCurrentUserRole(): Promise<"admin" | "employee"> {
   } catch (error) {
     console.error("Error fetching session role:", error);
     return "employee";
+  }
+}
+
+// Add this to your existing lib/data.ts file
+export interface PendingRequest {
+  id: string;
+  employee_name: string;
+  image_url: string | null;
+  type: 'time-off' | 'expense';
+  description: string;
+  created_at: Date;
+}
+
+export async function fetchPendingAdminRequests(): Promise<PendingRequest[]> {
+  try {
+    const rows = await sql`
+      SELECT 
+        r.id, 
+        r.type, 
+        r.description, 
+        r.created_at,
+        u.name as employee_name, 
+        u.image_url
+      FROM requests r
+      JOIN users u ON r.employee_id = u.id
+      WHERE r.status = 'pending'
+      ORDER BY r.created_at ASC
+      LIMIT 5
+    `;
+
+    return rows.map((row) => ({
+      id: row.id,
+      employee_name: row.employee_name,
+      image_url: row.image_url,
+      type: row.type as 'time-off' | 'expense',
+      description: row.description,
+      created_at: new Date(row.created_at),
+    }));
+  } catch (error) {
+    console.error("Database Error fetching requests:", error);
+    return []; // Return empty array on failure so UI doesn't crash
   }
 }
