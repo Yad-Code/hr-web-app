@@ -3,7 +3,7 @@ import NavLinks from "./nav-links";
 import { Building2 } from "lucide-react";
 
 interface SideNavProps {
-  role: 'admin' | 'employee';
+  role: 'employee' | 'employee';
 }
 
 export default function SideNav({ role }: SideNavProps) {

@@ -8,6 +8,7 @@
 
 import { sql } from "@/app/lib/db"; // Using our configured singleton instance
 import { formatDistanceToNow } from "date-fns";
+import { auth } from "@/app/auth";  
 
 export interface Employee {
   id: string;
@@ -64,16 +65,10 @@ function getRelativeTimeString(date: Date): string {
 }
 
 // Add this helper to your existing lib/data.ts file
-export async function getCurrentUserRole(): Promise<"admin" | "employee"> {
-  try {
-    // Replace this with your actual Auth session verification (e.g., NextAuth, Lucide, or standard JWT cookies)
-    // For now, we fetch the first user to establish a stable default fallback
-    const rows = await sql`SELECT role FROM users LIMIT 1`;
-    return rows[0]?.role || "employee";
-  } catch (error) {
-    console.error("Error fetching session role:", error);
-    return "employee";
-  }
+
+export async function getCurrentUserRole() {
+  const session = await auth();
+  return session?.user?.role || "employee";
 }
 
 // Add this to your existing lib/data.ts file

@@ -20,7 +20,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
       
       {/* 2. Side Navigation Panel */}
       <div className="w-full flex-none md:w-64">
-        <SideNav role={role} />
+        <SideNav role={'employee'} />
       </div>
       
       {/* 3. Main Workspace Area: Stacked Vertically to include the Top Navbar */}
