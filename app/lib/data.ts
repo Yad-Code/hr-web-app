@@ -86,33 +86,26 @@ export interface PendingRequest {
   created_at: Date;
 }
 
-export async function fetchPendingAdminRequests(): Promise<PendingRequest[]> {
+
+export async function fetchPendingAdminRequests() {
   try {
-    const rows = await sql`
+    const data = await sql`
       SELECT 
-        r.id, 
-        r.type, 
-        r.description, 
+        r.id,
+        r.type,
+        r.description, -- 👈 Make sure this is selected!
+        r.status,
         r.created_at,
-        u.name as employee_name, 
-        u.image_url
+        u.name as employee_name,
+        u.image_url as employee_image
       FROM requests r
       JOIN users u ON r.employee_id = u.id
       WHERE r.status = 'pending'
-      ORDER BY r.created_at ASC
-      LIMIT 5
+      ORDER BY r.created_at DESC
     `;
-
-    return rows.map((row) => ({
-      id: row.id,
-      employee_name: row.employee_name,
-      image_url: row.image_url,
-      type: row.type as 'time-off' | 'expense',
-      description: row.description,
-      created_at: new Date(row.created_at),
-    }));
+    return data;
   } catch (error) {
-    console.error("Database Error fetching requests:", error);
-    return []; // Return empty array on failure so UI doesn't crash
+    console.error("Database Error:", error);
+    return [];
   }
 }

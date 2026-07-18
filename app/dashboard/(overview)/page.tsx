@@ -6,7 +6,10 @@ import { WorkingDaysCalendar } from "@/app/ui/dashboard/calendar"; // Ensure cor
 import { lusitana } from "@/app/ui/fonts";
 import { getCurrentUserRole } from "@/app/lib/data";
 import { Suspense } from "react";
-import { RetentionEngagementChartSkeleton } from "@/app/ui/skeletons";
+import {
+  RetentionEngagementChartSkeleton,
+  EmployeeActivitySkeleton,
+} from "@/app/ui/skeletons";
 import { QuickOperationsWidget } from "@/app/ui/dashboard/quick-operations";
 
 export default async function Page() {
@@ -105,7 +108,9 @@ export default async function Page() {
         </div>
 
         {/* Right Sidebar Widget Panel */}
-        <QuickOperationsWidget isAdmin={isAdmin} />
+        <Suspense fallback={<EmployeeActivitySkeleton />}>
+          <QuickOperationsWidget isAdmin={isAdmin} />
+        </Suspense>
       </div>
     </main>
   );
