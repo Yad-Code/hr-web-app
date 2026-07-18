@@ -1,35 +1,34 @@
 import SideNav from "../ui/dashboard/sidnav";
 import { TopNavbar } from "@/app/ui/dashboard/top-navbar";
-import { getCurrentUserRole } from "@/app/lib/data"; 
-// Note: If you don't have a getCurrentUser() helper yet, you can pass a combined profile object from your session backend.
+import { auth } from "@/app/auth"; // 👈 Hook securely into Auth.js session state
 
 export default async function Layout({ children }: { children: React.ReactNode }) {
-  // 1. Fetch the user role and profile details server-side securely
-  const role = await getCurrentUserRole();
+  // 1. Fetch the active admin session server-side
+  const session = await auth();
   
-  // Example fallback profile object. Replace this with your actual database user fetch if available!
+  // 2. Map administrative parameters directly from the token payload
   const currentUser = {
-    name: role === "admin" ? "Olivia Kim" : "Yad Developer",
-    email: role === "admin" ? "olivia.kim@company.com" : "yad@company.com",
-    role: role,
-    image_url: null, // Triggers your custom initials fallback circle badge
+    name: session?.user?.name || "Admin User",
+    email: session?.user?.email || "admin@company.com",
+    role: session?.user?.role || "admin",
+    image_url: session?.user?.image || null, // Triggers custom initials fallback badge
   };
 
   return (
     <div className="flex h-screen flex-col md:flex-row md:overflow-hidden bg-slate-50/50">
       
-      {/* 2. Side Navigation Panel */}
+      {/* 3. Side Navigation Panel (Passed with "admin" context configuration) */}
       <div className="w-full flex-none md:w-64">
-        <SideNav role={'employee'} />
+        <SideNav role="admin" />
       </div>
       
-      {/* 3. Main Workspace Area: Stacked Vertically to include the Top Navbar */}
+      {/* 4. Main Administrative Command Center Shell */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         
-        {/* The new interactive Top Navbar */}
+        {/* Interactive Top Navbar with active Admin user profile */}
         <TopNavbar user={currentUser} />
         
-        {/* Dynamic page contents block rendered safely with standard padding */}
+        {/* Dynamic page contents pane rendered with proper workspace padding */}
         <div className="grow p-6 md:overflow-y-auto md:p-12 bg-white">
           {children}
         </div>

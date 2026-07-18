@@ -1,11 +1,47 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Building2 } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Building2, AlertCircle } from "lucide-react";
+import { signIn } from "next-auth/react"; // 👈 Client-side trigger method from Auth.js
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [keepSignedIn, setKeepSignedIn] = useState(true);
+  
+  // Operational State Tracking Variables
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Invoke the NextAuth credential engine pipeline directly
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false, // Handle dynamic navigation manually to prevent unexpected reloads
+      });
+
+      if (result?.error) {
+        setError("Invalid email address or system authentication security password.");
+        setIsLoading(false);
+      } else {
+        // Successful login: Force full router refresh to ensure layout and middleware pick up session state updates
+        router.refresh();
+        router.push("/");
+      }
+    } catch (err: unknown) {
+      setError("An unexpected system exception occurred. Please try again.");
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen w-full bg-[#0B0F17] flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans select-none">
@@ -19,13 +55,11 @@ export default function LoginPage() {
         }}
       />
 
-      {/* Main Container Core Stack */}
       <div className="w-full max-w-[440px] z-10 flex flex-col items-center">
         
-        {/* App Logo & Header Header Shell */}
+        {/* App Logo & Header */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-14 h-14 bg-[#00B894] rounded-2xl flex items-center justify-center shadow-lg shadow-[#00B894]/20 ring-4 ring-[#00B894]/10 mb-4 transition-transform hover:scale-105 duration-300">
-            {/* Using Building2 from Lucide to mimic the workplace/HR theme */}
             <Building2 className="w-7 h-7 text-white" />
           </div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Razga</h1>
@@ -34,9 +68,17 @@ export default function LoginPage() {
 
         {/* Primary Form Wrapper Card */}
         <div className="w-full bg-[#131924]/80 border border-slate-800/60 rounded-3xl p-6 sm:p-8 backdrop-blur-xl shadow-2xl shadow-black/40">
-          <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
             
-            {/* Email Field Layout Column */}
+            {/* Error Notification Block */}
+            {error && (
+              <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold animate-fadeIn">
+                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                <p>{error}</p>
+              </div>
+            )}
+
+            {/* Email Field Layout */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-300 tracking-wide">Email address</label>
               <div className="relative group">
@@ -45,13 +87,17 @@ export default function LoginPage() {
                 </div>
                 <input
                   type="email"
-                  placeholder="you@razga.com"
-                  className="w-full pl-11 pr-4 py-3 text-sm font-medium text-white bg-[#1A2232] border border-slate-800 rounded-xl placeholder-slate-600 focus:outline-none focus:border-[#00B894] focus:ring-2 focus:ring-[#00B894]/10 transition-all duration-200"
+                  required
+                  disabled={isLoading}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@company.com"
+                  className="w-full pl-11 pr-4 py-3 text-sm font-medium text-white bg-[#1A2232] border border-slate-800 rounded-xl placeholder-slate-600 focus:outline-none focus:border-[#00B894] focus:ring-2 focus:ring-[#00B894]/10 transition-all duration-200 disabled:opacity-50"
                 />
               </div>
             </div>
 
-            {/* Password Field Layout Column */}
+            {/* Password Field Layout */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-300 tracking-wide">Password</label>
               <div className="relative group">
@@ -60,8 +106,12 @@ export default function LoginPage() {
                 </div>
                 <input
                   type={showPassword ? "text" : "password"}
+                  required
+                  disabled={isLoading}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-11 pr-11 py-3 text-sm font-medium text-white bg-[#1A2232] border border-slate-800 rounded-xl placeholder-slate-600 focus:outline-none focus:border-[#00B894] focus:ring-2 focus:ring-[#00B894]/10 transition-all duration-200"
+                  className="w-full pl-11 pr-11 py-3 text-sm font-medium text-white bg-[#1A2232] border border-slate-800 rounded-xl placeholder-slate-600 focus:outline-none focus:border-[#00B894] focus:ring-2 focus:ring-[#00B894]/10 transition-all duration-200 disabled:opacity-50"
                 />
                 <button
                   type="button"
@@ -73,10 +123,9 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Remember Me and Forgot Password Toolbar Link Row */}
+            {/* Remember Me and Forgot Password Link Row */}
             <div className="flex items-center justify-between pt-1">
               <label className="flex items-center space-x-3 cursor-pointer select-none group">
-                {/* Custom Toggle Switch Component */}
                 <div className="relative">
                   <input 
                     type="checkbox" 
@@ -98,10 +147,11 @@ export default function LoginPage() {
             {/* Main Action Submit Button Control */}
             <button
               type="submit"
-              className="w-full bg-[#00B894] hover:bg-[#00cfa5] active:scale-[0.99] text-white py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#00B894]/10 transition-all duration-200 mt-2 group"
+              disabled={isLoading}
+              className="w-full bg-[#00B894] hover:bg-[#00cfa5] active:scale-[0.99] text-white py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#00B894]/10 transition-all duration-200 mt-2 group disabled:opacity-50 disabled:pointer-events-none"
             >
-              Sign in
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              {isLoading ? "Signing in..." : "Sign in"}
+              {!isLoading && <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />}
             </button>
 
           </form>
@@ -117,9 +167,9 @@ export default function LoginPage() {
         {/* OAuth Provider Section - Continue with Google */}
         <button
           type="button"
+          onClick={() => signIn("google")} // Triggers Auth.js Google flow configuration
           className="w-full bg-[#131924]/40 hover:bg-[#131924]/80 border border-slate-800 text-slate-200 hover:text-white py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-3 transition-all duration-200 active:scale-[0.99]"
         >
-          {/* SVG Google Custom Minimalist Monochromatic Vector Glyph */}
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -129,7 +179,6 @@ export default function LoginPage() {
           Continue with Google
         </button>
 
-        {/* Simple Legal/Contextual Footer Elements */}
         <footer className="mt-8 text-[11px] font-medium text-slate-600 tracking-wide">
           Protected by Razga Security · <a href="#" className="hover:underline transition-all hover:text-slate-500">Privacy policy</a>
         </footer>

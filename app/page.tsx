@@ -14,9 +14,9 @@ export default async function Home() {
   // 4. Silent Redirect: If already logged in, skip the landing page entirely
   if (session?.user) {
     if (session.user.role === "admin") {
-      redirect("/dashboard");
+      redirect("/dashboard"); // 🗺️ Maps to app/(admin)/dashboard/page.tsx
     } else {
-      redirect("/profile");
+      redirect("/my-profile"); // 🗺️ Updated from /profile to match your folder tree exactly!
     }
   }
 
