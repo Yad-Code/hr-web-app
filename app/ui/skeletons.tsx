@@ -38,12 +38,12 @@ export function DashboardHeaderSkeleton() {
 export function RetentionEngagementChartSkeleton() {
   return (
     <div className="xl:col-span-2 w-full flex flex-col">
-      <div className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col space-y-6 min-h-[420px]">
+      <div className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col space-y-6 min-h-105">
         <div className="space-y-2">
           <div className="h-4 w-44 bg-slate-200 rounded-md" />
           <div className="h-3 w-64 bg-slate-100 rounded-md" />
         </div>
-        <div className="grow w-full bg-slate-50 rounded-xl border border-slate-100 p-4 flex flex-col justify-between min-h-[280px]">
+        <div className="grow w-full bg-slate-50 rounded-xl border border-slate-100 p-4 flex flex-col justify-between min-h-70">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="w-full h-2 bg-slate-200/60 rounded-full" />
           ))}
@@ -56,7 +56,7 @@ export function RetentionEngagementChartSkeleton() {
 // 5. Right Sidebar Widget Skeleton
 export function EmployeeActivitySkeleton() {
   return (
-    <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm flex flex-col justify-center items-center text-center min-h-[420px] space-y-3">
+    <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm flex flex-col justify-center items-center text-center min-h-105 space-y-3">
       <div className="w-12 h-12 bg-slate-100 rounded-full border border-slate-50 shadow-sm" />
       <div className="h-4 w-32 bg-slate-200 rounded-md" />
       <div className="h-3 w-40 bg-slate-100 rounded-md" />

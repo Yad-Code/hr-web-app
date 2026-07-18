@@ -4,7 +4,7 @@ interface RequestItemProps {
   request: {
     id: string;
     type: string;
-    description: string; // 👈 Add to your structural type definition
+    description: string;
     status: string;
     created_at: Date;
     employee_name: string;

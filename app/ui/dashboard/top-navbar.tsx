@@ -12,16 +12,15 @@ interface TopNavbarProps {
 
 export function TopNavbar({ user }: TopNavbarProps) {
   return (
-    <header className="sticky top-0 z-40 w-full bg-white border-b border-slate-100 px-4 sm:px-6 py-3 flex items-center justify-between shadow-sm backdrop-blur-md bg-white/95">
-      
+    <header className="sticky top-0 z-40 w-full  border-b border-slate-100 px-4 sm:px-6 py-3 flex items-center justify-between shadow-sm backdrop-blur-md bg-white/100">
       {/* Left Column: Context Title Layout */}
       <div className="flex flex-col text-left">
         <h2 className="text-base font-bold text-slate-900 leading-tight tracking-tight">
           {user.role === "admin" ? "Dashboard" : "Workspace"}
         </h2>
         <p className="text-[11px] text-slate-400 font-medium hidden sm:block mt-0.5">
-          {user.role === "admin" 
-            ? "Workforce overview and pending approvals at a glance" 
+          {user.role === "admin"
+            ? "Workforce overview and pending approvals at a glance"
             : "Your operational dashboard shell updates"}
         </p>
       </div>
@@ -37,17 +36,11 @@ export function TopNavbar({ user }: TopNavbarProps) {
             placeholder="Search employees, requests, documents..."
             className="w-full pl-9 pr-14 py-1.5 text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-xl placeholder-slate-400 focus:outline-none focus:border-[#009473] focus:ring-2 focus:ring-[#eaf8f5] transition-all"
           />
-          <div className="absolute inset-y-0 right-2.5 flex items-center pointer-events-none select-none">
-            <kbd className="inline-flex items-center gap-0.5 h-5 px-1.5 rounded-md border border-slate-200 bg-slate-50 text-[10px] font-bold font-sans text-slate-400 shadow-sm">
-              <span className="text-[9px]">⌘</span>K
-            </kbd>
-          </div>
         </div>
       </div>
 
       {/* Right Column: Alerts & User Subsystem Action Anchors */}
       <div className="flex items-center gap-4 ml-auto md:ml-0">
-        
         {/* Alerts Notification Container */}
         <button className="relative p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all duration-200 active:scale-95 focus:outline-none">
           <Bell className="w-5 h-5" />
@@ -61,7 +54,6 @@ export function TopNavbar({ user }: TopNavbarProps) {
 
         {/* Modular Profile Action Trigger */}
         <UserDropdown user={user} />
-
       </div>
     </header>
   );
