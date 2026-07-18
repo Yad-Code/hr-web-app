@@ -7,11 +7,12 @@ import { lusitana } from "@/app/ui/fonts";
 import { getCurrentUserRole } from "@/app/lib/data";
 import { Suspense } from "react";
 import { RetentionEngagementChartSkeleton } from "@/app/ui/skeletons";
+import { QuickOperationsWidget } from "@/app/ui/dashboard/quick-operations";
 
 export default async function Page() {
   // 1. Fetch current user role securely on the server
   const role = await getCurrentUserRole();
-  const isAdmin = role === "employee";
+  const isAdmin = role === "admin";
 
   const titles = [
     "Total HeadCount",
@@ -104,19 +105,7 @@ export default async function Page() {
         </div>
 
         {/* Right Sidebar Widget Panel */}
-        <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm flex flex-col justify-center items-center text-center min-h-[260px]">
-          <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3 text-lg border border-slate-100 shadow-sm select-none">
-            ⚡
-          </div>
-          <h3 className="text-sm font-bold text-slate-800 tracking-tight">
-            Quick Operations
-          </h3>
-          <p className="text-xs text-slate-400 max-w-[220px] mt-1 leading-normal font-medium">
-            {isAdmin
-              ? "Approvals, dynamic reports, and employee shifts will appear here."
-              : "Leave requests, shift swaps, and formal document approvals will appear here."}
-          </p>
-        </div>
+        <QuickOperationsWidget isAdmin={isAdmin} />
       </div>
     </main>
   );

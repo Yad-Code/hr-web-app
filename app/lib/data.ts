@@ -6,18 +6,16 @@
 // DON'T FORGET TO ADD Promise.all().
 // what is the Promise((resolve) => setTimeout(resolve, 3000));
 
-
-import postgres from "postgres";
-
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
+import { sql } from "@/app/lib/db"; // Using our configured singleton instance
+import { formatDistanceToNow } from "date-fns";
 
 export interface Employee {
   id: string;
   name: string;
   email: string;
-  role: "admin" | "employee";
+  role: 'admin' | 'employee';
   image_url: string | null;
-  status: "active" | "offline";
+  status: 'active' | 'offline';
   last_seen_text: string;
 }
 
@@ -30,11 +28,12 @@ export async function fetchEmployeeStatusList(): Promise<Employee[]> {
     `;
 
     const NOW = new Date();
-    const FIVE_MINUTES_AGO = 5 * 60 * 1000;
+    const FIVE_MINUTES_IN_MS = 5 * 60 * 1000;
 
     return rows.map((row) => {
-      const lastSeen = new Date(row.last_seen_at);
-      const isRecent = NOW.getTime() - lastSeen.getTime() < FIVE_MINUTES_AGO;
+      // Guard against null timestamps safely
+      const lastSeen = row.last_seen_at ? new Date(row.last_seen_at) : new Date();
+      const isActiveNow = NOW.getTime() - lastSeen.getTime() < FIVE_MINUTES_IN_MS;
 
       return {
         id: row.id,
@@ -42,15 +41,15 @@ export async function fetchEmployeeStatusList(): Promise<Employee[]> {
         email: row.email,
         role: row.role,
         image_url: row.image_url,
-        status: isRecent ? "active" : "offline",
-        last_seen_text: isRecent
+        status: isActiveNow ? "active" : "offline",
+        last_seen_text: isActiveNow
           ? "Active now"
-          : `Active ${getRelativeTimeString(lastSeen)}`,
+          : `Active ${formatDistanceToNow(lastSeen, { addSuffix: true })}`,
       };
     });
   } catch (error) {
-    console.error("Database Error:", error);
-    throw new Error("Failed to load employee list.");
+    console.error("Database Error fetching employee status list:", error);
+    return []; // Return an empty array as a safe fallback for the UI layout shell
   }
 }
 
