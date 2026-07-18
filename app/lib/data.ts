@@ -1,3 +1,9 @@
+//The functions till now
+//1- fetchEmployeeStatusList
+//2- getRelativeTimeString
+//3- getCurrentUserRole
+// DON'T FORGET TO ADD Promise.all().
+
 import postgres from "postgres";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
@@ -6,9 +12,9 @@ export interface Employee {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'employee';
+  role: "admin" | "employee";
   image_url: string | null;
-  status: 'active' | 'offline';
+  status: "active" | "offline";
   last_seen_text: string;
 }
 
@@ -25,16 +31,18 @@ export async function fetchEmployeeStatusList(): Promise<Employee[]> {
 
     return rows.map((row) => {
       const lastSeen = new Date(row.last_seen_at);
-      const isRecent = (NOW.getTime() - lastSeen.getTime()) < FIVE_MINUTES_AGO;
-      
+      const isRecent = NOW.getTime() - lastSeen.getTime() < FIVE_MINUTES_AGO;
+
       return {
         id: row.id,
         name: row.name,
         email: row.email,
         role: row.role,
         image_url: row.image_url,
-        status: isRecent ? 'active' : 'offline',
-        last_seen_text: isRecent ? 'Active now' : `Active ${getRelativeTimeString(lastSeen)}`
+        status: isRecent ? "active" : "offline",
+        last_seen_text: isRecent
+          ? "Active now"
+          : `Active ${getRelativeTimeString(lastSeen)}`,
       };
     });
   } catch (error) {
@@ -50,18 +58,18 @@ function getRelativeTimeString(date: Date): string {
   if (mins < 60) return `${mins}m ago`;
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}h ago`;
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 // Add this helper to your existing lib/data.ts file
-export async function getCurrentUserRole(): Promise<'admin' | 'employee'> {
+export async function getCurrentUserRole(): Promise<"admin" | "employee"> {
   try {
     // Replace this with your actual Auth session verification (e.g., NextAuth, Lucide, or standard JWT cookies)
     // For now, we fetch the first user to establish a stable default fallback
     const rows = await sql`SELECT role FROM users LIMIT 1`;
-    return rows[0]?.role || 'employee';
+    return rows[0]?.role || "employee";
   } catch (error) {
     console.error("Error fetching session role:", error);
-    return 'employee';
+    return "employee";
   }
 }
