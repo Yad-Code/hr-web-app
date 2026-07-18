@@ -65,7 +65,7 @@ export default function Home() {
 
           <div className="w-full sm:w-auto">
             <Link
-              href="/dashboard"
+              href="/login"
               className="group flex items-center justify-center gap-3 rounded-lg bg-brand-blue px-12 py-4 text-sm font-medium tracking-wide text-white transition-all duration-200 hover:bg-[#1d4ed8] hover:shadow-lg hover:shadow-blue-500/10 active:scale-[0.98]"
             >
               <span>Login to Dashboard</span>
