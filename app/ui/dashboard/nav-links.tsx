@@ -24,7 +24,7 @@ const links = {
   employee: [
     { name: "My Profile", sub: "Personal portal", href: "/my-profile", icon: LayoutGrid },
     { name: "My Attendance", sub: "Check-ins & logs", href: "/my-profile/attendance", icon: Clock },
-    { name: "Team Directory", sub: "All team members", href: "/my-profile/team", icon: Users },
+    { name: "Team Directory", sub: "All team members", href: "/my-profile/friends", icon: Users },
     { name: "My Documents", sub: "Personal records", href: "/my-profile/documents", icon: FolderLock },
   ],
 };

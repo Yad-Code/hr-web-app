@@ -1,4 +1,3 @@
-// auth.config.ts
 import type { NextAuthConfig } from "next-auth";
 
 export const authConfig = {
@@ -7,22 +6,22 @@ export const authConfig = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      // Pass the role from the database user object into the JWT token
-      if (user) {
-        token.role = (user as any).role;
+      // TypeScript now safely knows user.role exists naturally!
+      if (user?.role) {
+        token.role = user.role;
       }
       return token;
     },
     async session({ session, token }) {
-      // Pass the role from the JWT token down to the client session
-      if (session.user) {
-        (session.user as any).role = token.role;
+      // TypeScript safely maps token.role onto the session object structure
+      if (session.user && token.role) {
+        session.user.role = token.role;
       }
       return session;
     },
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const userRole = (auth?.user as any)?.role;
+      const userRole = auth?.user?.role; // Clean, error-free typing
 
       const isOnDashboard = nextUrl.pathname.startsWith("/dashboard");
       const isOnProfile = nextUrl.pathname.startsWith("/my-profile");

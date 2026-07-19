@@ -1,5 +1,5 @@
 import { fetchEmployeeStatusList } from "@/app/lib/data";
-import { EmployeeSearchListClient } from "@/app/(admin)/employees/EmployeeSearchList";
+import { EmployeeSearchListClient } from "@/app/(admin)/dashboard/(overview)/employees/EmployeeSearchList";
 
 export async function EmployeeSearchList() {
   // Fetch data securely straight from the database on the server
