@@ -2,12 +2,26 @@ import { fetchPendingAdminRequests } from "@/app/lib/data";
 import { RequestItem } from "./request-items";
 import { EmployeeOperations } from "./employee-operations";
 
+// 1. Declare the strict shape your RequestItem component requires
+interface PendingRequestType {
+  id: string;
+  type: string;
+  description: string;
+  status: string;
+  created_at: Date;
+  employee_name: string;
+  employee_image: string | null;
+}
+
 interface QuickOperationsProps {
   isAdmin: boolean;
 }
 
 export async function QuickOperationsWidget({ isAdmin }: QuickOperationsProps) {
-  const pendingRequests = isAdmin ? await fetchPendingAdminRequests() : [];
+  // 2. Type cast the array response so TypeScript safely tracks the structural properties
+  const pendingRequests = isAdmin 
+    ? (await fetchPendingAdminRequests()) as PendingRequestType[] 
+    : [];
 
   return (
     <div className="bg-white border border-slate-100 rounded-2xl shadow-sm flex flex-col xl:min-h-[420px] w-full overflow-hidden">
