@@ -39,29 +39,6 @@ export default async function SideNav({ role }: SideNavProps) {
 
       {/* Profile & Server-Side Sign Out Action Block */}
       <div className="pt-4 border-t border-slate-50 space-y-3">
-        <div className="flex items-center gap-3 px-2">
-          {userImage ? (
-            <img 
-              src={userImage} 
-              alt={session?.user?.name || "Profile"} 
-              className="w-9 h-9 rounded-full object-cover border border-slate-200"
-            />
-          ) : (
-            <div className="flex items-center justify-center w-9 h-9 rounded-full bg-slate-800 text-slate-200 text-xs font-bold tracking-wide select-none">
-              {userInitial}
-            </div>
-          )}
-          
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs font-bold text-slate-800 truncate">
-              {session?.user?.name || "Active Session"}
-            </span>
-            <span className="text-[10px] font-medium text-slate-400 capitalize">
-              {role}
-            </span>
-          </div>
-        </div>
-
         <form
           action={async () => {
             "use server";

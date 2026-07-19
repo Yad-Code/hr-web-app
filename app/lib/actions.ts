@@ -1,6 +1,6 @@
 'use server';
 
-import { signIn } from '@/auth';
+import { signIn, signOut } from '@/auth';
 import { AuthError } from 'next-auth';
 import { z } from 'zod';
 
@@ -9,6 +9,10 @@ const LoginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
 });
+
+export async function handleSignOut() {
+  await signOut({ redirectTo: "/login" });
+}
 
 /**
  * Server Action to securely authenticate users.
