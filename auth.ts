@@ -10,7 +10,8 @@ const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
 async function getUser(email: string) {
   try {
-    const user = await sql`SELECT id, name, email, password_hash, role FROM users WHERE email=${email}`;
+    const user =
+      await sql`SELECT id, name, email, password_hash, role FROM users WHERE email=${email}`;
     return user[0];
   } catch (err) {
     console.error("Failed to fetch user:", err);
@@ -33,7 +34,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           if (!user) return null;
 
           // FIX: Changed from user.passwordHash to user.password_hash to match table setup
-          const passwordsMatch = await bcrypt.compare(password, user.password_hash);
+          const passwordsMatch = await bcrypt.compare(
+            password,
+            user.password_hash,
+          );
 
           if (passwordsMatch) {
             return {
@@ -48,4 +52,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
+  secret: process.env.AUTH_SECRET,
 });
