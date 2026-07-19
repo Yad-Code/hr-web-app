@@ -8,7 +8,7 @@
 
 import { sql } from "@/app/lib/db"; // Using our configured singleton instance
 import { formatDistanceToNow } from "date-fns";
-import { auth } from "@/app/auth";  
+import { auth } from "@/auth";  
 
 export interface Employee {
   id: string;

@@ -1,28 +1,57 @@
+// auth.config.ts
 import type { NextAuthConfig } from "next-auth";
-import Credentials from "next-auth/providers/credentials";
 
 export const authConfig = {
-  session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
   },
   callbacks: {
     async jwt({ token, user }) {
+      // Pass the role from the database user object into the JWT token
       if (user) {
-        token.role = user.role;
+        token.role = (user as any).role;
       }
       return token;
     },
     async session({ session, token }) {
+      // Pass the role from the JWT token down to the client session
       if (session.user) {
-        session.user.role = token.role as string;
+        (session.user as any).role = token.role;
       }
       return session;
-    }
+    },
+    authorized({ auth, request: { nextUrl } }) {
+      const isLoggedIn = !!auth?.user;
+      const userRole = (auth?.user as any)?.role;
+
+      const isOnDashboard = nextUrl.pathname.startsWith("/dashboard");
+      const isOnProfile = nextUrl.pathname.startsWith("/my-profile");
+      const isOnLoginPage = nextUrl.pathname.startsWith("/login");
+
+      // 1. If trying to access protected areas
+      if (isOnDashboard || isOnProfile) {
+        if (!isLoggedIn) return false; // Redirect to login
+
+        // Role enforcement
+        if (isOnDashboard && userRole !== "admin") {
+          return Response.redirect(new URL("/my-profile", nextUrl));
+        }
+        if (isOnProfile && userRole !== "employee") {
+          return Response.redirect(new URL("/dashboard", nextUrl));
+        }
+        return true;
+      }
+
+      // 2. If logged in and visiting home page or login page, auto-route them out
+      if (isLoggedIn && (isOnLoginPage || nextUrl.pathname === "/")) {
+        if (userRole === "admin") {
+          return Response.redirect(new URL("/dashboard", nextUrl));
+        }
+        return Response.redirect(new URL("/my-profile", nextUrl));
+      }
+
+      return true;
+    },
   },
-  providers: [
-    // Leave providers array empty or just provide a minimal layout here
-    // We will expand credentials authentication securely in the server-only file
-    Credentials({}), 
-  ],
+  providers: [], // Core providers are initialized in auth.ts
 } satisfies NextAuthConfig;

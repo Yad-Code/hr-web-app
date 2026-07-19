@@ -156,8 +156,37 @@ export async function GET() {
     return NextResponse.json(
       {
         success: true,
-        message:
-          "Database schema built and seeded successfully with users, schedules, and initial operations requests.",
+        message: "Database schema built and seeded successfully.",
+        credentialsHelp: {
+          note: "Use these explicit credentials to test your Next.js 16 Proxy configurations.",
+          adminAccount: {
+            email: "admin@company.com",
+            password: "AdminPass123",
+            role: "admin",
+          },
+          employeeAccounts: [
+            {
+              email: "yad@company.com",
+              password: "EmployeePass123",
+              role: "employee",
+            },
+            {
+              email: "lana@company.com",
+              password: "EmployeePass123",
+              role: "employee",
+            },
+            {
+              email: "diyar@company.com",
+              password: "EmployeePass123",
+              role: "employee",
+            },
+            {
+              email: "sara@company.com",
+              password: "EmployeePass123",
+              role: "employee",
+            },
+          ],
+        },
       },
       { status: 200 },
     );

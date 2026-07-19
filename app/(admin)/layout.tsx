@@ -1,6 +1,6 @@
 import SideNav from "../ui/dashboard/sidnav";
 import { TopNavbar } from "@/app/ui/dashboard/top-navbar";
-import { auth } from "@/app/auth"; // 👈 Hook securely into Auth.js session state
+import { auth } from "@/auth"; // 👈 Hook securely into Auth.js session state
 
 export default async function Layout({ children }: { children: React.ReactNode }) {
   // 1. Fetch the active admin session server-side

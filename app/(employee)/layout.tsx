@@ -1,6 +1,6 @@
 import SideNav from "../ui/dashboard/sidnav";
 import { TopNavbar } from "@/app/ui/dashboard/top-navbar";
-import { auth } from "@/app/auth"; // 👈 Pull sessions securely via Auth.js
+import { auth } from "@/auth"; // 👈 Pull sessions securely via Auth.js
 
 export default async function Layout({ children }: { children: React.ReactNode }) {
   // 1. Fetch the live user session server-side

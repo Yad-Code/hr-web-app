@@ -22,10 +22,10 @@ const links = {
     { name: "Settings", sub: "Workspace config", href: "/dashboard/settings", icon: Settings },
   ],
   employee: [
-    { name: "My Profile", sub: "Personal portal", href: "/dashboard", icon: LayoutGrid },
-    { name: "My Attendance", sub: "Check-ins & logs", href: "/dashboard/employees", icon: Clock },
-    { name: "My Documents", sub: "Personal records", href: "/dashboard/performance", icon: FolderLock },
-    { name: "Team Directory", sub: "All team members", href: "/dashboard/time-&-attendance", icon: Users },
+    { name: "My Profile", sub: "Personal portal", href: "/my-profile", icon: LayoutGrid },
+    { name: "My Attendance", sub: "Check-ins & logs", href: "/my-profile/attendance", icon: Clock },
+    { name: "Team Directory", sub: "All team members", href: "/my-profile/team", icon: Users },
+    { name: "My Documents", sub: "Personal records", href: "/my-profile/documents", icon: FolderLock },
   ],
 };
 
@@ -50,14 +50,11 @@ export default function NavLinks({ role }: NavLinksProps) {
             className={clsx(
               "flex items-center gap-4 px-3 py-2.5 rounded-xl text-left transition-all duration-150 group",
               {
-                // Active configuration matching the bright teal tint accent
                 "bg-[#eaf8f5] text-[#007a64]": isActive,
-                // Clean default state
                 "bg-transparent text-slate-700 hover:bg-slate-50": !isActive,
               }
             )}
           >
-            {/* Left aligned navigation icon */}
             <LinkIcon 
               className={clsx("w-5 h-5 flex-shrink-0 transition-colors", {
                 "text-[#009473] stroke-[2.25]": isActive,
@@ -65,7 +62,6 @@ export default function NavLinks({ role }: NavLinksProps) {
               })} 
             />
 
-            {/* Stacked title and subtext label */}
             <div className="flex flex-col leading-tight min-w-0">
               <span className={clsx("text-sm font-bold tracking-tight", {
                 "text-[#005c4b]": isActive,

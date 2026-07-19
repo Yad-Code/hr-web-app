@@ -1,48 +1,7 @@
-"use client";
-
-import { useState } from "react";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Building2, AlertCircle } from "lucide-react";
-import { signIn } from "next-auth/react"; // 👈 Client-side trigger method from Auth.js
-import { useRouter } from "next/navigation";
+import { Building2, KeyRound } from "lucide-react";
+import LoginForm from "@/app/ui/login/login-form";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [keepSignedIn, setKeepSignedIn] = useState(true);
-  
-  // Operational State Tracking Variables
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Invoke the NextAuth credential engine pipeline directly
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false, // Handle dynamic navigation manually to prevent unexpected reloads
-      });
-
-      if (result?.error) {
-        setError("Invalid email address or system authentication security password.");
-        setIsLoading(false);
-      } else {
-        // Successful login: Force full router refresh to ensure layout and middleware pick up session state updates
-        router.refresh();
-        router.push("/");
-      }
-    } catch (err: unknown) {
-      setError("An unexpected system exception occurred. Please try again.");
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen w-full bg-[#0B0F17] flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans select-none">
       
@@ -58,7 +17,7 @@ export default function LoginPage() {
       <div className="w-full max-w-[440px] z-10 flex flex-col items-center">
         
         {/* App Logo & Header */}
-        <div className="flex flex-col items-center mb-8">
+        <div className="flex flex-col items-center mb-6">
           <div className="w-14 h-14 bg-[#00B894] rounded-2xl flex items-center justify-center shadow-lg shadow-[#00B894]/20 ring-4 ring-[#00B894]/10 mb-4 transition-transform hover:scale-105 duration-300">
             <Building2 className="w-7 h-7 text-white" />
           </div>
@@ -66,95 +25,35 @@ export default function LoginPage() {
           <p className="text-sm font-medium text-slate-400 mt-1">Sign in to your workspace</p>
         </div>
 
+        {/* --- SANDBOX TESTING CREDENTIALS ACCORDION BANNER --- */}
+        <div className="w-full mb-5 bg-[#1A2232]/50 border border-slate-800/80 rounded-2xl p-4 backdrop-blur-sm">
+          <div className="flex items-center gap-2 mb-2.5 text-xs font-bold text-slate-400 uppercase tracking-wider">
+            <KeyRound className="w-3.5 h-3.5 text-[#00B894]" />
+            <span>Test</span>
+          </div>
+          <div className="space-y-1.5 text-xs font-mono text-slate-300">
+            <div className="flex justify-between items-center bg-[#0B0F17]/40 p-1.5 px-2.5 rounded-lg border border-slate-800/40">
+              <span className="text-emerald-400 font-semibold">Admin:</span>
+              <span>admin@company.com</span>
+              <span className="text-slate-500">AdminPass123</span>
+            </div>
+            <div className="flex justify-between items-center bg-[#0B0F17]/40 p-1.5 px-2.5 rounded-lg border border-slate-800/40">
+              <span className="text-blue-400 font-semibold">Employee:</span>
+              <span>yad@company.com</span>
+              <span className="text-slate-500">EmployeePass123</span>
+            </div>
+            <div className="flex justify-between items-center bg-[#0B0F17]/40 p-1.5 px-2.5 rounded-lg border border-slate-800/40">
+              <span className="text-blue-400 font-semibold">Employee:</span>
+              <span>lana@company.com</span>
+              <span className="text-slate-500">EmployeePass123</span>
+            </div>
+          </div>
+        </div>
+        {/* -------------------------------------------------- */}
+
         {/* Primary Form Wrapper Card */}
         <div className="w-full bg-[#131924]/80 border border-slate-800/60 rounded-3xl p-6 sm:p-8 backdrop-blur-xl shadow-2xl shadow-black/40">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            
-            {/* Error Notification Block */}
-            {error && (
-              <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold animate-fadeIn">
-                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-                <p>{error}</p>
-              </div>
-            )}
-
-            {/* Email Field Layout */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-300 tracking-wide">Email address</label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
-                  <Mail className="h-4 w-4 text-slate-500 group-focus-within:text-[#00B894] transition-colors" />
-                </div>
-                <input
-                  type="email"
-                  required
-                  disabled={isLoading}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@company.com"
-                  className="w-full pl-11 pr-4 py-3 text-sm font-medium text-white bg-[#1A2232] border border-slate-800 rounded-xl placeholder-slate-600 focus:outline-none focus:border-[#00B894] focus:ring-2 focus:ring-[#00B894]/10 transition-all duration-200 disabled:opacity-50"
-                />
-              </div>
-            </div>
-
-            {/* Password Field Layout */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-300 tracking-wide">Password</label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
-                  <Lock className="h-4 w-4 text-slate-500 group-focus-within:text-[#00B894] transition-colors" />
-                </div>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  disabled={isLoading}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-11 pr-11 py-3 text-sm font-medium text-white bg-[#1A2232] border border-slate-800 rounded-xl placeholder-slate-600 focus:outline-none focus:border-[#00B894] focus:ring-2 focus:ring-[#00B894]/10 transition-all duration-200 disabled:opacity-50"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-3.5 flex items-center text-slate-500 hover:text-slate-300 focus:outline-none transition-colors"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Remember Me and Forgot Password Link Row */}
-            <div className="flex items-center justify-between pt-1">
-              <label className="flex items-center space-x-3 cursor-pointer select-none group">
-                <div className="relative">
-                  <input 
-                    type="checkbox" 
-                    checked={keepSignedIn}
-                    onChange={() => setKeepSignedIn(!keepSignedIn)}
-                    className="sr-only" 
-                  />
-                  <div className={`w-9 h-5 rounded-full transition-colors duration-200 ${keepSignedIn ? 'bg-[#00B894]' : 'bg-slate-700'}`} />
-                  <div className={`absolute top-0.5 left-0.5 bg-white w-4 h-4 rounded-full transition-transform duration-200 shadow-sm ${keepSignedIn ? 'transform translate-x-4' : ''}`} />
-                </div>
-                <span className="text-xs font-bold text-slate-400 group-hover:text-slate-300 transition-colors">Keep me signed in</span>
-              </label>
-
-              <a href="#" className="text-xs font-bold text-[#00B894] hover:text-[#00cfa5] hover:underline transition-colors">
-                Forgot password?
-              </a>
-            </div>
-
-            {/* Main Action Submit Button Control */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-[#00B894] hover:bg-[#00cfa5] active:scale-[0.99] text-white py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#00B894]/10 transition-all duration-200 mt-2 group disabled:opacity-50 disabled:pointer-events-none"
-            >
-              {isLoading ? "Signing in..." : "Sign in"}
-              {!isLoading && <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />}
-            </button>
-
-          </form>
+          <LoginForm />
         </div>
 
         {/* Separator Section Context */}
@@ -167,7 +66,6 @@ export default function LoginPage() {
         {/* OAuth Provider Section - Continue with Google */}
         <button
           type="button"
-          onClick={() => signIn("google")} // Triggers Auth.js Google flow configuration
           className="w-full bg-[#131924]/40 hover:bg-[#131924]/80 border border-slate-800 text-slate-200 hover:text-white py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-3 transition-all duration-200 active:scale-[0.99]"
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">

@@ -1,17 +1,16 @@
 import NavLinks from "./nav-links";
-import { Building2 } from "lucide-react";
-import { auth } from "@/app/auth"; // 👈 Pull sessions securely for the footer badge
+import { Building2, LogOut } from "lucide-react";
+import { auth, signOut } from "@/auth";
 
 interface SideNavProps {
-  role: 'admin' | 'employee'; // 👈 Fixed: Type was incorrectly set to 'employee' | 'employee'
+  role: 'admin' | 'employee';
 }
 
 export default async function SideNav({ role }: SideNavProps) {
-  // 1. Fetch the active user session server-side for the avatar badge
   const session = await auth();
   
-  // Extract the first letter of the user's name as a dynamic fallback initial
   const userInitial = session?.user?.name ? session.user.name.charAt(0).toUpperCase() : "U";
+  const userImage = session?.user?.image;
 
   return (
     <div className="flex h-full flex-col justify-between bg-white border-r border-slate-100 p-4 w-full">
@@ -38,11 +37,45 @@ export default async function SideNav({ role }: SideNavProps) {
         </div>
       </div>
 
-      {/* Bottom Profile Anchor / Footer Context */}
-      <div className="pt-4 px-2">
-        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-800 text-slate-200 text-sm font-semibold tracking-wide border border-slate-700 shadow-inner select-none cursor-pointer hover:bg-slate-700 transition-colors">
-          {userInitial} {/* 👈 Dynamic initial letter based on logged-in user */}
+      {/* Profile & Server-Side Sign Out Action Block */}
+      <div className="pt-4 border-t border-slate-50 space-y-3">
+        <div className="flex items-center gap-3 px-2">
+          {userImage ? (
+            <img 
+              src={userImage} 
+              alt={session?.user?.name || "Profile"} 
+              className="w-9 h-9 rounded-full object-cover border border-slate-200"
+            />
+          ) : (
+            <div className="flex items-center justify-center w-9 h-9 rounded-full bg-slate-800 text-slate-200 text-xs font-bold tracking-wide select-none">
+              {userInitial}
+            </div>
+          )}
+          
+          <div className="flex flex-col min-w-0">
+            <span className="text-xs font-bold text-slate-800 truncate">
+              {session?.user?.name || "Active Session"}
+            </span>
+            <span className="text-[10px] font-medium text-slate-400 capitalize">
+              {role}
+            </span>
+          </div>
         </div>
+
+        <form
+          action={async () => {
+            "use server";
+            await signOut({ redirectTo: "/login" });
+          }}
+        >
+          <button
+            type="submit"
+            className="w-full flex items-center gap-4 px-3 py-2.5 rounded-xl text-left text-xs font-bold text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-all duration-150 group"
+          >
+            <LogOut className="w-4 h-4 text-slate-400 group-hover:text-rose-500 transition-colors stroke-[2]" />
+            <span>Sign Out</span>
+          </button>
+        </form>
       </div>
     </div>
   );

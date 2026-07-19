@@ -4,7 +4,7 @@ import styles from "@/app/ui/home.module.css";
 import { lusitana } from "@/app/ui/fonts";
 import { ArrowRightIcon } from "@heroicons/react/24/outline";
 import YadLogo from "@/app/ui/yad-logo";
-import { auth } from "@/app/auth"; // 👈 1. Import Auth.js
+import { auth } from "@/auth"; // 👈 1. Import Auth.js
 import { redirect } from "next/navigation"; // 👈 2. Import redirect
 
 // 3. Turn the component into an async function

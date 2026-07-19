@@ -1,4 +1,4 @@
-import { auth } from "@/app/auth";
+import { auth } from "@/auth";
 import { Edit2, LogOut } from "lucide-react";
 
 export default async function EmployeeProfilePage() {
