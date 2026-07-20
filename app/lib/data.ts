@@ -26,10 +26,6 @@ export interface PendingRequest {
 // 1. FIXED: Profile data fetcher
 export async function getProfileData(email: string) {
   try {
-    // Artificial 3s delay for testing loading skeletons (Remove in production)
-    // await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    // Using SELECT * prevents column missing errors if your DB schema varies
     const users = await sql`
       SELECT * 
       FROM users 
@@ -40,10 +36,10 @@ export async function getProfileData(email: string) {
 
     const user = users[0];
 
-    // Safely map and fallback to guarantee existing properties
     return {
       id: user.id,
-      employee_id: user.employee_id || user.id.slice(0, 8), // Fallback if column missing
+      userId: user.user_id || user.id, // <-- Add this line
+      employee_id: user.employee_id || user.id.slice(0, 8),
       name: user.name,
       preferred_name: user.preferred_name || user.name,
       department: user.department || "General",
@@ -66,7 +62,6 @@ export async function getProfileData(email: string) {
     return null;
   }
 }
-
 // 2. Fetch employee status list
 export async function fetchEmployeeStatusList(): Promise<Employee[]> {
   try {
