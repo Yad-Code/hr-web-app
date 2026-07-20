@@ -10,7 +10,7 @@ import { FullEmployeeProfile } from "@/app/lib/definitions";
 
 interface ProfileFormProps {
   profile: FullEmployeeProfile;
-  userEmail: string;
+  userEmail: string; 
 }
 
 export default function ProfileForm({ profile, userEmail }: ProfileFormProps) {
@@ -40,7 +40,7 @@ export default function ProfileForm({ profile, userEmail }: ProfileFormProps) {
 
         <div className="space-y-4">
           <div className="flex items-start gap-3">
-            <User className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+            <User className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
             <div className="flex-1">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Preferred Name</p>
               <input
@@ -56,7 +56,7 @@ export default function ProfileForm({ profile, userEmail }: ProfileFormProps) {
           </div>
 
           <div className="flex items-start gap-3">
-            <Heart className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+            <Heart className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
             <div className="flex-1">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Marital Status</p>
               <select
@@ -73,7 +73,7 @@ export default function ProfileForm({ profile, userEmail }: ProfileFormProps) {
           </div>
 
           <div className="flex items-start gap-3">
-            <Droplet className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+            <Droplet className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
             <div className="flex-1">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Blood Group</p>
               <select
@@ -95,7 +95,7 @@ export default function ProfileForm({ profile, userEmail }: ProfileFormProps) {
           </div>
 
           <div className="flex items-start gap-3">
-            <Mail className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+            <Mail className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
             <div className="flex-1">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Personal Email</p>
               <input
@@ -111,7 +111,7 @@ export default function ProfileForm({ profile, userEmail }: ProfileFormProps) {
           </div>
 
           <div className="flex items-start gap-3">
-            <Phone className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+            <Phone className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
             <div className="flex-1">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Personal Phone</p>
               <input
@@ -124,7 +124,7 @@ export default function ProfileForm({ profile, userEmail }: ProfileFormProps) {
           </div>
 
           <div className="flex items-start gap-3">
-            <MapPin className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+            <MapPin className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
             <div className="flex-1">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Current Address</p>
               <textarea

@@ -26,7 +26,7 @@ export function EmployeeSearchListSkeleton() {
             {/* Left Side: Avatar & Name lines */}
             <div className="flex items-center gap-3.5 min-w-0 flex-1">
               {/* Profile Circle */}
-              <div className="w-11 h-11 rounded-full bg-slate-200 flex-shrink-0" />
+              <div className="w-11 h-11 rounded-full bg-slate-200 shrink-0" />
               
               {/* Info Blocks */}
               <div className="space-y-2 flex-1 max-w-xs">
@@ -43,7 +43,7 @@ export function EmployeeSearchListSkeleton() {
             {/* Right Side: Timestamp Anchor */}
             <div className="h-3 w-16 bg-slate-100 rounded-md shrink-0 ml-4" />
           </div>
-        ))}
+        ))} 
       </div>
     </div>
   );
@@ -126,7 +126,7 @@ export function ProfileFormSkeleton() {
       <div className="space-y-4">
         {[...Array(6)].map((_, i) => (
           <div key={i} className="flex items-start gap-3">
-            <div className="w-4 h-4 rounded-full bg-slate-200 mt-0.5 flex-shrink-0" />
+            <div className="w-4 h-4 rounded-full bg-slate-200 mt-0.5 shrink-0" />
             <div className="flex-1 space-y-1.5">
               <div className="h-2.5 w-24 bg-slate-200 rounded" />
               <div className="h-9 w-full bg-slate-100 rounded-lg border border-slate-200" />
