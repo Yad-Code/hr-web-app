@@ -1,6 +1,6 @@
 import NavLinks from "./nav-links";
 import { Building2, LogOut } from "lucide-react";
-import { signOut } from "@/auth";
+import { handleSignOut } from "@/app/lib/auth-actions";
 
 interface SideNavProps {
   role: "admin" | "employee";
@@ -39,10 +39,7 @@ export default async function SideNav({ role }: SideNavProps) {
       {/* Profile & Server-Side Sign Out Action Block */}
       <div className="pt-4 border-t border-slate-50 space-y-3">
         <form
-          action={async () => {
-            "use server";
-            await signOut({ redirectTo: "/login" });
-          }}
+          action={handleSignOut}
         >
           <button
             type="submit"

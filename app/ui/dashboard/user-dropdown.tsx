@@ -82,7 +82,7 @@ export function UserDropdown({ user }: UserDropdownProps) {
           {/* Top Info Context */}
           <div className="p-4 flex items-center gap-3 bg-slate-50/40">
             {user.image_url ? (
-              <div className="relative w-12 h-12 rounded-full overflow-hidden border border-slate-200 flex-shrink-0">
+              <div className="relative w-12 h-12 rounded-full overflow-hidden border border-slate-200 shrink-0">
                 <Image
                   src={user.image_url}
                   alt={user.name}
@@ -91,7 +91,7 @@ export function UserDropdown({ user }: UserDropdownProps) {
                 />
               </div>
             ) : (
-              <div className="w-12 h-12 rounded-full bg-[#009473] text-white flex items-center justify-center font-bold text-base flex-shrink-0 shadow-sm">
+              <div className="w-12 h-12 rounded-full bg-[#009473] text-white flex items-center justify-center font-bold text-base shrink-0 shadow-sm">
                 {initials}
               </div>
             )}
@@ -121,10 +121,12 @@ export function UserDropdown({ user }: UserDropdownProps) {
 
           {/* Action Navigation Links */}
           <div className="p-1.5 bg-white space-y-0.5">
-            <button className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors text-left group">
-              <User className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
-              <Link href="/my-profile">My Profile</Link>
-            </button>
+            <Link href="/my-profile">
+              <button className="cursor-pointer w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors text-left group">
+                <User className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
+                My Profile
+              </button>
+            </Link>
             <button className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors text-left group">
               <Settings className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
               Workspace Settings

@@ -21,7 +21,7 @@ export default function ProfileHeader({
 
       <div className="px-6 pb-6 pt-0 relative">
         <div className="absolute -top-12 left-6">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-indigo-500 to-blue-600 text-white font-bold text-2xl flex items-center justify-center border-4 border-white shadow-md">
+          <div className="w-24 h-24 rounded-full bg-linear-to-tr from-indigo-500 to-blue-600 text-white font-bold text-2xl flex items-center justify-center border-4 border-white shadow-md">
             {(profile.preferred_name || profile.name || "U").charAt(0)}
           </div>
         </div>
