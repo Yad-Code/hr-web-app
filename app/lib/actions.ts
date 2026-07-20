@@ -1,6 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
+import { put } from "@vercel/blob";
 import { z } from "zod";
 import postgres from "postgres";
 import { revalidatePath } from "next/cache";
@@ -11,6 +12,48 @@ const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 // ==========================================
 // SCHEMAS & VALIDATION
 // ==========================================
+
+//Profile picture:
+export async function uploadProfilePicture(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.email) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  const file = formData.get("avatar") as File;
+  if (!file || file.size === 0) {
+    return { success: false, error: "No file provided" };
+  }
+
+  // Validate file type & size (max 4MB)
+  if (!file.type.startsWith("image/")) {
+    return { success: false, error: "File must be an image" };
+  }
+  if (file.size > 4 * 1024 * 1024) {
+    return { success: false, error: "Image must be smaller than 4MB" };
+  }
+
+  try {
+    // 1. Upload to cloud storage
+    const blob = await put(`avatars/${session.user.email}-${Date.now()}`, file, {
+      access: "public",
+    });
+
+    // 2. Save image URL to PostgreSQL
+    await sql`
+      UPDATE users 
+      SET image_url = ${blob.url} 
+      WHERE email = ${session.user.email}
+    `;
+
+    revalidatePath("/my-profile");
+    return { success: true, url: blob.url };
+  } catch (error) {
+    console.error("Avatar upload failed:", error);
+    return { success: false, error: "Failed to upload image" };
+  }
+}
+
 
 // Validation schema for employee-editable profile fields
 const ProfileUpdateSchema = z.object({

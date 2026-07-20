@@ -22,7 +22,7 @@ export async function GET() {
         employee_id VARCHAR(50) UNIQUE,
         name VARCHAR(100) NOT NULL,
         preferred_name VARCHAR(100),
-        department VARCHAR(100),
+        department VARCHAR(100), 
         branch VARCHAR(100),
         date_of_birth DATE,
         age INT,

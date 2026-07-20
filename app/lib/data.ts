@@ -3,7 +3,6 @@ import { sql } from "@/app/lib/db"; // Using our configured singleton instance
 import { formatDistanceToNow } from "date-fns";
 import { auth } from "@/auth";
 
-
 export interface Employee {
   id: string;
   name: string;
@@ -56,6 +55,7 @@ export async function getProfileData(email: string) {
       current_address: user.current_address || "",
       role: user.role || "employee",
       status: user.status || "Active",
+      image_url: user.image_url || null,
     };
   } catch (error) {
     console.error("Failed to fetch employee profile:", error);
