@@ -5,6 +5,12 @@ import { redirect } from "next/navigation";
 import ProfileHeader from "@/app/ui/employee/profile/profileHeader";
 import OfficialInfoCard from "@/app/ui/employee/profile/officialInfoCard";
 import ProfileForm from "@/app/ui/employee/profile/profileForm";
+import {
+  OfficialInfoCardSkeleton,
+  ProfileFormSkeleton,
+  ProfileHeaderSkeleton,
+} from "@/app/ui/employee/skeleton";
+import { Suspense } from "react";
 
 export default async function EmployeeProfilePage() {
   const session = await auth();
@@ -25,11 +31,17 @@ export default async function EmployeeProfilePage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 p-2 sm:p-4 text-left select-none animate-fadeIn">
-      <ProfileHeader profile={profile} />
+      <Suspense fallback={<ProfileHeaderSkeleton />}>
+        <ProfileHeader profile={profile} />
+      </Suspense>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <OfficialInfoCard profile={profile} />
-        <ProfileForm profile={profile} userEmail={session.user.email} />
+        <Suspense fallback={<OfficialInfoCardSkeleton />}>
+          <OfficialInfoCard profile={profile} />
+        </Suspense>
+        <Suspense fallback={<ProfileFormSkeleton />}>
+          <ProfileForm profile={profile} userEmail={session.user.email} />
+        </Suspense>
       </div>
     </div>
   );
