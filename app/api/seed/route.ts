@@ -8,6 +8,7 @@ export async function GET() {
     await db`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
 
     // Drop tables in reverse order of foreign key dependencies
+    await db`DROP TABLE IF EXISTS attendance`;
     await db`DROP TABLE IF EXISTS requests`;
     await db`DROP TABLE IF EXISTS schedules`;
     await db`DROP TABLE IF EXISTS users`;
@@ -61,6 +62,21 @@ export async function GET() {
         description TEXT NOT NULL,
         status VARCHAR(50) DEFAULT 'pending' NOT NULL,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )
+    `;
+
+    await db`
+      CREATE TABLE attendance (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        date DATE NOT NULL,
+        check_in VARCHAR(10),
+        check_out VARCHAR(10),
+        work_hours VARCHAR(20),
+        status VARCHAR(20) DEFAULT 'Present',
+        work_location VARCHAR(20) DEFAULT 'Office',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, date)
       )
     `;
 
@@ -185,7 +201,7 @@ export async function GET() {
       RETURNING id, role, name;
     `;
 
-    // 5. Seed Work Schedules & Operational Requests Dynamically
+    // 5. Seed Schedules, Requests & Attendance Dynamically
     const employees = seededUsers.filter((user) => user.role === "employee");
 
     for (const emp of employees) {
@@ -204,6 +220,13 @@ export async function GET() {
           INSERT INTO requests (employee_id, type, description, status)
           VALUES (${emp.id}, 'time-off', 'Requesting 2 days off for a local engineering hackathon event.', 'pending')
         `;
+
+        await db`
+          INSERT INTO attendance (user_id, date, check_in, check_out, work_hours, status, work_location)
+          VALUES 
+            (${emp.id}, '2026-07-20', '08:52 AM', '05:05 PM', '8h 13m', 'Present', 'Office'),
+            (${emp.id}, '2026-07-21', '09:02 AM', '05:00 PM', '7h 58m', 'Present', 'Remote')
+        `;
       } else if (emp.name === "Lana Amin") {
         await db`
           INSERT INTO schedules (employee_id, work_date, shift_start, shift_end, notes)
@@ -213,6 +236,13 @@ export async function GET() {
             (${emp.id}, '2026-07-22', '08:30:00', '16:30:00', 'User Testing Interviews'),
             (${emp.id}, '2026-07-23', '08:30:00', '16:30:00', 'Design System Audit'),
             (${emp.id}, '2026-07-24', '08:30:00', '15:30:00', 'Weekly Sync & Retro')
+        `;
+
+        await db`
+          INSERT INTO attendance (user_id, date, check_in, check_out, work_hours, status, work_location)
+          VALUES 
+            (${emp.id}, '2026-07-20', '08:28 AM', '04:32 PM', '8h 04m', 'Present', 'Office'),
+            (${emp.id}, '2026-07-21', '08:30 AM', '04:30 PM', '8h 00m', 'Present', 'Office')
         `;
       } else if (emp.name === "Diyar Karwan") {
         await db`
@@ -229,6 +259,13 @@ export async function GET() {
           INSERT INTO requests (employee_id, type, description, status)
           VALUES (${emp.id}, 'expense', 'Cloud database hosting reimbursement.', 'pending')
         `;
+
+        await db`
+          INSERT INTO attendance (user_id, date, check_in, check_out, work_hours, status, work_location)
+          VALUES 
+            (${emp.id}, '2026-07-20', '09:14 AM', '05:10 PM', '7h 56m', 'Late', 'Office'),
+            (${emp.id}, '2026-07-21', '08:58 AM', '05:02 PM', '8h 04m', 'Present', 'WFH')
+        `;
       } else if (emp.name === "Sara Omar") {
         await db`
           INSERT INTO schedules (employee_id, work_date, shift_start, shift_end, notes)
@@ -239,13 +276,21 @@ export async function GET() {
             (${emp.id}, '2026-07-23', '09:00:00', '17:00:00', 'Bug Backlog Triage'),
             (${emp.id}, '2026-07-24', '09:00:00', '16:00:00', 'Weekly Sync & Retro')
         `;
+
+        await db`
+          INSERT INTO attendance (user_id, date, check_in, check_out, work_hours, status, work_location)
+          VALUES 
+            (${emp.id}, '2026-07-20', '08:55 AM', '05:01 PM', '8h 06m', 'Present', 'Office'),
+            (${emp.id}, '2026-07-21', '08:50 AM', '05:00 PM', '8h 10m', 'Present', 'Office')
+        `;
       }
     }
 
     return NextResponse.json(
       {
         success: true,
-        message: "Database schema built and seeded successfully with full profile data.",
+        message:
+          "Database schema built and seeded successfully with users, schedules, requests, and attendance logs.",
         credentialsHelp: {
           adminAccount: {
             email: "admin@company.com",
@@ -253,10 +298,26 @@ export async function GET() {
             role: "admin",
           },
           employeeAccounts: [
-            { email: "yad@company.com", password: "EmployeePass123", role: "employee" },
-            { email: "lana@company.com", password: "EmployeePass123", role: "employee" },
-            { email: "diyar@company.com", password: "EmployeePass123", role: "employee" },
-            { email: "sara@company.com", password: "EmployeePass123", role: "employee" },
+            {
+              email: "yad@company.com",
+              password: "EmployeePass123",
+              role: "employee",
+            },
+            {
+              email: "lana@company.com",
+              password: "EmployeePass123",
+              role: "employee",
+            },
+            {
+              email: "diyar@company.com",
+              password: "EmployeePass123",
+              role: "employee",
+            },
+            {
+              email: "sara@company.com",
+              password: "EmployeePass123",
+              role: "employee",
+            },
           ],
         },
       },

@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { put } from "@vercel/blob";
+import { put, del } from "@vercel/blob";
 import { z } from "zod";
 import postgres from "postgres";
 import { revalidatePath } from "next/cache";
@@ -25,7 +25,6 @@ export async function uploadProfilePicture(formData: FormData) {
     return { success: false, error: "No file provided" };
   }
 
-  // Validate file type & size (max 4MB)
   if (!file.type.startsWith("image/")) {
     return { success: false, error: "File must be an image" };
   }
@@ -34,17 +33,32 @@ export async function uploadProfilePicture(formData: FormData) {
   }
 
   try {
-    // 1. Upload to cloud storage
-    const blob = await put(`avatars/${session.user.email}-${Date.now()}`, file, {
-      access: "public",
-    });
+    // 2. Fetch user's existing image URL from the database
+    const existingUser = await sql`
+      SELECT image_url FROM users WHERE email = ${session.user.email}
+    `;
+    const oldImageUrl = existingUser[0]?.image_url;
 
-    // 2. Save image URL to PostgreSQL
+    // 3. Upload the new file to Vercel Blob
+    const blob = await put(
+      `avatars/${session.user.email}-${Date.now()}`,
+      file,
+      {
+        access: "public",
+      },
+    );
+
+    // 4. Update the database with the new URL
     await sql`
       UPDATE users 
       SET image_url = ${blob.url} 
       WHERE email = ${session.user.email}
     `;
+
+    // 5. Delete the old image file from storage if it exists
+    if (oldImageUrl) {
+      await del(oldImageUrl);
+    }
 
     revalidatePath("/my-profile");
     return { success: true, url: blob.url };
@@ -53,7 +67,6 @@ export async function uploadProfilePicture(formData: FormData) {
     return { success: false, error: "Failed to upload image" };
   }
 }
-
 
 // Validation schema for employee-editable profile fields
 const ProfileUpdateSchema = z.object({
@@ -68,7 +81,7 @@ const ProfileUpdateSchema = z.object({
     ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "Unknown"],
     {
       message: "Please select a valid blood group.",
-    }
+    },
   ),
   personalEmail: z
     .string()
