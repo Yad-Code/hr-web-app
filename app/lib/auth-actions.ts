@@ -1,10 +1,23 @@
 "use server";
 
+import { signIn, signOut } from "@/auth";
+import { AuthError } from "next-auth";
 import { z } from "zod";
 import bcrypt from "bcrypt";
 import postgres from "postgres";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
+
+// ==========================================
+// SCHEMAS & HELPERS
+// ==========================================
+
+const LoginSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address." }),
+  password: z
+    .string()
+    .min(6, { message: "Password must be at least 6 characters." }),
+});
 
 async function getUser(email: string) {
   try {
@@ -39,4 +52,49 @@ export async function verifyUserCredentials(email: string, password: string) {
   }
 
   return null;
+}
+
+// ==========================================
+// AUTHENTICATION SERVER ACTIONS
+// ==========================================
+
+export async function handleSignOut() {
+  await signOut({ redirectTo: "/login" });
+}
+
+/**
+ * Server Action to securely authenticate users.
+ */
+export async function authenticate(
+  prevState: string | undefined,
+  formData: FormData,
+) {
+  try {
+    const rawFields = Object.fromEntries(formData.entries());
+    const validatedFields = LoginSchema.safeParse(rawFields);
+
+    if (!validatedFields.success) {
+      return "Invalid email or password structure.";
+    }
+
+    const { email, password } = validatedFields.data;
+
+    await signIn("credentials", {
+      email,
+      password,
+      redirect: true,
+    });
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case "CredentialsSignin":
+          return "Invalid credentials. Please check your email and password.";
+        default:
+          return "Something went wrong. Please try again.";
+      }
+    }
+
+    // CRITICAL: Next.js redirects rely on throwing internal routing exceptions.
+    throw error;
+  }
 }

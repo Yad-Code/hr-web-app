@@ -1,59 +1,120 @@
-'use server';
+"use server";
 
-import { signIn, signOut } from '@/auth';
-import { AuthError } from 'next-auth';
-import { z } from 'zod';
+import { auth } from "@/auth";
+import { z } from "zod";
+import postgres from "postgres";
+import { revalidatePath } from "next/cache";
+import { ActionState } from "./definitions";
 
-// Define input validation scheme matching our login rules
-const LoginSchema = z.object({
-  email: z.string().email({ message: 'Please enter a valid email address.' }),
-  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
+
+// ==========================================
+// SCHEMAS & VALIDATION
+// ==========================================
+
+// Validation schema for employee-editable profile fields
+const ProfileUpdateSchema = z.object({
+  preferredName: z
+    .string()
+    .trim()
+    .min(1, { message: "Preferred name is required." }),
+  maritalStatus: z.enum(["Single", "Married", "Divorced", "Widowed"], {
+    message: "Please select a valid marital status.",
+  }),
+  bloodGroup: z.enum(
+    ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "Unknown"],
+    {
+      message: "Please select a valid blood group.",
+    }
+  ),
+  personalEmail: z
+    .string()
+    .email({ message: "Invalid personal email address." }),
+  personalPhone: z.string().trim().optional(),
+  currentAddress: z.string().trim().optional(),
 });
 
-export async function handleSignOut() {
-  await signOut({ redirectTo: "/login" });
-}
+// ==========================================
+// PROFILE ACTIONS
+// ==========================================
 
 /**
- * Server Action to securely authenticate users.
- * This is invoked by your client-side form using action or transition fields.
+ * Server Action to update self-service employee profile fields in PostgreSQL.
+ * Ensures strict boundary enforcement—official attributes are omitted entirely.
  */
-export async function authenticate(
-  prevState: string | undefined,
-  formData: FormData
-) {
+export async function updateEmployeeProfile(
+  prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  // 1. Verify caller session
+  const session = await auth();
+
+  if (!session?.user?.email) {
+    return {
+      success: false,
+      error: "Unauthorized",
+    };
+  }
+
+  // 2. Extract raw input safely
+  const rawData = {
+    preferredName: formData.get("preferredName"),
+    maritalStatus: formData.get("maritalStatus"),
+    bloodGroup: formData.get("bloodGroup"),
+    personalEmail: formData.get("personalEmail"),
+    personalPhone: formData.get("personalPhone"),
+    currentAddress: formData.get("currentAddress"),
+  };
+
+  // Safe parse with Zod
+  const validatedFields = ProfileUpdateSchema.safeParse(rawData);
+
+  if (!validatedFields.success) {
+    const flattenedErrors = validatedFields.error.flatten().fieldErrors;
+
+    console.error("Validation errors:", flattenedErrors);
+
+    return {
+      success: false,
+      error:
+        "Invalid form data. Check your inputs (e.g. Marital Status capitalization).",
+      fieldErrors: flattenedErrors,
+    };
+  }
+
+  const {
+    preferredName,
+    maritalStatus,
+    bloodGroup,
+    personalEmail,
+    personalPhone,
+    currentAddress,
+  } = validatedFields.data;
+
+  // 3. Update database
   try {
-    // 1. Convert form data fields and validate schemas securely
-    const rawFields = Object.fromEntries(formData.entries());
-    const validatedFields = LoginSchema.safeParse(rawFields);
+    await sql`
+      UPDATE users  
+      SET 
+        preferred_name = ${preferredName},
+        marital_status = ${maritalStatus},
+        blood_group = ${bloodGroup},
+        personal_email = ${personalEmail},
+        personal_phone = ${personalPhone || null},
+        current_address = ${currentAddress || null}
+      WHERE email = ${session.user.email}
+    `;
 
-    if (!validatedFields.success) {
-      return 'Invalid email or password structure.';
-    }
+    // 4. Trigger Next.js cache revalidation
+    revalidatePath("/my-profile");
 
-    const { email, password } = validatedFields.data;
-
-    // 2. Invoke NextAuth's underlying signIn procedure
-    await signIn('credentials', {
-      email,
-      password,
-      // Setting redirect to true lets our middleware route guards automatically 
-      // handle routing users to /dashboard or /my-profile based on roles.
-      redirect: true, 
-    });
-
+    return { success: true };
   } catch (error) {
-    if (error instanceof AuthError) {
-      switch (error.type) {
-        case 'CredentialsSignin':
-          return 'Invalid credentials. Please check your email and password.';
-        default:
-          return 'Something went wrong. Please try again.';
-      }
-    }
-    
-    // CRITICAL: Next.js handling redirects relies on throwing native internal routing exceptions. 
-    // We must re-throw this error so Next.js actually redirects the user instead of catching it as an error!
-    throw error;
+    console.error("Database update failed:", error);
+
+    return {
+      success: false,
+      error: "Database error occurred while updating profile.",
+    };
   }
 }

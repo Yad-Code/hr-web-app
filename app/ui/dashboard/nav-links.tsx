@@ -24,8 +24,8 @@ const links = {
   employee: [
     { name: "My Profile", sub: "Personal portal", href: "/my-profile", icon: LayoutGrid },
     { name: "My Attendance", sub: "Check-ins & logs", href: "/my-profile/attendance", icon: Clock },
-    { name: "Team Directory", sub: "All team members", href: "/my-profile/friends", icon: Users },
-    { name: "My Documents", sub: "Personal records", href: "/my-profile/documents", icon: FolderLock },
+    { name: "My Performance", sub: "KPIs & Past reviews", href: "/my-profile/performance", icon: Users },
+    { name: "My Payroll", sub: "Current & past payslips", href: "/my-profile/payroll", icon: FolderLock },
   ],
 };
 
@@ -56,7 +56,7 @@ export default function NavLinks({ role }: NavLinksProps) {
             )}
           >
             <LinkIcon 
-              className={clsx("w-5 h-5 flex-shrink-0 transition-colors", {
+              className={clsx("w-5 h-5 shrink-0 transition-colors", {
                 "text-[#009473] stroke-[2.25]": isActive,
                 "text-slate-400 group-hover:text-slate-600 stroke-[1.75]": !isActive,
               })} 

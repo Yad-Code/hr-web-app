@@ -1,25 +1,73 @@
-//The functions till now
-//1- fetchEmployeeStatusList
-//2- getRelativeTimeString
-//3- getCurrentUserRole
-//4- fetchPendingAdminRequests
-// DON'T FORGET TO ADD Promise.all().
-// what is the Promise((resolve) => setTimeout(resolve, 3000));
-
+// app/lib/data.ts
 import { sql } from "@/app/lib/db"; // Using our configured singleton instance
 import { formatDistanceToNow } from "date-fns";
-import { auth } from "@/auth";  
+import { auth } from "@/auth";
+
 
 export interface Employee {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'employee';
+  role: "admin" | "employee";
   image_url: string | null;
-  status: 'active' | 'offline';
+  status: "active" | "offline";
   last_seen_text: string;
 }
 
+export interface PendingRequest {
+  id: string;
+  employee_name: string;
+  image_url: string | null;
+  type: "time-off" | "expense";
+  description: string;
+  created_at: Date;
+}
+
+// 1. FIXED: Profile data fetcher
+export async function getProfileData(email: string) {
+  try {
+    // Artificial 3s delay for testing loading skeletons (Remove in production)
+    // await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    // Using SELECT * prevents column missing errors if your DB schema varies
+    const users = await sql`
+      SELECT * 
+      FROM users 
+      WHERE email = ${email}
+    `;
+
+    if (!users[0]) return null;
+
+    const user = users[0];
+
+    // Safely map and fallback to guarantee existing properties
+    return {
+      id: user.id,
+      employee_id: user.employee_id || user.id.slice(0, 8), // Fallback if column missing
+      name: user.name,
+      preferred_name: user.preferred_name || user.name,
+      department: user.department || "General",
+      branch: user.branch || "Main Branch",
+      date_of_birth: user.date_of_birth || null,
+      age: user.age || null,
+      gender: user.gender || "N/A",
+      nationality: user.nationality || "N/A",
+      marital_status: user.marital_status || "Single",
+      blood_group: user.blood_group || "Unknown",
+      email: user.email,
+      personal_email: user.personal_email || user.email,
+      personal_phone: user.personal_phone || "",
+      current_address: user.current_address || "",
+      role: user.role || "employee",
+      status: user.status || "Active",
+    };
+  } catch (error) {
+    console.error("Failed to fetch employee profile:", error);
+    return null;
+  }
+}
+
+// 2. Fetch employee status list
 export async function fetchEmployeeStatusList(): Promise<Employee[]> {
   try {
     const rows = await sql`
@@ -32,9 +80,11 @@ export async function fetchEmployeeStatusList(): Promise<Employee[]> {
     const FIVE_MINUTES_IN_MS = 5 * 60 * 1000;
 
     return rows.map((row) => {
-      // Guard against null timestamps safely
-      const lastSeen = row.last_seen_at ? new Date(row.last_seen_at) : new Date();
-      const isActiveNow = NOW.getTime() - lastSeen.getTime() < FIVE_MINUTES_IN_MS;
+      const lastSeen = row.last_seen_at
+        ? new Date(row.last_seen_at)
+        : new Date();
+      const isActiveNow =
+        NOW.getTime() - lastSeen.getTime() < FIVE_MINUTES_IN_MS;
 
       return {
         id: row.id,
@@ -50,11 +100,12 @@ export async function fetchEmployeeStatusList(): Promise<Employee[]> {
     });
   } catch (error) {
     console.error("Database Error fetching employee status list:", error);
-    return []; // Return an empty array as a safe fallback for the UI layout shell
+    return [];
   }
 }
 
-function getRelativeTimeString(date: Date): string {
+// Helper: Relative time string
+export function getRelativeTimeString(date: Date): string {
   const ms = new Date().getTime() - date.getTime();
   const mins = Math.floor(ms / 60000);
   if (mins < 1) return "just now";
@@ -64,31 +115,20 @@ function getRelativeTimeString(date: Date): string {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-// Add this helper to your existing lib/data.ts file
-
+// 3. Get current user role
 export async function getCurrentUserRole() {
   const session = await auth();
   return session?.user?.role || "employee";
 }
 
-// Add this to your existing lib/data.ts file
-export interface PendingRequest {
-  id: string;
-  employee_name: string;
-  image_url: string | null;
-  type: 'time-off' | 'expense';
-  description: string;
-  created_at: Date;
-}
-
-
+// 4. Fetch pending admin requests
 export async function fetchPendingAdminRequests() {
   try {
     const data = await sql`
       SELECT 
         r.id,
         r.type,
-        r.description, -- 👈 Make sure this is selected!
+        r.description,
         r.status,
         r.created_at,
         u.name as employee_name,
@@ -100,7 +140,24 @@ export async function fetchPendingAdminRequests() {
     `;
     return data;
   } catch (error) {
-    console.error("Database Error:", error);
+    console.error("Database Error fetching pending requests:", error);
     return [];
+  }
+}
+
+// 5. BONUS: Parallel Dashboard Data Fetcher using Promise.all()
+export async function fetchDashboardData() {
+  try {
+    // Runs independent DB queries in parallel instead of sequentially waiting
+    const [statusList, pendingRequests, userRole] = await Promise.all([
+      fetchEmployeeStatusList(),
+      fetchPendingAdminRequests(),
+      getCurrentUserRole(),
+    ]);
+
+    return { statusList, pendingRequests, userRole };
+  } catch (error) {
+    console.error("Database Error in fetchDashboardData:", error);
+    throw new Error("Failed to load dashboard data.");
   }
 }

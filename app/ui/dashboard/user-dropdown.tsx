@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { User, Settings, HelpCircle, LogOut, ChevronDown } from "lucide-react";
-import { handleSignOut } from "@/app/lib/actions";
+import { handleSignOut } from "@/app/lib/auth-actions";
+import Link from "next/link";
 // Import from the react sub-module if using NextAuth
 
 interface UserDropdownProps {
@@ -122,7 +123,7 @@ export function UserDropdown({ user }: UserDropdownProps) {
           <div className="p-1.5 bg-white space-y-0.5">
             <button className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors text-left group">
               <User className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
-              My Profile
+              <Link href="/my-profile">My Profile</Link>
             </button>
             <button className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors text-left group">
               <Settings className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
