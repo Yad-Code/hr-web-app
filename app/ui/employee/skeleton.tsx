@@ -100,7 +100,7 @@ export function OfficialInfoCardSkeleton() {
       <div className="space-y-4">
         {[...Array(6)].map((_, i) => (
           <div key={i} className="flex items-start gap-3">
-            <div className="w-4 h-4 rounded-full bg-slate-200 mt-0.5 flex-shrink-0" />
+            <div className="w-4 h-4 rounded-full bg-slate-200 mt-0.5 shrink-0" />
             <div className="flex-1 space-y-1.5">
               <div className="h-2.5 w-20 bg-slate-200 rounded" />
               <div className="h-4 w-3/4 bg-slate-200 rounded" />
