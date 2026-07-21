@@ -33,34 +33,39 @@ export async function uploadProfilePicture(formData: FormData) {
   }
 
   try {
-    // 2. Fetch user's existing image URL from the database
+    // 1. Fetch user's existing image URL from Postgres
     const existingUser = await sql`
       SELECT image_url FROM users WHERE email = ${session.user.email}
     `;
     const oldImageUrl = existingUser[0]?.image_url;
 
-    // 3. Upload the new file to Vercel Blob
+    // 2. Upload the new file to Vercel Blob
     const blob = await put(
       `avatars/${session.user.email}-${Date.now()}`,
       file,
-      {
-        access: "public",
-      },
+      { access: "public" }
     );
 
-    // 4. Update the database with the new URL
+    // 3. Update PostgreSQL with the Vercel Blob public URL
     await sql`
       UPDATE users 
       SET image_url = ${blob.url} 
       WHERE email = ${session.user.email}
     `;
 
-    // 5. Delete the old image file from storage if it exists
-    if (oldImageUrl) {
-      await del(oldImageUrl);
+    // 4. Safely delete the old blob image (if it's not a seed URL)
+    if (oldImageUrl && oldImageUrl.includes("public.blob.vercel-storage.com")) {
+      try {
+        await del(oldImageUrl);
+      } catch (e) {
+        console.warn("Failed to delete old blob:", e);
+      }
     }
 
+    // 5. Purge Next.js cache so all users see the new image instantly
     revalidatePath("/my-profile");
+    revalidatePath("/employees");
+
     return { success: true, url: blob.url };
   } catch (error) {
     console.error("Avatar upload failed:", error);

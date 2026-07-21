@@ -8,7 +8,7 @@ export function TodayStatusSkeleton() {
         <div className="h-16 bg-slate-100 rounded-xl" />
         <div className="h-16 bg-slate-100 rounded-xl" />
         <div className="h-16 bg-slate-100 rounded-xl" />
-      </div>
+      </div> 
     </div>
   );
 }

@@ -17,7 +17,7 @@ export default function ProfileHeader({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) return; 
 
     const formData = new FormData();
     formData.append("avatar", file);
