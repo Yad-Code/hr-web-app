@@ -33,27 +33,26 @@ export async function uploadProfilePicture(formData: FormData) {
   }
 
   try {
-    // 1. Fetch user's existing image URL from Postgres
     const existingUser = await sql`
       SELECT image_url FROM users WHERE email = ${session.user.email}
     `;
     const oldImageUrl = existingUser[0]?.image_url;
 
-    // 2. Upload the new file to Vercel Blob
+    // 1. Upload new image to Vercel Blob
     const blob = await put(
       `avatars/${session.user.email}-${Date.now()}`,
       file,
       { access: "public" }
     );
 
-    // 3. Update PostgreSQL with the Vercel Blob public URL
+    // 2. Update Postgres database
     await sql`
       UPDATE users 
       SET image_url = ${blob.url} 
       WHERE email = ${session.user.email}
     `;
 
-    // 4. Safely delete the old blob image (if it's not a seed URL)
+    // 3. Clean up old blob image safely
     if (oldImageUrl && oldImageUrl.includes("public.blob.vercel-storage.com")) {
       try {
         await del(oldImageUrl);
@@ -62,7 +61,7 @@ export async function uploadProfilePicture(formData: FormData) {
       }
     }
 
-    // 5. Purge Next.js cache so all users see the new image instantly
+    // 4. Revalidate cache for all profile & team views
     revalidatePath("/my-profile");
     revalidatePath("/employees");
 
