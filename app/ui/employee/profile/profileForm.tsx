@@ -32,16 +32,22 @@ export default function ProfileForm({ profile, userEmail }: ProfileFormProps) {
   console.log(state);
   // Soft-refresh client state when server action succeeds
   useEffect(() => {
-    if (state?.success) {
-      setShowSuccess(true);
-      router.refresh();
-    }
+    if (!state?.success) return;
 
-    const timer = setTimeout(() => {
+    router.refresh();
+
+    const showTimer = setTimeout(() => {
+      setShowSuccess(true);
+    }, 0);
+
+    const hideTimer = setTimeout(() => {
       setShowSuccess(false);
     }, 5000);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
+    };
   }, [state, router]);
 
   return (
