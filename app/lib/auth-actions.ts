@@ -79,10 +79,14 @@ export async function authenticate(
 
     const { email, password } = validatedFields.data;
 
+    // Fetch user role first to determine correct post-login landing page
+    const user = await getUser(email);
+    const destination = user?.role === "admin" ? "/dashboard" : "/my-profile";
+
     await signIn("credentials", {
       email,
       password,
-      redirect: true,
+      redirectTo: destination, // Direct explicitly to break the default '/' loop
     });
   } catch (error) {
     if (error instanceof AuthError) {
@@ -94,7 +98,6 @@ export async function authenticate(
       }
     }
 
-    // CRITICAL: Next.js redirects rely on throwing internal routing exceptions.
     throw error;
   }
 }
