@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateEmployeeProfile } from "@/app/lib/actions";
 import {
@@ -27,12 +27,21 @@ export default function ProfileForm({ profile, userEmail }: ProfileFormProps) {
     updateEmployeeProfile,
     null,
   );
+  const [showSuccess, setShowSuccess] = useState(false);
 
+  console.log(state);
   // Soft-refresh client state when server action succeeds
   useEffect(() => {
     if (state?.success) {
+      setShowSuccess(true);
       router.refresh();
     }
+
+    const timer = setTimeout(() => {
+      setShowSuccess(false);
+    }, 5000);
+
+    return () => clearTimeout(timer);
   }, [state, router]);
 
   return (
@@ -57,7 +66,7 @@ export default function ProfileForm({ profile, userEmail }: ProfileFormProps) {
         </div>
 
         {/* Success Alert */}
-        {state?.success && (
+        {showSuccess && (
           <div className="mb-4 p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-semibold text-emerald-700 flex items-center gap-2">
             <Check className="w-4 h-4 text-emerald-500 shrink-0" />
             Profile changes saved successfully!
