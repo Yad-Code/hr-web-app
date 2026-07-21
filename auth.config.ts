@@ -23,31 +23,32 @@ export const authConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const userRole = auth?.user?.role;
+      const path = nextUrl.pathname;
 
-      const isOnDashboard = nextUrl.pathname.startsWith("/dashboard");
-      const isOnProfile = nextUrl.pathname.startsWith("/my-profile") || nextUrl.pathname.startsWith("/my-attendance");
-      const isOnEmployee = nextUrl.pathname.startsWith("/employee"); // Matches /employee and /employees
-      const isOnLoginPage = nextUrl.pathname.startsWith("/login");
+      const isOnAdminRoute = path.startsWith("/dashboard");
+      // Clean check: /my-profile covers both /my-profile and /my-profile/my-attendance
+      const isOnEmployeePortal = path.startsWith("/my-profile");
+      const isOnLoginPage = path.startsWith("/login");
 
       // 1. Unauthenticated users trying to access protected pages
-      if ((isOnDashboard || isOnProfile || isOnEmployee) && !isLoggedIn) {
+      if ((isOnAdminRoute || isOnEmployeePortal) && !isLoggedIn) {
         return false; // Automatically redirects to /login
       }
 
-      // 2. Admin-only protection
-      if (isOnDashboard && userRole !== "admin") {
+      // 2. Handle Logged-in users visiting /login or root /
+      if (isLoggedIn && (isOnLoginPage || path === "/")) {
+        const target = userRole === "admin" ? "/dashboard" : "/my-profile";
+        return Response.redirect(new URL(target, nextUrl));
+      }
+
+      // 3. Admin-only protection (Block employees from /dashboard and /employees)
+      if (isOnAdminRoute && userRole === "employee") {
         return Response.redirect(new URL("/my-profile", nextUrl));
       }
 
-      // 3. Employee-only protection (Block Admins)
-      if (isOnEmployee && userRole !== "employee") {
+      // 4. Employee-only protection (Block admins from /my-profile and nested routes)
+      if (isOnEmployeePortal && userRole === "admin") {
         return Response.redirect(new URL("/dashboard", nextUrl));
-      }
-
-      // 4. Logged-in users visiting /login or root /
-      if (isLoggedIn && (isOnLoginPage || nextUrl.pathname === "/")) {
-        const target = userRole === "admin" ? "/dashboard" : "/my-profile";
-        return Response.redirect(new URL(target, nextUrl));
       }
 
       return true;

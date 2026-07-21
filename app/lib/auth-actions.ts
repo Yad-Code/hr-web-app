@@ -65,6 +65,8 @@ export async function handleSignOut() {
 /**
  * Server Action to securely authenticate users.
  */
+// app/lib/auth-actions.ts
+// app/lib/auth-actions.ts
 export async function authenticate(
   prevState: string | undefined,
   formData: FormData,
@@ -79,25 +81,24 @@ export async function authenticate(
 
     const { email, password } = validatedFields.data;
 
-    // Fetch user role first to determine correct post-login landing page
+    // Fetch user role to direct them to their correct section immediately
     const user = await getUser(email);
     const destination = user?.role === "admin" ? "/dashboard" : "/my-profile";
 
     await signIn("credentials", {
       email,
       password,
-      redirectTo: destination, // Direct explicitly to break the default '/' loop
+      redirectTo: destination,
     });
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
         case "CredentialsSignin":
-          return "Invalid credentials. Please check your email and password.";
+          return "Invalid credentials.";
         default:
-          return "Something went wrong. Please try again.";
+          return "Something went wrong.";
       }
     }
-
     throw error;
   }
 }
