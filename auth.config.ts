@@ -26,19 +26,25 @@ export const authConfig = {
 
       const isOnDashboard = nextUrl.pathname.startsWith("/dashboard");
       const isOnProfile = nextUrl.pathname.startsWith("/my-profile") || nextUrl.pathname.startsWith("/my-attendance");
+      const isOnEmployee = nextUrl.pathname.startsWith("/employee"); // Matches /employee and /employees
       const isOnLoginPage = nextUrl.pathname.startsWith("/login");
 
       // 1. Unauthenticated users trying to access protected pages
-      if ((isOnDashboard || isOnProfile) && !isLoggedIn) {
+      if ((isOnDashboard || isOnProfile || isOnEmployee) && !isLoggedIn) {
         return false; // Automatically redirects to /login
       }
 
-      // 2. Role-based protection for Admin Dashboard only
+      // 2. Admin-only protection
       if (isOnDashboard && userRole !== "admin") {
         return Response.redirect(new URL("/my-profile", nextUrl));
       }
 
-      // 3. Logged-in users visiting /login or root /
+      // 3. Employee-only protection (Block Admins)
+      if (isOnEmployee && userRole !== "employee") {
+        return Response.redirect(new URL("/dashboard", nextUrl));
+      }
+
+      // 4. Logged-in users visiting /login or root /
       if (isLoggedIn && (isOnLoginPage || nextUrl.pathname === "/")) {
         const target = userRole === "admin" ? "/dashboard" : "/my-profile";
         return Response.redirect(new URL(target, nextUrl));
