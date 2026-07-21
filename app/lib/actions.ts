@@ -6,6 +6,13 @@ import { z } from "zod";
 import postgres from "postgres";
 import { revalidatePath } from "next/cache";
 import { ActionState } from "./definitions";
+import {
+  getTodayAttendance,
+  createCheckIn,
+  updateCheckOut,
+  getFormattedTime,
+  calculateWorkHours,
+} from "@/app/lib/data";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
@@ -42,7 +49,7 @@ export async function uploadProfilePicture(formData: FormData) {
     const blob = await put(
       `avatars/${session.user.email}-${Date.now()}`,
       file,
-      { access: "public" }
+      { access: "public" },
     );
 
     // 2. Update Postgres database
@@ -176,5 +183,88 @@ export async function updateEmployeeProfile(
       success: false,
       error: "Database error occurred while updating profile.",
     };
+  }
+}
+
+// ==========================================
+// ATTENDANCE & CHECK-IN ACTIONS
+// ==========================================
+
+function getLocalDateString(): string {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+export async function toggleCheckInStatus() {
+  try {
+    const session = await auth();
+
+    // Debug check: ensures session & user ID exist
+    if (!session?.user?.id) {
+      console.error("Auth Failed: User session or user.id missing.", session);
+      return {
+        success: false,
+        error: "Unauthorized: Missing user session ID.",
+      };
+    }
+
+    const userId = session.user.id;
+    const today = getLocalDateString();
+    const nowTime = getFormattedTime();
+
+    const existingRecord = await getTodayAttendance(userId, today);
+
+    if (!existingRecord) {
+      // Action: Check In
+      await createCheckIn(userId, today, nowTime);
+    } else if (!existingRecord.check_out) {
+      // Action: Check Out
+      const checkInTime = existingRecord.check_in || nowTime;
+      const workHours = calculateWorkHours(checkInTime, nowTime);
+      await updateCheckOut(existingRecord.id, nowTime, workHours);
+    } else {
+      return { success: false, error: "Shift already completed for today." };
+    }
+
+    revalidatePath("/my-profile/attendance");
+    return { success: true };
+  } catch (error: unknown) {
+    // Print real error details in server console
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("Error in toggleCheckInStatus:", error);
+    return { success: false, error: `Server error: ${message}` };
+  }
+}
+// ==========================================
+// WFH REQUEST ACTION
+// ==========================================
+
+export async function submitWFHRequest(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  const requestDate = formData.get("date") as string;
+  const reason = formData.get("reason") as string;
+
+  if (!requestDate || !reason) {
+    return { success: false, error: "All fields are required." };
+  }
+
+  try {
+    await sql`
+      INSERT INTO wfh_requests (user_id, request_date, reason, status)
+      VALUES (${session.user.id}, ${requestDate}, ${reason}, 'Pending')
+    `;
+
+    revalidatePath("/my-profile/attendance");
+    return { success: true };
+  } catch (error) {
+    console.error("WFH request error:", error);
+    return { success: false, error: "Could not submit WFH request." };
   }
 }

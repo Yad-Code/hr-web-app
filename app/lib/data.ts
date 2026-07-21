@@ -156,3 +156,100 @@ export async function fetchDashboardData() {
     throw new Error("Failed to load dashboard data.");
   }
 }
+
+
+export interface AttendanceRecord {
+  id: string;
+  user_id: string;
+  date: string;
+  check_in: string | null;
+  check_out: string | null;
+  work_hours: string | null;
+  status: string;
+}
+
+// Helper: Normalize time strings to avoid Unicode space issues (\u202f)
+export function getFormattedTime(): string {
+  const now = new Date();
+  let hours = now.getHours();
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12 || 12; // 12-hour format
+  const formattedHours = String(hours).padStart(2, "0");
+  
+  return `${formattedHours}:${minutes} ${ampm}`;
+}
+
+// Helper: Safely calculate shift duration
+export function calculateWorkHours(checkIn: string, checkOut: string): string {
+  const parseMins = (timeStr: string) => {
+    // Standardize spaces first
+    const cleanStr = timeStr.replace(/\u202f/g, " ").trim();
+    const match = cleanStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!match) return 0;
+
+    let h = parseInt(match[1], 10);
+    const m = parseInt(match[2], 10);
+    const period = match[3].toUpperCase();
+
+    if (period === "PM" && h < 12) h += 12;
+    if (period === "AM" && h === 12) h = 0;
+
+    return h * 60 + m;
+  };
+
+  const startMins = parseMins(checkIn);
+  const endMins = parseMins(checkOut);
+  let diff = endMins - startMins;
+
+  if (diff < 0) diff += 24 * 60; // Overnight shift safety
+
+  const hours = Math.floor(diff / 60);
+  const mins = diff % 60;
+  return `${hours}h ${mins}m`;
+}
+
+// Fetch today's attendance record
+export async function getTodayAttendance(userId: string, date: string): Promise<AttendanceRecord | null> {
+  try {
+    const records = await sql<AttendanceRecord[]>`
+      SELECT id, user_id, date::text, check_in, check_out, work_hours, status
+      FROM attendance 
+      WHERE user_id = ${userId}::uuid 
+        AND date = ${date}::date
+      LIMIT 1
+    `;
+    return records[0] || null;
+  } catch (error) {
+    console.error("Database Error [getTodayAttendance]:", error);
+    throw error;
+  }
+}
+
+// Record Check-In
+export async function createCheckIn(userId: string, date: string, checkInTime: string) {
+  try {
+    await sql`
+      INSERT INTO attendance (user_id, date, check_in, status, work_location)
+      VALUES (${userId}::uuid, ${date}::date, ${checkInTime}, 'Present', 'Office')
+    `;
+  } catch (error) {
+    console.error("Database Error [createCheckIn]:", error);
+    throw error;
+  }
+}
+
+// Record Check-Out
+export async function updateCheckOut(id: string, checkOutTime: string, workHours: string) {
+  try {
+    await sql`
+      UPDATE attendance 
+      SET check_out = ${checkOutTime},
+          work_hours = ${workHours}
+      WHERE id = ${id}::uuid
+    `;
+  } catch (error) {
+    console.error("Database Error [updateCheckOut]:", error);
+    throw error;
+  }
+}

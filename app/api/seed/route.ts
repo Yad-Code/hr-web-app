@@ -4,10 +4,11 @@ import bcrypt from "bcrypt";
 
 export async function GET() {
   try {
-    // 1. Clean slate / Extensions
+    // 1. Extensions & Clean Slate
     await db`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
 
-    // Drop tables in reverse order of foreign key dependencies
+    await db`DROP TABLE IF EXISTS wfh_requests`;
+    await db`DROP TABLE IF EXISTS leave_balances`;
     await db`DROP TABLE IF EXISTS attendance`;
     await db`DROP TABLE IF EXISTS requests`;
     await db`DROP TABLE IF EXISTS schedules`;
@@ -80,6 +81,30 @@ export async function GET() {
       )
     `;
 
+    // Added: WFH Requests Table
+    await db`
+      CREATE TABLE wfh_requests (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        request_date DATE NOT NULL,
+        reason TEXT NOT NULL,
+        status VARCHAR(20) DEFAULT 'Pending' NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )
+    `;
+
+    // Added: Leave Balances Table
+    await db`
+      CREATE TABLE leave_balances (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+        annual_total INT DEFAULT 20 NOT NULL,
+        annual_remaining INT DEFAULT 14 NOT NULL,
+        sick_total INT DEFAULT 10 NOT NULL,
+        sick_remaining INT DEFAULT 8 NOT NULL
+      )
+    `;
+
     // 3. Hash Passwords
     const adminPassword = await bcrypt.hash("AdminPass123", 10);
     const employeePassword = await bcrypt.hash("EmployeePass123", 10);
@@ -94,117 +119,53 @@ export async function GET() {
       )
       VALUES 
         (
-          'EMP-1001',
-          'Admin Manager', 
-          'Admin',
-          'Human Resources',
-          'HQ - Sulaymaniyah',
-          '1988-03-15',
-          38,
-          'Female',
-          'Iraqi',
-          'Married',
-          'O+',
-          'admin@company.com', 
-          'admin.personal@gmail.com',
-          '+964 770 111 2233',
-          'Main Street, District 101, Sulaymaniyah',
-          ${adminPassword}, 
-          'admin', 
-          'Active',
+          'EMP-1001', 'Admin Manager', 'Admin', 'Human Resources', 'HQ - Sulaymaniyah',
+          '1988-03-15', 38, 'Female', 'Iraqi', 'Married', 'O+',
+          'admin@company.com', 'admin.personal@gmail.com', '+964 770 111 2233',
+          'Main Street, District 101, Sulaymaniyah', ${adminPassword}, 'admin', 'Active',
           'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
         ),
         (
-          'EMP-1002',
-          'Yad Developer', 
-          'Yad',
-          'Software Engineering',
-          'HQ - Sulaymaniyah',
-          '2002-05-20',
-          24,
-          'Male',
-          'Iraqi',
-          'Single',
-          'A+',
-          'yad@company.com', 
-          'yad.dev@gmail.com',
-          '+964 770 222 3344',
-          'Salim Street, Sulaymaniyah',
-          ${employeePassword}, 
-          'employee', 
-          'Active',
+          'EMP-1002', 'Yad Developer', 'Yad', 'Software Engineering', 'HQ - Sulaymaniyah',
+          '2002-05-20', 24, 'Male', 'Iraqi', 'Single', 'A+',
+          'yad@company.com', 'yad.dev@gmail.com', '+964 770 222 3344',
+          'Salim Street, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
           'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80'
         ),
         (
-          'EMP-1003',
-          'Lana Amin', 
-          'Lana',
-          'UI/UX Design',
-          'HQ - Sulaymaniyah',
-          '1997-09-12',
-          28,
-          'Female',
-          'Iraqi',
-          'Single',
-          'B+',
-          'lana@company.com', 
-          'lana.amin@gmail.com',
-          '+964 770 333 4455',
-          'Barty Street, Sulaymaniyah',
-          ${employeePassword}, 
-          'employee', 
-          'Active',
+          'EMP-1003', 'Lana Amin', 'Lana', 'UI/UX Design', 'HQ - Sulaymaniyah',
+          '1997-09-12', 28, 'Female', 'Iraqi', 'Single', 'B+',
+          'lana@company.com', 'lana.amin@gmail.com', '+964 770 333 4455',
+          'Barty Street, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
           'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80'
         ),
         (
-          'EMP-1004',
-          'Diyar Karwan', 
-          'Diyar',
-          'Backend Infrastructure',
-          'HQ - Sulaymaniyah',
-          '1995-11-04',
-          30,
-          'Male',
-          'Iraqi',
-          'Married',
-          'O-',
-          'diyar@company.com', 
-          'diyar.karwan@gmail.com',
-          '+964 770 444 5566',
-          'Sarchinar Way, Sulaymaniyah',
-          ${employeePassword}, 
-          'employee', 
-          'Active',
+          'EMP-1004', 'Diyar Karwan', 'Diyar', 'Backend Infrastructure', 'HQ - Sulaymaniyah',
+          '1995-11-04', 30, 'Male', 'Iraqi', 'Married', 'O-',
+          'diyar@company.com', 'diyar.karwan@gmail.com', '+964 770 444 5566',
+          'Sarchinar Way, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
           'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'
         ),
         (
-          'EMP-1005',
-          'Sara Omar', 
-          'Sara',
-          'Quality Assurance',
-          'HQ - Sulaymaniyah',
-          '1999-01-28',
-          27,
-          'Female',
-          'Iraqi',
-          'Single',
-          'AB+',
-          'sara@company.com', 
-          'sara.omar@gmail.com',
-          '+964 770 555 6677',
-          'Rapakarin Quarter, Sulaymaniyah',
-          ${employeePassword}, 
-          'employee', 
-          'Active',
+          'EMP-1005', 'Sara Omar', 'Sara', 'Quality Assurance', 'HQ - Sulaymaniyah',
+          '1999-01-28', 27, 'Female', 'Iraqi', 'Single', 'AB+',
+          'sara@company.com', 'sara.omar@gmail.com', '+964 770 555 6677',
+          'Rapakarin Quarter, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
           'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80'
         )
       RETURNING id, role, name;
     `;
 
-    // 5. Seed Schedules, Requests & Attendance Dynamically
+    // 5. Seed Leave Balances, Schedules, Requests & Attendance
     const employees = seededUsers.filter((user) => user.role === "employee");
 
     for (const emp of employees) {
+      // Seed leave balance record
+      await db`
+        INSERT INTO leave_balances (user_id, annual_total, annual_remaining, sick_total, sick_remaining)
+        VALUES (${emp.id}, 20, 14, 10, 8)
+      `;
+
       if (emp.name === "Yad Developer") {
         await db`
           INSERT INTO schedules (employee_id, work_date, shift_start, shift_end, notes)
@@ -221,67 +182,30 @@ export async function GET() {
           VALUES (${emp.id}, 'time-off', 'Requesting 2 days off for a local engineering hackathon event.', 'pending')
         `;
 
+        // Historical attendance entries across July 2026
         await db`
           INSERT INTO attendance (user_id, date, check_in, check_out, work_hours, status, work_location)
           VALUES 
+            (${emp.id}, '2026-07-01', '08:50 AM', '05:00 PM', '8h 10m', 'Present', 'Office'),
+            (${emp.id}, '2026-07-02', '08:55 AM', '05:02 PM', '8h 07m', 'Present', 'Office'),
+            (${emp.id}, '2026-07-03', '09:15 AM', '05:10 PM', '7h 55m', 'Late', 'Office'),
+            (${emp.id}, '2026-07-06', '08:48 AM', '05:00 PM', '8h 12m', 'Present', 'Remote'),
+            (${emp.id}, '2026-07-07', '08:52 AM', '05:01 PM', '8h 09m', 'Present', 'Office'),
+            (${emp.id}, '2026-07-08', '09:05 AM', '05:00 PM', '7h 55m', 'Late', 'Office'),
+            (${emp.id}, '2026-07-09', '08:50 AM', '05:00 PM', '8h 10m', 'Present', 'Remote'),
+            (${emp.id}, '2026-07-10', '08:59 AM', '04:30 PM', '7h 31m', 'Present', 'Office'),
+            (${emp.id}, '2026-07-13', '08:54 AM', '05:05 PM', '8h 11m', 'Present', 'Office'),
+            (${emp.id}, '2026-07-14', '08:50 AM', '05:00 PM', '8h 10m', 'Present', 'Office'),
+            (${emp.id}, '2026-07-15', '08:45 AM', '05:00 PM', '8h 15m', 'Present', 'Office'),
+            (${emp.id}, '2026-07-16', '08:55 AM', '05:02 PM', '8h 07m', 'Present', 'Remote'),
+            (${emp.id}, '2026-07-17', '09:00 AM', '04:00 PM', '7h 00m', 'Present', 'Office'),
             (${emp.id}, '2026-07-20', '08:52 AM', '05:05 PM', '8h 13m', 'Present', 'Office'),
             (${emp.id}, '2026-07-21', '09:02 AM', '05:00 PM', '7h 58m', 'Present', 'Remote')
         `;
-      } else if (emp.name === "Lana Amin") {
-        await db`
-          INSERT INTO schedules (employee_id, work_date, shift_start, shift_end, notes)
-          VALUES 
-            (${emp.id}, '2026-07-20', '08:30:00', '16:30:00', 'UI/UX Design Handover'),
-            (${emp.id}, '2026-07-21', '08:30:00', '16:30:00', 'Figma Prototype Revisions'),
-            (${emp.id}, '2026-07-22', '08:30:00', '16:30:00', 'User Testing Interviews'),
-            (${emp.id}, '2026-07-23', '08:30:00', '16:30:00', 'Design System Audit'),
-            (${emp.id}, '2026-07-24', '08:30:00', '15:30:00', 'Weekly Sync & Retro')
-        `;
 
         await db`
-          INSERT INTO attendance (user_id, date, check_in, check_out, work_hours, status, work_location)
-          VALUES 
-            (${emp.id}, '2026-07-20', '08:28 AM', '04:32 PM', '8h 04m', 'Present', 'Office'),
-            (${emp.id}, '2026-07-21', '08:30 AM', '04:30 PM', '8h 00m', 'Present', 'Office')
-        `;
-      } else if (emp.name === "Diyar Karwan") {
-        await db`
-          INSERT INTO schedules (employee_id, work_date, shift_start, shift_end, notes)
-          VALUES 
-            (${emp.id}, '2026-07-20', '09:00:00', '17:00:00', 'Backend API Optimization'),
-            (${emp.id}, '2026-07-21', '09:00:00', '17:00:00', 'Postgres Query Tuning'),
-            (${emp.id}, '2026-07-22', '09:00:00', '17:00:00', 'Auth Security Audit'),
-            (${emp.id}, '2026-07-23', '11:00:00', '19:00:00', 'Late Shift - Server Maintenance'),
-            (${emp.id}, '2026-07-24', '09:00:00', '16:00:00', 'Weekly Sync & Retro')
-        `;
-
-        await db`
-          INSERT INTO requests (employee_id, type, description, status)
-          VALUES (${emp.id}, 'expense', 'Cloud database hosting reimbursement.', 'pending')
-        `;
-
-        await db`
-          INSERT INTO attendance (user_id, date, check_in, check_out, work_hours, status, work_location)
-          VALUES 
-            (${emp.id}, '2026-07-20', '09:14 AM', '05:10 PM', '7h 56m', 'Late', 'Office'),
-            (${emp.id}, '2026-07-21', '08:58 AM', '05:02 PM', '8h 04m', 'Present', 'WFH')
-        `;
-      } else if (emp.name === "Sara Omar") {
-        await db`
-          INSERT INTO schedules (employee_id, work_date, shift_start, shift_end, notes)
-          VALUES 
-            (${emp.id}, '2026-07-20', '09:00:00', '17:00:00', 'QA Automated Test Setup'),
-            (${emp.id}, '2026-07-21', '09:00:00', '17:00:00', 'Dashboard Form Validation Tests'),
-            (${emp.id}, '2026-07-22', '09:00:00', '17:00:00', 'Regression Testing Session'),
-            (${emp.id}, '2026-07-23', '09:00:00', '17:00:00', 'Bug Backlog Triage'),
-            (${emp.id}, '2026-07-24', '09:00:00', '16:00:00', 'Weekly Sync & Retro')
-        `;
-
-        await db`
-          INSERT INTO attendance (user_id, date, check_in, check_out, work_hours, status, work_location)
-          VALUES 
-            (${emp.id}, '2026-07-20', '08:55 AM', '05:01 PM', '8h 06m', 'Present', 'Office'),
-            (${emp.id}, '2026-07-21', '08:50 AM', '05:00 PM', '8h 10m', 'Present', 'Office')
+          INSERT INTO wfh_requests (user_id, request_date, reason, status)
+          VALUES (${emp.id}, '2026-07-28', 'Working on server optimization and require quiet space.', 'Pending')
         `;
       }
     }
@@ -289,39 +213,9 @@ export async function GET() {
     return NextResponse.json(
       {
         success: true,
-        message:
-          "Database schema built and seeded successfully with users, schedules, requests, and attendance logs.",
-        credentialsHelp: {
-          adminAccount: {
-            email: "admin@company.com",
-            password: "AdminPass123",
-            role: "admin",
-          },
-          employeeAccounts: [
-            {
-              email: "yad@company.com",
-              password: "EmployeePass123",
-              role: "employee",
-            },
-            {
-              email: "lana@company.com",
-              password: "EmployeePass123",
-              role: "employee",
-            },
-            {
-              email: "diyar@company.com",
-              password: "EmployeePass123",
-              role: "employee",
-            },
-            {
-              email: "sara@company.com",
-              password: "EmployeePass123",
-              role: "employee",
-            },
-          ],
-        },
+        message: "Database schema built and seeded successfully.",
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error: unknown) {
     const errorMessage =
@@ -330,11 +224,8 @@ export async function GET() {
         : "An error occurred during database configuration.";
     console.error("Seeding Error:", error);
     return NextResponse.json(
-      {
-        success: false,
-        error: errorMessage,
-      },
-      { status: 500 }
+      { success: false, error: errorMessage },
+      { status: 500 },
     );
   }
 }
