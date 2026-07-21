@@ -40,6 +40,9 @@ export async function GET() {
         role user_role DEFAULT 'employee' NOT NULL,
         status VARCHAR(20) DEFAULT 'Active',
         image_url TEXT,
+        shift_start TIME DEFAULT '09:00:00' NOT NULL,
+        shift_end TIME DEFAULT '17:00:00' NOT NULL,
+        shift_type VARCHAR(50) DEFAULT 'Standard (Mon - Fri)' NOT NULL,
         last_seen_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
       )
     `;
@@ -81,7 +84,6 @@ export async function GET() {
       )
     `;
 
-    // Added: WFH Requests Table
     await db`
       CREATE TABLE wfh_requests (
         id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -93,7 +95,6 @@ export async function GET() {
       )
     `;
 
-    // Added: Leave Balances Table
     await db`
       CREATE TABLE leave_balances (
         id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -109,13 +110,13 @@ export async function GET() {
     const adminPassword = await bcrypt.hash("AdminPass123", 10);
     const employeePassword = await bcrypt.hash("EmployeePass123", 10);
 
-    // 4. Seed Users
+    // 4. Seed Users (Including default shift settings)
     const seededUsers = await db`
       INSERT INTO users (
         employee_id, name, preferred_name, department, branch, 
         date_of_birth, age, gender, nationality, marital_status, 
         blood_group, email, personal_email, personal_phone, current_address, 
-        password_hash, role, status, image_url
+        password_hash, role, status, image_url, shift_start, shift_end, shift_type
       )
       VALUES 
         (
@@ -123,35 +124,40 @@ export async function GET() {
           '1988-03-15', 38, 'Female', 'Iraqi', 'Married', 'O+',
           'admin@company.com', 'admin.personal@gmail.com', '+964 770 111 2233',
           'Main Street, District 101, Sulaymaniyah', ${adminPassword}, 'admin', 'Active',
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)'
         ),
         (
           'EMP-1002', 'Yad Developer', 'Yad', 'Software Engineering', 'HQ - Sulaymaniyah',
           '2002-05-20', 24, 'Male', 'Iraqi', 'Single', 'A+',
           'yad@company.com', 'yad.dev@gmail.com', '+964 770 222 3344',
           'Salim Street, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
-          'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80'
+          'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)'
         ),
         (
           'EMP-1003', 'Lana Amin', 'Lana', 'UI/UX Design', 'HQ - Sulaymaniyah',
           '1997-09-12', 28, 'Female', 'Iraqi', 'Single', 'B+',
           'lana@company.com', 'lana.amin@gmail.com', '+964 770 333 4455',
           'Barty Street, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
-          'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80'
+          'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)'
         ),
         (
           'EMP-1004', 'Diyar Karwan', 'Diyar', 'Backend Infrastructure', 'HQ - Sulaymaniyah',
           '1995-11-04', 30, 'Male', 'Iraqi', 'Married', 'O-',
           'diyar@company.com', 'diyar.karwan@gmail.com', '+964 770 444 5566',
           'Sarchinar Way, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
-          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'
+          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)'
         ),
         (
           'EMP-1005', 'Sara Omar', 'Sara', 'Quality Assurance', 'HQ - Sulaymaniyah',
           '1999-01-28', 27, 'Female', 'Iraqi', 'Single', 'AB+',
           'sara@company.com', 'sara.omar@gmail.com', '+964 770 555 6677',
           'Rapakarin Quarter, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
-          'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80'
+          'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80',
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)'
         )
       RETURNING id, role, name;
     `;
@@ -160,7 +166,6 @@ export async function GET() {
     const employees = seededUsers.filter((user) => user.role === "employee");
 
     for (const emp of employees) {
-      // Seed leave balance record
       await db`
         INSERT INTO leave_balances (user_id, annual_total, annual_remaining, sick_total, sick_remaining)
         VALUES (${emp.id}, 20, 14, 10, 8)
@@ -182,7 +187,6 @@ export async function GET() {
           VALUES (${emp.id}, 'time-off', 'Requesting 2 days off for a local engineering hackathon event.', 'pending')
         `;
 
-        // Historical attendance entries across July 2026
         await db`
           INSERT INTO attendance (user_id, date, check_in, check_out, work_hours, status, work_location)
           VALUES 
@@ -211,21 +215,13 @@ export async function GET() {
     }
 
     return NextResponse.json(
-      {
-        success: true,
-        message: "Database schema built and seeded successfully.",
-      },
-      { status: 200 },
+      { success: true, message: "Database schema built and seeded successfully." },
+      { status: 200 }
     );
   } catch (error: unknown) {
     const errorMessage =
-      error instanceof Error
-        ? error.message
-        : "An error occurred during database configuration.";
+      error instanceof Error ? error.message : "An error occurred during database configuration.";
     console.error("Seeding Error:", error);
-    return NextResponse.json(
-      { success: false, error: errorMessage },
-      { status: 500 },
-    );
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }

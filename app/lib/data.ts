@@ -22,7 +22,18 @@ export interface PendingRequest {
   created_at: Date;
 }
 
-// 1. FIXED: Profile data fetcher
+export interface AttendanceRecord {
+  id: string;
+  user_id: string;
+  date: string;
+  check_in: string | null;
+  check_out: string | null;
+  work_hours: string | null;
+  status: string;
+  work_location?: string;
+}
+
+// 1. Profile data fetcher
 export async function getProfileData(email: string) {
   try {
     const users = await sql`
@@ -37,7 +48,7 @@ export async function getProfileData(email: string) {
 
     return {
       id: user.id,
-      userId: user.user_id || user.id, // <-- Add this line
+      userId: user.user_id || user.id,
       employee_id: user.employee_id || user.id.slice(0, 8),
       name: user.name,
       preferred_name: user.preferred_name || user.name,
@@ -62,6 +73,7 @@ export async function getProfileData(email: string) {
     return null;
   }
 }
+
 // 2. Fetch employee status list
 export async function fetchEmployeeStatusList(): Promise<Employee[]> {
   try {
@@ -140,10 +152,9 @@ export async function fetchPendingAdminRequests() {
   }
 }
 
-// 5. BONUS: Parallel Dashboard Data Fetcher using Promise.all()
+// 5. Parallel Dashboard Data Fetcher
 export async function fetchDashboardData() {
   try {
-    // Runs independent DB queries in parallel instead of sequentially waiting
     const [statusList, pendingRequests, userRole] = await Promise.all([
       fetchEmployeeStatusList(),
       fetchPendingAdminRequests(),
@@ -157,17 +168,6 @@ export async function fetchDashboardData() {
   }
 }
 
-
-export interface AttendanceRecord {
-  id: string;
-  user_id: string;
-  date: string;
-  check_in: string | null;
-  check_out: string | null;
-  work_hours: string | null;
-  status: string;
-}
-
 // Helper: Normalize time strings to avoid Unicode space issues (\u202f)
 export function getFormattedTime(): string {
   const now = new Date();
@@ -176,14 +176,13 @@ export function getFormattedTime(): string {
   const ampm = hours >= 12 ? "PM" : "AM";
   hours = hours % 12 || 12; // 12-hour format
   const formattedHours = String(hours).padStart(2, "0");
-  
+
   return `${formattedHours}:${minutes} ${ampm}`;
 }
 
 // Helper: Safely calculate shift duration
 export function calculateWorkHours(checkIn: string, checkOut: string): string {
   const parseMins = (timeStr: string) => {
-    // Standardize spaces first
     const cleanStr = timeStr.replace(/\u202f/g, " ").trim();
     const match = cleanStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
     if (!match) return 0;
@@ -210,10 +209,13 @@ export function calculateWorkHours(checkIn: string, checkOut: string): string {
 }
 
 // Fetch today's attendance record
-export async function getTodayAttendance(userId: string, date: string): Promise<AttendanceRecord | null> {
+export async function getTodayAttendance(
+  userId: string,
+  date: string
+): Promise<AttendanceRecord | null> {
   try {
     const records = await sql<AttendanceRecord[]>`
-      SELECT id, user_id, date::text, check_in, check_out, work_hours, status
+      SELECT id, user_id, date::text, check_in, check_out, work_hours, status, work_location
       FROM attendance 
       WHERE user_id = ${userId}::uuid 
         AND date = ${date}::date
@@ -226,12 +228,17 @@ export async function getTodayAttendance(userId: string, date: string): Promise<
   }
 }
 
-// Record Check-In
-export async function createCheckIn(userId: string, date: string, checkInTime: string) {
+// Record Check-In with optional location parameter (defaults to 'Office')
+export async function createCheckIn(
+  userId: string,
+  date: string,
+  checkInTime: string,
+  location: "Office" | "Remote" = "Office"
+) {
   try {
     await sql`
       INSERT INTO attendance (user_id, date, check_in, status, work_location)
-      VALUES (${userId}::uuid, ${date}::date, ${checkInTime}, 'Present', 'Office')
+      VALUES (${userId}::uuid, ${date}::date, ${checkInTime}, 'Present', ${location})
     `;
   } catch (error) {
     console.error("Database Error [createCheckIn]:", error);
@@ -240,7 +247,11 @@ export async function createCheckIn(userId: string, date: string, checkInTime: s
 }
 
 // Record Check-Out
-export async function updateCheckOut(id: string, checkOutTime: string, workHours: string) {
+export async function updateCheckOut(
+  id: string,
+  checkOutTime: string,
+  workHours: string
+) {
   try {
     await sql`
       UPDATE attendance 

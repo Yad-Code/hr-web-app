@@ -2,8 +2,7 @@
 
 import { auth } from "@/auth";
 import { put, del } from "@vercel/blob";
-import { z } from "zod";
-import postgres from "postgres";
+import { z } from "zod"; 
 import { revalidatePath } from "next/cache";
 import { ActionState } from "./definitions";
 import {
@@ -13,14 +12,13 @@ import {
   getFormattedTime,
   calculateWorkHours,
 } from "@/app/lib/data";
-
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
+import { sql } from "@/app/lib/db";   
 
 // ==========================================
 // SCHEMAS & VALIDATION
 // ==========================================
 
-//Profile picture:
+// Profile picture:
 export async function uploadProfilePicture(formData: FormData) {
   const session = await auth();
   if (!session?.user?.email) {
@@ -185,7 +183,6 @@ export async function updateEmployeeProfile(
     };
   }
 }
-
 // ==========================================
 // ATTENDANCE & CHECK-IN ACTIONS
 // ==========================================
@@ -198,20 +195,31 @@ function getLocalDateString(): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-export async function toggleCheckInStatus() {
+export async function toggleCheckInStatus(
+  location: "Office" | "Remote" = "Office",
+) {
   try {
     const session = await auth();
 
-    // Debug check: ensures session & user ID exist
-    if (!session?.user?.id) {
-      console.error("Auth Failed: User session or user.id missing.", session);
+    // 1. Verify email exists on session
+    if (!session?.user?.email) {
+      console.error("Auth Failed: User session email missing.", session);
       return {
         success: false,
-        error: "Unauthorized: Missing user session ID.",
+        error: "Unauthorized: Missing user session email.",
       };
     }
 
-    const userId = session.user.id;
+    // 2. Resolve actual Postgres UUID using verified email
+    const userQuery = await sql`
+      SELECT id FROM users WHERE email = ${session.user.email}
+    `;
+
+    if (!userQuery || userQuery.length === 0) {
+      return { success: false, error: "User not found in the database." };
+    }
+
+    const userId = userQuery[0].id;
     const today = getLocalDateString();
     const nowTime = getFormattedTime();
 
@@ -219,7 +227,7 @@ export async function toggleCheckInStatus() {
 
     if (!existingRecord) {
       // Action: Check In
-      await createCheckIn(userId, today, nowTime);
+      await createCheckIn(userId, today, nowTime, location);
     } else if (!existingRecord.check_out) {
       // Action: Check Out
       const checkInTime = existingRecord.check_in || nowTime;
@@ -232,19 +240,20 @@ export async function toggleCheckInStatus() {
     revalidatePath("/my-profile/attendance");
     return { success: true };
   } catch (error: unknown) {
-    // Print real error details in server console
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("Error in toggleCheckInStatus:", error);
     return { success: false, error: `Server error: ${message}` };
   }
 }
+
 // ==========================================
 // WFH REQUEST ACTION
 // ==========================================
 
 export async function submitWFHRequest(formData: FormData) {
   const session = await auth();
-  if (!session?.user?.id) {
+
+  if (!session?.user?.email) {
     return { success: false, error: "Unauthorized" };
   }
 
@@ -256,9 +265,20 @@ export async function submitWFHRequest(formData: FormData) {
   }
 
   try {
+    // Resolve actual Postgres UUID using verified email
+    const userQuery = await sql`
+      SELECT id FROM users WHERE email = ${session.user.email}
+    `;
+
+    if (!userQuery || userQuery.length === 0) {
+      return { success: false, error: "User not found in database." };
+    }
+
+    const userId = userQuery[0].id;
+
     await sql`
       INSERT INTO wfh_requests (user_id, request_date, reason, status)
-      VALUES (${session.user.id}, ${requestDate}, ${reason}, 'Pending')
+      VALUES (${userId}, ${requestDate}, ${reason}, 'Pending')
     `;
 
     revalidatePath("/my-profile/attendance");

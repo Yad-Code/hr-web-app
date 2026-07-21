@@ -1,24 +1,26 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
-import { 
-  Clock, 
-  Calendar as CalendarIcon, 
-  CheckCircle2, 
-  AlertCircle, 
-  MapPin, 
-  Briefcase, 
-  FileText,
-  Loader2,
-  X,
-  Plus
-} from "lucide-react";
-import { AttendanceData } from "@/app/lib/data/attendance";
+import { MapPin, Loader2, X, Plus, ChevronLeft, ChevronRight, Clock} from "lucide-react";
+ 
+// Import clean types from definitions
+import {
+  TodayAttendance,
+  AttendanceSummary,
+  LeaveBalance,
+  CalendarDay,
+  AttendanceLog,
+} from "@/app/lib/attendance/definitions";
+
 import { toggleCheckInStatus, submitWFHRequest } from "@/app/lib/actions";
 
+// ----------------------------------------------------------------------
+// 1. Section Header
+// ----------------------------------------------------------------------
 export function SectionHeader({
   title,
-  description, 
+  description,
   action,
 }: {
   title: string;
@@ -38,32 +40,65 @@ export function SectionHeader({
   );
 }
 
-export function TodayStatusCard({ data }: { data: AttendanceData["today"] }) {
-  const [isPending, startTransition] = useTransition();
+// ----------------------------------------------------------------------
+// 2. Today's Status Card
+// ----------------------------------------------------------------------
 
-  const isCheckedIn = Boolean(data.checkIn);
-  const isCheckedOut = Boolean(data.checkOut);
+export function TodayStatusCard({ data }: { data?: TodayAttendance }) {
+  const [isPending, startTransition] = useTransition();
+  const [location, setLocation] = useState<"Office" | "Remote">("Office");
+
+  const isCheckedIn = Boolean(data?.checkIn);
+  const isCheckedOut = Boolean(data?.checkOut);
+
+  // Fallback defaults if shift parameters aren't supplied by backend query
+  const shiftStart = data?.shiftStart || "09:00 AM";
+  const shiftEnd = data?.shiftEnd || "05:00 PM";
+  const shiftType = data?.shiftType || "Standard (Mon - Fri)";
 
   const handleToggle = () => {
     startTransition(async () => {
-      const res = await toggleCheckInStatus();
-      if (!res.success) {
-        alert(res.error);
+      const res = await toggleCheckInStatus(location);
+      if (!res?.success) {
+        alert(res?.error || "An error occurred while updating status.");
       }
     });
   };
 
   return (
-    <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-xs text-left">
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-          Todays Status
-        </span>
-        <div className="flex items-center gap-3">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs text-left">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+        <div>
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+            Today s Status
+          </span>
+          <p className="text-xs font-medium text-slate-500 mt-0.5">
+            {shiftType} • {shiftStart} - {shiftEnd}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
           <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            {data.status}
+            {data?.status || "Not Checked In"}
           </span>
+
+          {/* Location Selector (Hidden after initial check-in) */}
+          {!isCheckedIn && (
+            <select
+              value={location}
+              onChange={(e) =>
+                setLocation(e.target.value as "Office" | "Remote")
+              }
+              disabled={isPending}
+              className="text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
+            >
+              <option value="Office">🏢 Office</option>
+              <option value="Remote">🏠 Remote</option>
+            </select>
+          )}
+
           <button
             type="button"
             onClick={handleToggle}
@@ -83,37 +118,47 @@ export function TodayStatusCard({ data }: { data: AttendanceData["today"] }) {
         </div>
       </div>
 
+      {/* Grid Display */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
-          <p className="text-[11px] font-medium text-slate-400">Check In</p>
+          <p className="text-[11px] font-medium text-slate-400 flex items-center gap-1">
+            <Clock className="w-3 h-3 text-slate-400" /> Check In
+          </p>
           <p className="text-lg font-bold text-slate-800 mt-0.5">
-            {data.checkIn || "--:--"}
+            {data?.checkIn || "--:--"}
           </p>
         </div>
+
         <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
-          <p className="text-[11px] font-medium text-slate-400">Check Out</p>
+          <p className="text-[11px] font-medium text-slate-400 flex items-center gap-1">
+            <Clock className="w-3 h-3 text-slate-400" /> Check Out
+          </p>
           <p className="text-lg font-bold text-slate-800 mt-0.5">
-            {data.checkOut || "--:--"}
+            {data?.checkOut || "--:--"}
           </p>
         </div>
+
         <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
-          <p className="text-[11px] font-medium text-slate-400">Location</p>
-          <p className="text-lg font-bold text-slate-800 mt-0.5 flex items-center gap-1.5">
-            <MapPin className="w-4 h-4 text-indigo-500" />
-            {data.workLocation}
+          <p className="text-[11px] font-medium text-slate-400 flex items-center gap-1">
+            <MapPin className="w-3 h-3 text-indigo-500" /> Location
+          </p>
+          <p className="text-lg font-bold text-slate-800 mt-0.5">
+            {isCheckedIn ? data?.workLocation : location}
           </p>
         </div>
       </div>
     </div>
   );
 }
-
+// ----------------------------------------------------------------------
+// 3. Stats Grid
+// ----------------------------------------------------------------------
 export function AttendanceStatsGrid({
   summary,
   leaveBalance,
 }: {
-  summary: AttendanceData["summary"];
-  leaveBalance: AttendanceData["leaveBalance"];
+  summary: AttendanceSummary;
+  leaveBalance: LeaveBalance;
 }) {
   return (
     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 text-left">
@@ -145,77 +190,232 @@ export function AttendanceStatsGrid({
   );
 }
 
+// ----------------------------------------------------------------------
+// 4. Fixed Attendance Calendar Component
+// ----------------------------------------------------------------------
+interface AttendanceCalendarProps {
+  currentMonth: string;
+  currentYear: number;
+  calendarDays?: (CalendarDay | number)[];
+  /**
+   * Array of day indexes considered working days.
+   * Day indexes: 0 = Sun, 1 = Mon, 2 = Tue, 3 = Wed, 4 = Thu, 5 = Fri, 6 = Sat
+   * Default below: [1, 2, 3, 4, 5] (Monday to Friday)
+   * Change to [0, 1, 2, 3, 4] if working Sunday to Thursday.
+   */
+  workingDays?: number[];
+}
+
 export function AttendanceCalendar({
   currentMonth,
   currentYear,
-  calendarDays,
-}: {
-  currentMonth: string;
-  currentYear: number;
-  calendarDays: AttendanceData["calendarDays"];
-}) {
+  calendarDays = [],
+  workingDays = [1, 2, 3, 4, 5], // Default: Mon - Fri
+}: AttendanceCalendarProps) {
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  // 1. Calculate current date metrics
+  const monthIndex = new Date(`${currentMonth} 1, ${currentYear}`).getMonth();
+  const daysInMonth = new Date(currentYear, monthIndex + 1, 0).getDate();
+  const startDayOfWeek = new Date(currentYear, monthIndex, 1).getDay();
+
+  // 2. Calculate Previous / Next navigation targets
+  const prevMonthIndex = monthIndex === 0 ? 11 : monthIndex - 1;
+  const prevYear = monthIndex === 0 ? currentYear - 1 : currentYear;
+
+  const nextMonthIndex = monthIndex === 11 ? 0 : monthIndex + 1;
+  const nextYear = monthIndex === 11 ? currentYear + 1 : currentYear;
+
+  // 3. Normalize input data
+  const normalizedDays: CalendarDay[] =
+    calendarDays && calendarDays.length > 0
+      ? calendarDays.map((d) => (typeof d === "number" ? { date: d } : d))
+      : Array.from({ length: daysInMonth }, (_, i) => ({ date: i + 1 }));
+
+  // 4. Add leading padding slots
+  const hasLeadingPadding =
+    normalizedDays.length > 0 && normalizedDays[0].date === null;
+  const paddedDays: CalendarDay[] = hasLeadingPadding
+    ? normalizedDays
+    : [
+        ...Array.from({ length: startDayOfWeek }, () => ({ date: null })),
+        ...normalizedDays,
+      ];
 
   return (
-    <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-xs text-left h-full">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-bold text-slate-900">
-          {currentMonth} {currentYear}
-        </h3>
-      </div>
-      
-      <div className="grid grid-cols-7 gap-1 text-center mb-2">
-        {weekDays.map((day) => (
-          <span key={day} className="text-[10px] font-bold text-slate-400 uppercase">
-            {day}
-          </span>
-        ))}
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs text-left h-full">
+      {/* Calendar Header & Legend */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+        {/* Title & Navigation */}
+        <div className="flex items-center gap-4">
+          {/* Fixed width to prevent jumping when month names change length */}
+          <h3 className="text-sm font-bold text-slate-900 w-28">
+            {currentMonth} {currentYear}
+          </h3>
+
+          <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5">
+            <Link
+              href={`?month=${monthNames[prevMonthIndex]}&year=${prevYear}`}
+              className="p-1 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-500 hover:text-slate-900"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Link>
+            <div className="w-[1px] h-4 bg-slate-200 mx-0.5" /> {/* Divider */}
+            <Link
+              href={`?month=${monthNames[nextMonthIndex]}&year=${nextYear}`}
+              className="p-1 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-500 hover:text-slate-900"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Visual Legend */}
+        <div className="flex items-center gap-3 text-[11px] text-slate-500 font-medium">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-900" />
+            <span>Work Day</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-200" />
+            <span>Off Day / Weekend</span>
+          </div>
+        </div>
       </div>
 
+      {/* Weekday Column Headers */}
+      <div className="grid grid-cols-7 gap-1 text-center mb-2">
+        {weekDays.map((day, idx) => {
+          const isWorkHeader = workingDays.includes(idx);
+          return (
+            <span
+              key={day}
+              className={`text-[10px] font-bold uppercase ${
+                isWorkHeader ? "text-slate-700" : "text-slate-300"
+              }`}
+            >
+              {day}
+            </span>
+          );
+        })}
+      </div>
+
+      {/* Days Grid */}
       <div className="grid grid-cols-7 gap-1.5">
-        {calendarDays.map((item, idx) => (
-          <div
-            key={idx}
-            className={`p-2 rounded-xl text-center border text-xs min-h-[48px] flex flex-col items-center justify-between transition-all ${
-              !item.date
-                ? "border-transparent bg-transparent"
-                : item.status === "present"
-                ? "bg-emerald-50/50 border-emerald-100 text-emerald-900"
-                : item.status === "late"
-                ? "bg-amber-50/50 border-amber-100 text-amber-900"
-                : item.status === "absent"
-                ? "bg-rose-50/50 border-rose-100 text-rose-900"
-                : "bg-slate-50 border-slate-100 text-slate-600"
-            }`}
-          >
-            <span className="font-semibold text-[11px]">{item.date || ""}</span>
-            {item.status && (
-              <span className="text-[9px] font-bold tracking-tight opacity-80">
-                {item.status}
+        {paddedDays.map((item, idx) => {
+          const dayNum = item?.date;
+
+          // Padding Cell
+          if (dayNum === null || dayNum === undefined) {
+            return (
+              <div
+                key={`pad-${idx}`}
+                className="min-h-13 bg-slate-50/30 rounded-xl border border-dashed border-slate-100"
+              />
+            );
+          }
+
+          // Calculate Day of Week for this specific day
+          const dateObj = new Date(currentYear, monthIndex, dayNum);
+          const dayOfWeek = dateObj.getDay();
+          const isWorkingDay = workingDays.includes(dayOfWeek);
+
+          const status = item.status?.toLowerCase();
+
+          // 1. NON-WORKING DAY / WEEKEND STYLING
+          if (!isWorkingDay) {
+            return (
+              <div
+                key={`day-${dayNum}-${idx}`}
+                className="p-2 rounded-xl text-center border text-xs min-h-13 flex flex-col items-center justify-between bg-slate-100/60 border-slate-200/50 text-slate-400 opacity-60"
+              >
+                <span className="font-bold text-[11px]">{dayNum}</span>
+                <span className="text-[9px] font-medium uppercase tracking-tight">
+                  Off
+                </span>
+              </div>
+            );
+          }
+
+          // 2. WORKING DAY STYLING (Based on status)
+          return (
+            <div
+              key={`day-${dayNum}-${idx}`}
+              className={`p-2 rounded-xl text-center border text-xs min-h-13 flex flex-col items-center justify-between transition-all ${
+                status === "present"
+                  ? "bg-emerald-50 border-emerald-200 text-emerald-900 font-semibold"
+                  : status === "late"
+                    ? "bg-amber-50 border-amber-200 text-amber-900 font-semibold"
+                    : status === "absent"
+                      ? "bg-rose-50 border-rose-200 text-rose-900 font-semibold"
+                      : "bg-white border-slate-300 text-slate-800 shadow-2xs hover:border-indigo-400" // Default Working Day
+              }`}
+            >
+              <span className="font-bold text-[11px] text-slate-900">
+                {dayNum}
               </span>
-            )}
-          </div>
-        ))}
+
+              {item.status ? (
+                <span className="text-[9px] font-bold tracking-tight opacity-90 capitalize">
+                  {item.status}
+                </span>
+              ) : (
+                <span className="text-[9px] font-medium text-slate-400">
+                  Scheduled
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-export function ShiftSummaryCard({ data }: { data?: AttendanceData["today"] }) {
+// ----------------------------------------------------------------------
+// 5. Shift Summary Card
+// ----------------------------------------------------------------------
+export function ShiftSummaryCard({ data }: { data?: TodayAttendance }) {
+  // Assuming your TodayAttendance definition includes shift details,
+  // or you pass a separate Shift profile object.
+  const shiftStart = data?.shiftStart || "09:00 AM";
+  const shiftEnd = data?.shiftEnd || "05:00 PM";
+  const shiftType = data?.shiftType || "Standard (Mon - Fri)";
+
   return (
     <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-xs text-left">
       <h3 className="text-sm font-bold text-slate-900 mb-3">Shift Info</h3>
-      <p className="text-xs text-slate-500">
-        Default: 09:00 AM – 05:00 PM (Mon - Fri)
-      </p>
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-slate-700">
+          {shiftStart} – {shiftEnd}
+        </p>
+        <p className="text-xs text-slate-500">{shiftType}</p>
+      </div>
     </div>
   );
 }
 
+// ----------------------------------------------------------------------
+// 6. Leave Balance Card
+// ----------------------------------------------------------------------
 export function LeaveBalanceCard({
   leaveBalance,
 }: {
-  leaveBalance: AttendanceData["leaveBalance"];
+  leaveBalance: LeaveBalance;
 }) {
   return (
     <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-xs text-left">
@@ -223,23 +423,30 @@ export function LeaveBalanceCard({
       <div className="space-y-2 text-xs">
         <div className="flex justify-between text-slate-600">
           <span>Annual Leave</span>
-          <span className="font-semibold">{leaveBalance.annualRemaining} / {leaveBalance.annualTotal} days</span>
+          <span className="font-semibold">
+            {leaveBalance.annualRemaining} / {leaveBalance.annualTotal} days
+          </span>
         </div>
         <div className="flex justify-between text-slate-600">
           <span>Sick Leave</span>
-          <span className="font-semibold">{leaveBalance.sickRemaining} / {leaveBalance.sickTotal} days</span>
+          <span className="font-semibold">
+            {leaveBalance.sickRemaining} / {leaveBalance.sickTotal} days
+          </span>
         </div>
       </div>
     </div>
   );
 }
 
+// ----------------------------------------------------------------------
+// 7. Attendance Log Table
+// ----------------------------------------------------------------------
 export function AttendanceLogTable({
   logs,
 }: {
-  logs: AttendanceData["attendanceLog"];
-  month: string;
-  year: number;
+  logs: AttendanceLog[];
+  month?: string;
+  year?: number;
 }) {
   return (
     <div className="bg-white border border-slate-100 rounded-2xl shadow-xs overflow-hidden text-left">
@@ -260,16 +467,20 @@ export function AttendanceLogTable({
           <tbody className="divide-y divide-slate-100">
             {logs.map((log) => (
               <tr key={log.id} className="hover:bg-slate-50/50">
-                <td className="px-4 py-3 font-medium text-slate-900">{log.date}</td>
+                <td className="px-4 py-3 font-medium text-slate-900">
+                  {log.date}
+                </td>
                 <td className="px-4 py-3">{log.checkIn || "--:--"}</td>
                 <td className="px-4 py-3">{log.checkOut || "--:--"}</td>
                 <td className="px-4 py-3">{log.workHours || "--"}</td>
                 <td className="px-4 py-3">
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                    log.status === "Present"
-                      ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-                      : "bg-amber-50 text-amber-700 border-amber-100"
-                  }`}>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                      log.status === "Present"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                        : "bg-amber-50 text-amber-700 border-amber-100"
+                    }`}
+                  >
                     {log.status}
                   </span>
                 </td>
@@ -282,6 +493,9 @@ export function AttendanceLogTable({
   );
 }
 
+// ----------------------------------------------------------------------
+// 8. WFH Request Modal
+// ----------------------------------------------------------------------
 export function WFHRequestModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -315,7 +529,9 @@ export function WFHRequestModal() {
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-sm font-bold text-slate-900">Request Work From Home</h3>
+              <h3 className="text-sm font-bold text-slate-900">
+                Request Work From Home
+              </h3>
               <button
                 onClick={() => setIsOpen(false)}
                 className="text-slate-400 hover:text-slate-600 cursor-pointer"
@@ -363,7 +579,9 @@ export function WFHRequestModal() {
                   disabled={isPending}
                   className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all disabled:opacity-50 cursor-pointer"
                 >
-                  {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  {isPending && (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  )}
                   Submit Request
                 </button>
               </div>
