@@ -4,6 +4,7 @@
 import { useState, useTransition } from "react";
 import { Goal } from "@/app/lib/performance/definitions";
 import { updateGoalProgress } from "@/app/lib/performance/actions/goals"; // Server Action
+import { formatDate } from "@/app/lib/utils";
 
 interface GoalsTabProps {
   goals: Goal[];
@@ -168,7 +169,7 @@ export default function GoalsTab({ goals }: GoalsTabProps) {
               </div>
 
               <div className="flex justify-between items-center mt-3 text-[11px] text-slate-500">
-                <span>Due: {String(goal.due_date).split("T")[0]}</span>
+                <span>Due: {formatDate(goal.due_date).split("T")[0]}</span>
                 <span>Status: {goal.status}</span>
               </div>
             </div>

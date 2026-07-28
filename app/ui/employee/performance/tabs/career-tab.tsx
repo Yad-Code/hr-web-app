@@ -2,6 +2,7 @@
 "use client";
 
 import { CareerDevelopment, OneOnOneMeeting } from "@/app/lib/performance/definitions";
+import { formatDate } from "@/app/lib/utils";
 
 interface CareerTabProps {
   career: CareerDevelopment | null;
@@ -27,7 +28,7 @@ export default function CareerTab({ career, meetings }: CareerTabProps) {
               </div>
               <div className="bg-white p-4 rounded-lg border border-slate-200">
                 <p className="text-xs text-slate-500 font-medium">Target Completion Date</p>
-                <p className="text-base font-semibold text-slate-900 mt-1">{String(career.target_date)}</p>
+                <p className="text-base font-semibold text-slate-900 mt-1">{formatDate(career.target_date)}</p>
               </div>
             </div>
 
@@ -56,7 +57,7 @@ export default function CareerTab({ career, meetings }: CareerTabProps) {
                   <div>
                     <h3 className="font-semibold text-slate-900">{meeting.topic || "Regular Sync"}</h3>
                     <p className="text-xs text-slate-500">
-                      With {meeting.manager_name || "Manager"} on {String(meeting.meeting_date)}
+                      With {meeting.manager_name || "Manager"} on {formatDate(meeting.meeting_date)}
                     </p>
                   </div>
                   <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${

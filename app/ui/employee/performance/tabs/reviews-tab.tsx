@@ -4,6 +4,7 @@
 import { useTransition } from "react";
 import { PerformanceReview } from "@/app/lib/performance/definitions";
 import { updateEmployeeComments } from "@/app/lib/performance/actions/reviews";
+import { formatDate } from "@/app/lib/utils";
 
 export default function ReviewsTab({ reviews }: { reviews: PerformanceReview[] }) {
   const [isPending, startTransition] = useTransition();
@@ -30,7 +31,7 @@ export default function ReviewsTab({ reviews }: { reviews: PerformanceReview[] }
             <div className="flex justify-between items-start border-b pb-3">
               <div>
                 <h3 className="font-bold text-slate-800">{review.period} Review</h3>
-                <p className="text-sm text-slate-500">Reviewed by {review.reviewer} on {String(review.date)}</p>
+                <p className="text-sm text-slate-500">Reviewed by {review.reviewer} on {formatDate(review.date)}</p>
               </div>
               <span className="px-3 py-1 bg-blue-50 text-blue-700 font-semibold rounded-full text-sm">
                 Rating: {review.rating}

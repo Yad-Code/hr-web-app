@@ -4,6 +4,7 @@
 import { useTransition } from "react";
 import { SelfAssessment } from "@/app/lib/performance/definitions";
 import { submitSelfAssessment, reopenSelfAssessment } from "@/app/lib/performance/actions/selfAssessment";
+import { formatDate } from "@/app/lib/utils";
 
 export default function SelfAssessmentTab({ assessment }: { assessment: SelfAssessment | null }) {
   const [isPending, startTransition] = useTransition();
@@ -29,7 +30,7 @@ export default function SelfAssessmentTab({ assessment }: { assessment: SelfAsse
     return (
       <div className="p-6 bg-green-50 rounded-lg border border-green-200">
         <h3 className="text-green-800 font-semibold mb-2">Assessment Submitted!</h3>
-        <p className="text-green-700 text-sm mb-4">You submitted your assessment on {String(assessment.submitted_at)}</p>
+        <p className="text-green-700 text-sm mb-4">You submitted your assessment on {formatDate(assessment.submitted_at)}</p>
         <button 
           onClick={handleReopen} 
           disabled={isPending}

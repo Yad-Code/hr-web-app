@@ -4,6 +4,7 @@
 import { useTransition } from "react";
 import { Feedback } from "@/app/lib/performance/definitions";
 import { markFeedbackAsRead } from "@/app/lib/performance/actions/feedback";
+import { formatDate } from "@/app/lib/utils";
 
 export default function FeedbackTab({ feedbackList }: { feedbackList: Feedback[] }) {
   const [isPending, startTransition] = useTransition();
@@ -34,7 +35,7 @@ export default function FeedbackTab({ feedbackList }: { feedbackList: Feedback[]
                 </span>
                 <p className="mt-1 text-slate-800">{feedback.text}</p>
                 <p className="text-xs text-slate-500 mt-2">
-                  From {feedback.sender} ({feedback.role}) on {String(feedback.date)}
+                  From {feedback.sender} ({feedback.role}) on {formatDate(feedback.date)}
                 </p>
               </div>
               

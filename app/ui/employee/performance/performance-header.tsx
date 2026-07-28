@@ -1,5 +1,6 @@
 // app/ui/employee/performance/performance-header.tsx
 import { PerformanceProfile } from "@/app/lib/performance/definitions";
+import { formatDate } from "@/app/lib/utils";
 
 export default function PerformanceHeader({ profile }: { profile: PerformanceProfile | null }) {
   if (!profile) return null;
@@ -23,7 +24,7 @@ export default function PerformanceHeader({ profile }: { profile: PerformancePro
         </div>
         <div className="bg-white/10 backdrop-blur-md px-4 py-3 rounded-lg border border-white/10">
           <p className="text-xs text-blue-200">Next Review</p>
-          <p className="text-2xl font-bold mt-1">{String(profile.next_review)}</p>
+          <p className="text-2xl font-bold mt-1">{formatDate(profile.next_review)}</p>
         </div>
       </div>
     </div>

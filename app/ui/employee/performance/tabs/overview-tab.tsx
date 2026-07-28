@@ -2,6 +2,7 @@
 "use client";
 
 import { KPI, PerformanceHistory, PerformanceNotification } from "@/app/lib/performance/definitions";
+import { formatDate } from "@/app/lib/utils";
 
 interface OverviewTabProps {
   kpis: KPI[];
@@ -43,7 +44,7 @@ export default function OverviewTab({ kpis, history, notifications }: OverviewTa
             <div className="space-y-4">
               {history.map((record) => (
                 <div key={record.id} className="bg-white p-4 rounded-lg border border-slate-200 space-y-3">
-                  <span className="text-xs font-bold text-slate-500 uppercase">{String(record.month)}</span>
+                  <span className="text-xs font-bold text-slate-500 uppercase">{formatDate(record.month)}</span>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                     <div>
                       <p className="text-slate-500">Productivity</p>
