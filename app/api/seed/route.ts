@@ -16,6 +16,7 @@ export async function GET() {
     // new tables
     await db`DROP TABLE IF EXISTS user_feedback`;
     await db`DROP TABLE IF EXISTS user_skills`;
+    await db`DROP TABLE IF EXISTS skills`;
     await db`DROP TABLE IF EXISTS performance_reviews`;
     await db`DROP TABLE IF EXISTS user_goals`;
     await db`DROP TABLE IF EXISTS user_kpis`;
@@ -268,6 +269,18 @@ CREATE TABLE self_assessments (
     CONSTRAINT performance_history_user_month_unique
         UNIQUE (user_id, month)
 );
+    `;
+
+    await db`
+    CREATE TABLE IF NOT EXISTS skills (
+      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name VARCHAR(255) NOT NULL,
+      label VARCHAR(100) NOT NULL,
+      level INT NOT NULL DEFAULT 1 CHECK (level BETWEEN 1 AND 5),
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
     `;
 
     // 3. Hash Passwords
@@ -681,19 +694,37 @@ ON CONFLICT (user_id, cycle) DO NOTHING;
       // SKILLS
       // ----------------------------------------------------
       await db`
-INSERT INTO user_skills (
-    user_id,
-    name,
-    level,
-    label
-)
-VALUES
-(${emp.id}, 'React / Next.js', 95, 'Expert'),
-(${emp.id}, 'TypeScript', 92, 'Expert'),
-(${emp.id}, 'PostgreSQL', 85, 'Advanced'),
-(${emp.id}, 'System Architecture', 80, 'Advanced'),
-(${emp.id}, 'Docker', 72, 'Intermediate');
+       INSERT INTO user_skills (
+        user_id,
+        name,
+        level,
+        label
+       )
+       VALUES
+        (${emp.id}, 'React / Next.js', 95, 'Expert'),
+        (${emp.id}, 'TypeScript', 92, 'Expert'),
+        (${emp.id}, 'PostgreSQL', 85, 'Advanced'),
+        (${emp.id}, 'System Architecture', 80, 'Advanced'),
+        (${emp.id}, 'Docker', 72, 'Intermediate');
 `;
+
+      if (emp.email === "yad@company.com") {
+        await db`
+      INSERT INTO skills (user_id, name, label, level) VALUES
+        (${emp.id}, 'React & Next.js', 'Technical', 5),
+        (${emp.id}, 'PostgreSQL & SQL', 'Architecture', 4),
+        (${emp.id}, 'Node.js & Express', 'Technical', 4),
+        (${emp.id}, 'System Architecture', 'Architecture', 3)
+    `;
+      } else {
+        // Default engineering skills set for other team members
+        await db`
+      INSERT INTO skills (user_id, name, label, level) VALUES
+        (${emp.id}, 'Frontend Development', 'Technical', 4),
+        (${emp.id}, 'API Design', 'Architecture', 3),
+        (${emp.id}, 'Git & Code Review', 'Tools', 4)
+    `;
+      }
 
       // ----------------------------------------------------
       // FEEDBACK
