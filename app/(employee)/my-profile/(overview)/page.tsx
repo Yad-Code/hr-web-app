@@ -1,6 +1,6 @@
 // app/employee/profile/page.tsx
 import { auth } from "@/auth";
-import { getProfileData } from "@/app/lib/data";
+import { getProfileData } from "@/app/lib/employee/data";
 import { redirect } from "next/navigation";
 import ProfileHeader from "@/app/ui/employee/profile/profileHeader";
 import OfficialInfoCard from "@/app/ui/employee/profile/officialInfoCard";

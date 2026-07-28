@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Employee } from "@/app/lib/data";
+import { Employee } from "@/app/lib/employee/data";
 
 interface EmployeeSearchListClientProps {
   initialEmployees: Employee[];

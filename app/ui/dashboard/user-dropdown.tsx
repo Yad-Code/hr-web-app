@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { User, Settings, HelpCircle, LogOut, ChevronDown } from "lucide-react";
-import { handleSignOut } from "@/app/lib/auth-actions";
+import { handleSignOut } from "@/app/lib/employee/auth-actions";
 import Link from "next/link";
 // Import from the react sub-module if using NextAuth
 

@@ -1,8 +1,8 @@
 // app/my-profile/attendance/page.tsx (or wherever your attendance page is)
 import { Suspense } from "react";
 import { auth } from "@/auth";
-import { sql } from "@/app/lib/db"; // <-- Make sure sql is imported
-import { getAttendanceData } from "@/app/lib/data/attendance";
+import { sql } from "@/app/lib/employee/db"; // <-- Make sure sql is imported
+import { getAttendanceData } from "@/app/lib/attendance/attendance";
 import {
   TodayStatusCard,
   AttendanceStatsGrid,

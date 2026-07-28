@@ -13,7 +13,7 @@ import {
   AttendanceLog,
 } from "@/app/lib/attendance/definitions";
 
-import { toggleCheckInStatus, submitWFHRequest } from "@/app/lib/actions";
+import { toggleCheckInStatus, submitWFHRequest } from "@/app/lib/employee/actions";
 
 // ----------------------------------------------------------------------
 // 1. Section Header

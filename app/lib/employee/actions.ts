@@ -11,8 +11,8 @@ import {
   updateCheckOut,
   getFormattedTime,
   calculateWorkHours,
-} from "@/app/lib/data";
-import { sql } from "@/app/lib/db";   
+} from "@/app/lib/employee/data";
+import { sql } from "@/app/lib/employee/db";   
 
 // ==========================================
 // SCHEMAS & VALIDATION
