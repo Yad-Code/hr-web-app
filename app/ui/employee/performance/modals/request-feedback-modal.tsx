@@ -1,7 +1,7 @@
 // app/ui/employee/performance/modals/request-feedback-modal.tsx
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, FormEvent } from "react";
 import { requestFeedback } from "@/app/lib/performance/actions/feedback";
 
 interface ModalProps {
@@ -15,24 +15,28 @@ export default function RequestFeedbackModal({ isOpen, onClose }: ModalProps) {
 
   if (!isOpen) return null;
 
-  const handleSubmit = (formData: FormData) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+
     startTransition(async () => {
       setError(null);
       const result = await requestFeedback(formData);
       if (result.success) {
         onClose();
       } else {
-        setError("Failed to send request. Make sure recipient exists.");
+        setError("Failed to send request. Check server logs.");
       }
     });
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
-      <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-150">
+      <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden">
         <div className="flex justify-between items-center p-5 border-b border-slate-100">
           <h3 className="text-lg font-bold text-slate-800">Request Feedback</h3>
           <button
+            type="button"
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 rounded-lg p-1 text-sm font-semibold"
           >
@@ -40,7 +44,7 @@ export default function RequestFeedbackModal({ isOpen, onClose }: ModalProps) {
           </button>
         </div>
 
-        <form action={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {error && (
             <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm">
               {error}
@@ -49,7 +53,7 @@ export default function RequestFeedbackModal({ isOpen, onClose }: ModalProps) {
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Select Recipient (Manager / Peer)
+              Select Recipient
             </label>
             <select
               name="recipient"
@@ -57,11 +61,13 @@ export default function RequestFeedbackModal({ isOpen, onClose }: ModalProps) {
               className="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
             >
               <option value="admin@company.com">
-                Sarah Jenkins (Engineering Manager)
+                Admin Manager (admin@company.com)
               </option>
-              <option value="lana@company.com">Lana Amin (UI/UX Design)</option>
+              <option value="lana@company.com">
+                Lana Amin (lana@company.com)
+              </option>
               <option value="diyar@company.com">
-                Diyar Karwan (Backend Infrastructure)
+                Diyar Karwan (diyar@company.com)
               </option>
             </select>
           </div>
@@ -94,7 +100,7 @@ export default function RequestFeedbackModal({ isOpen, onClose }: ModalProps) {
               name="message"
               required
               rows={3}
-              placeholder="e.g. Could you provide feedback on the Next.js migration PR I merged yesterday?"
+              placeholder="e.g. Could you provide feedback on the Next.js migration PR?"
               className="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
           </div>

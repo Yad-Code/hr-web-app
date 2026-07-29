@@ -6,23 +6,30 @@ import { getCurrentUserId } from "./utils";
 
 export async function markFeedbackAsRead(feedbackId: string) {
   try {
+    const userId = await getCurrentUserId();
+
+    // Security: Scope the update to the logged-in user
     await sql`
       UPDATE user_feedback
       SET is_read = true
-      WHERE id = ${feedbackId}
+      WHERE id = ${feedbackId} AND user_id = ${userId}
     `;
 
     revalidatePath("/my-profile/performance");
     return { success: true };
   } catch (error) {
     console.error("Failed to mark feedback as read:", error);
-    return { success: false };
+    return { success: false, error: "Could not update feedback status." };
   }
 }
 
 export async function markAllFeedbackAsRead() {
   try {
-    const userId = await getCurrentUserId(); // Ensure this fetches current user ID
+    const userId = await getCurrentUserId();
+
+    if (!userId) {
+      return { success: false, error: "User session not found." };
+    }
 
     await sql`
       UPDATE user_feedback
@@ -34,7 +41,7 @@ export async function markAllFeedbackAsRead() {
     return { success: true };
   } catch (error) {
     console.error("Failed to mark all feedback as read:", error);
-    return { success: false };
+    return { success: false, error: "Could not mark all items as read." };
   }
 }
 
@@ -45,7 +52,42 @@ export async function requestFeedback(formData: FormData) {
     const type = formData.get("type") as string;
     const message = formData.get("message") as string;
 
-    // Create a notification for the recipient (or manager) asking for feedback
+    if (!userId) {
+      return { success: false, error: "User session not found." };
+    }
+
+    if (!recipient || !message) {
+      return { success: false, error: "Recipient and message are required." };
+    }
+
+    // 1. Query returns an array of rows directly
+    const recipientResult = await sql`
+      SELECT id, name FROM users 
+      WHERE email = ${recipient} OR name = ${recipient} OR id = ${recipient}
+      LIMIT 1
+    `;
+
+    // Access the first element directly from the array
+    const recipientUser = recipientResult[0];
+
+    if (!recipientUser) {
+      console.error(`Recipient "${recipient}" not found in users table.`);
+      return {
+        success: false,
+        error: `Recipient "${recipient}" could not be found.`,
+      };
+    }
+
+    // 2. Fetch requester info
+    const senderResult = await sql`
+      SELECT name FROM users WHERE id = ${userId} LIMIT 1
+    `;
+    const senderName = senderResult[0]?.name || "A team member";
+
+    // 3. Insert notification linked directly to recipient's ID
+    const title = `Feedback Request from ${senderName}`;
+    const description = `Requested feedback on ${type}: "${message}"`;
+
     await sql`
       INSERT INTO performance_notifications (
         user_id,
@@ -55,9 +97,9 @@ export async function requestFeedback(formData: FormData) {
         is_read
       )
       VALUES (
-        (SELECT id FROM users WHERE email = ${recipient} OR name = ${recipient} LIMIT 1),
-        ${`Feedback Request from team member`},
-        ${`Requested feedback on ${type}: "${message}"`},
+        ${recipientUser.id},
+        ${title},
+        ${description},
         'Feedback Request',
         false
       )
@@ -67,6 +109,9 @@ export async function requestFeedback(formData: FormData) {
     return { success: true };
   } catch (error) {
     console.error("Failed to request feedback:", error);
-    return { success: false };
+    return {
+      success: false,
+      error: "Database error while processing request.",
+    };
   }
 }
