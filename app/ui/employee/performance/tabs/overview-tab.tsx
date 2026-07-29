@@ -5,7 +5,7 @@ import {
   KPI,
   PerformanceHistory,
   PerformanceNotification,
-} from "@/app/lib/performance/definitions";
+} from "@/app/lib/employeeDashboard/performance/definitions";
 import { formatDate } from "@/app/lib/utils";
 import PerformanceChart from "./performance-chart";
 

@@ -1,10 +1,10 @@
 "use server";
 
-import { sql } from "@/app/lib/employee/db";
+import { sql } from "@/app/lib/employeeDashboard/employee/db";
 import { revalidatePath } from "next/cache";
 import { GoalSchema } from "../validations";
 import { getCurrentUserId } from "./utils";
-import { NewGoalData } from "@/app/lib/performance/definitions"; // Import type
+import { NewGoalData } from "@/app/lib/employeeDashboard/performance/definitions"; // Import type
 
 export async function updateGoal(
   goalId: string,

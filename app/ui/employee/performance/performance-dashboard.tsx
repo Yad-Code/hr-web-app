@@ -14,7 +14,7 @@ import {
   PerformanceNotification,
   PerformanceHistory,
   SelfAssessment,
-} from "@/app/lib/performance/definitions";
+} from "@/app/lib/employeeDashboard/performance/definitions";
 
 import PerformanceHeader from "./performance-header";
 import OverviewTab from "./tabs/overview-tab";

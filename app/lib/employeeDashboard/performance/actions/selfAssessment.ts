@@ -1,6 +1,6 @@
 "use server";
 
-import { sql } from "@/app/lib/employee/db";
+import { sql } from "@/app/lib/employeeDashboard/employee/db";
 import { revalidatePath } from "next/cache";
 import { SelfAssessmentSchema } from "../validations";
 import { getCurrentUserId } from "./utils";

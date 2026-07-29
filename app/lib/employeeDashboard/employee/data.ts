@@ -1,5 +1,5 @@
 // app/lib/data.ts
-import { sql } from "@/app/lib/employee/db"; // Using our configured singleton instance
+import { sql } from "@/app/lib/employeeDashboard/employee/db"; // Using our configured singleton instance
 import { formatDistanceToNow } from "date-fns";
 import { auth } from "@/auth";
 

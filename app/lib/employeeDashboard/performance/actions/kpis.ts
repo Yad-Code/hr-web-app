@@ -1,6 +1,6 @@
 "use server";
 
-import { sql } from "@/app/lib/employee/db";
+import { sql } from "@/app/lib/employeeDashboard/employee/db";
 import { getCurrentUserId } from "./utils";
 
 export async function getMyKPIs() {

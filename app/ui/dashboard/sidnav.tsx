@@ -1,6 +1,6 @@
 import NavLinks from "./nav-links";
 import { Building2, LogOut } from "lucide-react";
-import { handleSignOut } from "@/app/lib/employee/auth-actions";
+import { handleSignOut } from "@/app/lib/employeeDashboard/employee/auth-actions";
 
 interface SideNavProps {
   role: "admin" | "employee";

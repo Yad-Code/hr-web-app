@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sql as db } from "@/app/lib/employee/db";
+import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import bcrypt from "bcrypt";
 
 export async function GET() {

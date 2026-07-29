@@ -1,13 +1,13 @@
 // app/lib/performance/actions/career.ts
 "use server";
 
-import { sql } from "@/app/lib/employee/db";
+import { sql } from "@/app/lib/employeeDashboard/employee/db";
 import { revalidatePath } from "next/cache";
 import { getCurrentUserId } from "./utils";
 import {
   RequestMeetingData,
   UpdateCareerData,
-} from "@/app/lib/performance/definitions";
+} from "@/app/lib/employeeDashboard/performance/definitions";
 
 export async function requestOneOnOne(data: RequestMeetingData) {
   try {

@@ -1,4 +1,4 @@
-import { sql } from "@/app/lib/employee/db";
+import { sql } from "@/app/lib/employeeDashboard/employee/db";
 
 import {
   PerformanceProfile,

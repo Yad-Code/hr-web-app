@@ -1,4 +1,4 @@
-import { fetchPendingAdminRequests } from "@/app/lib/employee/data";
+import { fetchPendingAdminRequests } from "@/app/lib/employeeDashboard/employee/data";
 import { RequestItem } from "./request-items";
 import { EmployeeOperations } from "./employee-operations";
 

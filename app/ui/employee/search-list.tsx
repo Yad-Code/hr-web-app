@@ -1,4 +1,4 @@
-import { fetchEmployeeStatusList } from "@/app/lib/employee/data";
+import { fetchEmployeeStatusList } from "@/app/lib/employeeDashboard/employee/data";
 import { EmployeeSearchListClient } from "@/app/(admin)/dashboard/(overview)/employees/EmployeeSearchList";
 
 export async function EmployeeSearchList() {

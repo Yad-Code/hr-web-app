@@ -1,7 +1,7 @@
 // app/lib/performance/actions/reviews.ts
 "use server";
 
-import { sql } from "@/app/lib/employee/db";
+import { sql } from "@/app/lib/employeeDashboard/employee/db";
 import { revalidatePath } from "next/cache";
 import { getCurrentUserId } from "./utils";
 
