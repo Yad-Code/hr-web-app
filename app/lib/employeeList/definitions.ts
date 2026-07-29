@@ -1,3 +1,4 @@
+// app/lib/employeeList/definitions.ts
 
 export interface Employee {
   id: string;
@@ -12,9 +13,14 @@ export interface Employee {
 
 export interface FullEmployeeProfile {
   id: string;
+  employee_id?: string | null;
   name: string;
   email: string;
   department?: string | null;
+  branch?: string | null;
+  date_of_birth?: string | null;
+  gender?: string | null;
+  nationality?: string | null;
   role?: string | null;
   status?: string | null;
   image_url?: string | null;

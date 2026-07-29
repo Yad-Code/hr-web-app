@@ -1,3 +1,4 @@
+// @/app/dashboard/employees/[id]/edit/page.tsx (or your file path)
 import { auth } from "@/auth";
 import { getProfileById } from "@/app/lib/employeeList/data";
 import { redirect } from "next/navigation";
@@ -5,10 +6,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import ProfileHeader from "@/app/ui/dashboard/id/profileHeader";
-import OfficialInfoCard from "@/app/ui/dashboard/id/officialInfoCard";
 import ProfileForm from "@/app/ui/dashboard/id/profileForm";
 import {
-  OfficialInfoCardSkeleton,
   ProfileFormSkeleton,
   ProfileHeaderSkeleton,
 } from "@/app/ui/employee/skeleton";
@@ -19,7 +18,7 @@ export default async function AdminEmployeeEditPage({
   params: Promise<{ id: string }>;
 }) {
   // 1. Redirect to /my-profile if the user is not an admin
-  const session = await auth(); 
+  const session = await auth();
   if (session?.user?.role !== "admin") {
     redirect("/my-profile");
   }
@@ -71,15 +70,10 @@ export default async function AdminEmployeeEditPage({
         <ProfileHeader profile={profile} />
       </Suspense>
 
-      {/* Official Info & Edit Form Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Suspense fallback={<OfficialInfoCardSkeleton />}>
-          <OfficialInfoCard profile={profile} />
-        </Suspense>
-        <Suspense fallback={<ProfileFormSkeleton />}>
-          <ProfileForm profile={profile} userEmail={profile.email} />
-        </Suspense>
-      </div>
+      {/* Unified Profile Edit Form (Manages its own 2-column layout internally) */}
+      <Suspense fallback={<ProfileFormSkeleton />}>
+        <ProfileForm profile={profile} />
+      </Suspense>
     </div>
   );
 }

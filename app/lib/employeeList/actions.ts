@@ -35,12 +35,17 @@ export async function updateEmployeeProfile(
     }
 
     // 1. Extract Official Account Details (Safeguarded against undefined)
+    const employeeId = formData.get("employeeId")?.toString() || null;
     const name = formData.get("name")?.toString() || null;
     const email = formData.get("email")?.toString() || null;
     const department = formData.get("department")?.toString() || null;
+    const branch = formData.get("branch")?.toString() || null;
+    const dateOfBirth = formData.get("dateOfBirth")?.toString() || null;
+    const gender = formData.get("gender")?.toString() || null;
+    const nationality = formData.get("nationality")?.toString() || null;
     const status = formData.get("status")?.toString() || "active";
 
-    // 2. Extract Personal Information Details (Safeguarded against undefined)
+    // 2. Extract Personal Information Details
     const preferredName = formData.get("preferredName")?.toString() || null;
     const maritalStatus = formData.get("maritalStatus")?.toString() || "Single";
     const bloodGroup = formData.get("bloodGroup")?.toString() || "Unknown";
@@ -48,15 +53,20 @@ export async function updateEmployeeProfile(
     const personalPhone = formData.get("personalPhone")?.toString() || null;
     const currentAddress = formData.get("currentAddress")?.toString() || null;
 
-    // 3. Update Database (Dynamic Role handling)
+    // 3. Update Database (Dynamic Role handling - UUID is untouched)
     if (isAdmin) {
       const role = formData.get("role")?.toString() || "employee";
       await sql`
         UPDATE users 
         SET 
+          employee_id = ${employeeId},
           name = ${name},
           email = ${email},
           department = ${department},
+          branch = ${branch},
+          date_of_birth = ${dateOfBirth},
+          gender = ${gender},
+          nationality = ${nationality},
           status = ${status},
           role = ${role},
           preferred_name = ${preferredName},
@@ -68,13 +78,17 @@ export async function updateEmployeeProfile(
         WHERE id = ${targetUserId}::uuid
       `;
     } else {
-      // Non-admins cannot update role
       await sql`
         UPDATE users 
         SET 
+          employee_id = ${employeeId},
           name = ${name},
           email = ${email},
           department = ${department},
+          branch = ${branch},
+          date_of_birth = ${dateOfBirth},
+          gender = ${gender},
+          nationality = ${nationality},
           status = ${status},
           preferred_name = ${preferredName},
           marital_status = ${maritalStatus},
