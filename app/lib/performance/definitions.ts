@@ -41,17 +41,18 @@ export interface NewGoalData {
 
 export type PerformanceReview = {
   id: string;
-  user_id: string;
+  employee_id: string;
   period: string;
-  date: DateValue;
   reviewer: string;
-  rating: number;
+  date: string;
+  rating: number | string;
   strengths: string;
   improvements: string;
   manager_comments: string;
-  employee_comments: string | null;
-  goals_for_next_cycle: string;
-  status: "Draft" | "Completed";
+  employee_comments?: string | null;
+  // new properties ---->
+  acknowledged?: boolean;
+  acknowledged_at?: string | Date | null;
 };
 
 export type Skill = {

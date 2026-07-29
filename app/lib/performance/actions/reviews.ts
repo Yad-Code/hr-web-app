@@ -15,7 +15,7 @@ export async function updateEmployeeComments(
     await sql`
       UPDATE performance_reviews
       SET employee_comments = ${comments}
-      WHERE id = ${reviewId} AND employee_id = ${userId}
+      WHERE id = ${reviewId} AND user_id = ${userId}
     `;
 
     revalidatePath("/my-profile/performance");
@@ -35,7 +35,7 @@ export async function acknowledgeReview(reviewId: string) {
       SET 
         acknowledged = true,
         acknowledged_at = NOW()
-      WHERE id = ${reviewId} AND employee_id = ${userId}
+      WHERE id = ${reviewId} AND user_id = ${userId}
     `;
 
     revalidatePath("/my-profile/performance");
