@@ -18,7 +18,7 @@ export default async function EmployeeProfilePage() {
   if (!session?.user?.email) {
     redirect("/login");
   }
-
+  
   const profile = await getProfileData(session.user.email);
 
   if (!profile) {

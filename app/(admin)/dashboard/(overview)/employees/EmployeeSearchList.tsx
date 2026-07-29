@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link"; // 👈 1. Import Next.js Link
-import { Employee } from "@/app/lib/employeeDashboard/employee/data";
+import { Employee } from "@/app/lib/employeeList/definitions";
 
 interface EmployeeSearchListClientProps {
   initialEmployees: Employee[];
@@ -162,7 +162,7 @@ export function EmployeeSearchListClient({
                   </span>
 
                   <Link
-                    href={`/admin/employees/${employee.id}`}
+                    href={`/dashboard/employees/${employee.id}/edit`}
                     className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all shadow-xs"
                   >
                     Edit Profile
