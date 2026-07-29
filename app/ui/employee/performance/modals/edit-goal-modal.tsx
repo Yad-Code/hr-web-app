@@ -2,8 +2,8 @@
 "use client";
 
 import { useTransition, useState } from "react";
-import { Goal } from "@/app/lib/performance/definitions";
-import { updateGoal } from "@/app/lib/performance/actions/goals";
+import { Goal } from "@/app/lib/employeeDashboard/performance/definitions";
+import { updateGoal } from "@/app/lib/employeeDashboard/performance/actions/goals";
 
 interface EditGoalModalProps {
   goal: Goal;

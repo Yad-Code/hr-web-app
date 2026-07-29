@@ -4,14 +4,12 @@ import styles from "@/app/ui/home.module.css";
 import { lusitana } from "@/app/ui/fonts";
 import { ArrowRightIcon } from "@heroicons/react/24/outline";
 import YadLogo from "@/app/ui/yad-logo";
-import { auth } from "@/auth"; // 👈 1. Import Auth.js
-import { redirect } from "next/navigation"; // 👈 2. Import redirect
-
-// 3. Turn the component into an async function
+import { auth } from "@/auth";  
+import { redirect } from "next/navigation";   
+ 
 export default async function Home() {
   const session = await auth();
-
-  // Silent Redirect: If already logged in, route directly to role home
+ 
   if (session?.user) {
     if (session.user.role === "admin") {
       redirect("/dashboard");
@@ -20,11 +18,9 @@ export default async function Home() {
     }
   } else {
     redirect("/login");
-  }
-  // Otherwise, render the gorgeous landing page layout as normal:
+  } 
   return (
-    <main className="flex min-h-screen flex-col lg:flex-row bg-dark-bg text-white antialiased">
-      {/* ... Left side section unchanged ... */}
+    <main className="flex min-h-screen flex-col lg:flex-row bg-dark-bg text-white antialiased"> 
       <section className="relative h-[40vh] w-full lg:h-screen lg:w-1/2 bg-zinc-900 border-b lg:border-b-0 lg:border-r border-zinc-800">
         <Image
           src="/yad-corp.png"
@@ -36,9 +32,9 @@ export default async function Home() {
         <div className="absolute inset-0 bg-linear-to-t lg:bg-linear-to-r from-transparent to-dark-bg/30" />
       </section>
 
-      {/* RIGHT SIDE CONTENT CONTAINER */}
+    
       <div className="flex flex-col justify-between flex-1 p-8 md:p-16 lg:p-24 h-auto lg:h-screen">
-        {/* ... Header contents ... */}
+        
         <header className="flex flex-col gap-4 max-w-xl">
           <div className="flex flex-wrap items-baseline gap-4 mb-2">
             <p
@@ -68,8 +64,7 @@ export default async function Home() {
             </span>
           </div>
 
-          <div className="w-full sm:w-auto">
-            {/* Clicking this routes them to your customized dark login card screen */}
+          <div className="w-full sm:w-auto"> 
             <Link
               href="/login"
               className="group flex items-center justify-center gap-3 rounded-lg bg-brand-blue px-12 py-4 text-sm font-medium tracking-wide text-white transition-all duration-200 hover:bg-[#1d4ed8] hover:shadow-lg hover:shadow-blue-500/10 active:scale-[0.98]"

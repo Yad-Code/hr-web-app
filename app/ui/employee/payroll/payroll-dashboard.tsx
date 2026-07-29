@@ -7,7 +7,7 @@ import {
   PayStub,
   PaymentMethod,
   Document,
-} from "@/app/lib/payroll/definitions";
+} from "@/app/lib/employeeDashboard/payroll/definitions";
 
 import OverviewTab from "./tabs/overview-tab";
 import PayslipsTab from "./tabs/payslips-tab";

@@ -2,10 +2,10 @@
 
 import { useTransition, useRef } from "react";
 import Image from "next/image";
-import { handleSignOut } from "@/app/lib/employee/auth-actions";
-import { uploadProfilePicture } from "@/app/lib/employee/actions";
+import { handleSignOut } from "@/app/lib/employeeDashboard/employee/auth-actions";
+import { uploadProfilePicture } from "@/app/lib/employeeDashboard/employee/actions";
 import { LogOut, Camera, Loader2 } from "lucide-react";
-import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
+import { FullEmployeeProfile } from "@/app/lib/employeeDashboard/employee/definitions";
 
 export default function ProfileHeader({
   profile,

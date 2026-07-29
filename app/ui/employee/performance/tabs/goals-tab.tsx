@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, useTransition, useOptimistic } from "react";
-import { Goal, NewGoalData } from "@/app/lib/performance/definitions";
-import { updateGoalProgress, addGoal } from "@/app/lib/performance/actions/goals";
+import { Goal, NewGoalData } from "@/app/lib/employeeDashboard/performance/definitions";
+import { updateGoalProgress, addGoal } from "@/app/lib/employeeDashboard/performance/actions/goals";
 import AddGoalModal from "@/app/ui/employee/performance/modals/add-goal-modal";
 import GoalsHeader from "@/app/ui/employee/performance/goals/goals-header";
 import GoalCard from "@/app/ui/employee/performance/goals/goal-card";

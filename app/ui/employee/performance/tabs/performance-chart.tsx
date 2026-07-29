@@ -1,6 +1,6 @@
 "use client";
 
-import { PerformanceHistory } from "@/app/lib/performance/definitions";
+import { PerformanceHistory } from "@/app/lib/employeeDashboard/performance/definitions";
 import { formatDate } from "@/app/lib/utils";
 import {
   ResponsiveContainer,

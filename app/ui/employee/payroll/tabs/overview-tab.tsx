@@ -1,7 +1,7 @@
 // app/ui/employee/payroll/tabs/overview-tab.tsx
 "use client";
 
-import { CompensationSummary, PayStub } from "@/app/lib/payroll/definitions";
+import { CompensationSummary, PayStub } from "@/app/lib/employeeDashboard/payroll/definitions";
 
 interface OverviewTabProps {
   summary: CompensationSummary;

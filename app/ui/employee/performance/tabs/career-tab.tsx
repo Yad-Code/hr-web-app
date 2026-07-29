@@ -7,12 +7,12 @@ import {
   OneOnOneMeeting,
   RequestMeetingData,
   UpdateCareerData,
-} from "@/app/lib/performance/definitions";
+} from "@/app/lib/employeeDashboard/performance/definitions";
 import { formatDate } from "@/app/lib/utils";
 import {
   requestOneOnOne,
   updateCareerPlan,
-} from "@/app/lib/performance/actions/career";
+} from "@/app/lib/employeeDashboard/performance/actions/career";
 import EditCareerModal from "../modals/edit-career-modal";
 import RequestMeetingModal from "../modals/request-meeting-modal";
 

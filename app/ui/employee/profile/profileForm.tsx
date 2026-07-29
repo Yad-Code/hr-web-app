@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { updateEmployeeProfile } from "@/app/lib/employee/actions";
+import { updateEmployeeProfile } from "@/app/lib/employeeDashboard/employee/actions";
 import {
   Edit2,
   User,
@@ -14,7 +14,7 @@ import {
   Check,
   Loader2,
 } from "lucide-react";
-import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
+import { FullEmployeeProfile } from "@/app/lib/employeeDashboard/employee/definitions";
 
 interface ProfileFormProps {
   profile: FullEmployeeProfile;

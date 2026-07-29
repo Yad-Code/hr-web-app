@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { RequestMeetingData } from "@/app/lib/performance/definitions";
+import { RequestMeetingData } from "@/app/lib/employeeDashboard/performance/definitions";
 
 interface RequestMeetingModalProps {
   isOpen: boolean;

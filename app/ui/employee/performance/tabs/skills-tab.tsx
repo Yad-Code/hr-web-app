@@ -2,12 +2,12 @@
 "use client";
 
 import { useState, useTransition, useOptimistic } from "react";
-import { Skill } from "@/app/lib/performance/definitions";
+import { Skill } from "@/app/lib/employeeDashboard/performance/definitions";
 import {
   updateSkillLevel,
   addSkill,
   deleteSkill,
-} from "@/app/lib/performance/actions/skills";
+} from "@/app/lib/employeeDashboard/performance/actions/skills";
 import AddSkillModal, {
   NewSkillData,
 } from "@/app/ui/employee/performance/modals/add-skill-modal";

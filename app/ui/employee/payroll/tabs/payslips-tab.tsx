@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { PayStub } from "@/app/lib/payroll/definitions";
+import { PayStub } from "@/app/lib/employeeDashboard/payroll/definitions";
 
 export default function PayslipsTab({ payStubs }: { payStubs: PayStub[] }) {
   const [selectedStub, setSelectedStub] = useState<PayStub | null>(null);

@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useTransition, FormEvent } from "react";
-import { requestFeedback } from "@/app/lib/performance/actions/feedback";
+import { requestFeedback } from "@/app/lib/employeeDashboard/performance/actions/feedback";
 
 interface ModalProps {
   isOpen: boolean;

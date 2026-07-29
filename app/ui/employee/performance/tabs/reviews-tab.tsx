@@ -2,11 +2,11 @@
 "use client";
 
 import { useState, useTransition, FormEvent } from "react";
-import { PerformanceReview } from "@/app/lib/performance/definitions";
+import { PerformanceReview } from "@/app/lib/employeeDashboard/performance/definitions";
 import {
   updateEmployeeComments,
   acknowledgeReview,
-} from "@/app/lib/performance/actions/reviews";
+} from "@/app/lib/employeeDashboard/performance/actions/reviews";
 import { formatDate } from "@/app/lib/utils";
 
 export default function ReviewsTab({

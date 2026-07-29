@@ -2,12 +2,12 @@
 "use client";
 
 import { useTransition, useState } from "react";
-import { SelfAssessment } from "@/app/lib/performance/definitions";
+import { SelfAssessment } from "@/app/lib/employeeDashboard/performance/definitions";
 import {
   submitSelfAssessment,
   reopenSelfAssessment,
   saveSelfAssessmentDraft,
-} from "@/app/lib/performance/actions/selfAssessment";
+} from "@/app/lib/employeeDashboard/performance/actions/selfAssessment";
 import { formatDate } from "@/app/lib/utils";
 
 export default function SelfAssessmentTab({

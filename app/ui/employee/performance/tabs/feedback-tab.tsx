@@ -2,11 +2,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Feedback } from "@/app/lib/performance/definitions";
+import { Feedback } from "@/app/lib/employeeDashboard/performance/definitions";
 import {
   markFeedbackAsRead,
   markAllFeedbackAsRead,
-} from "@/app/lib/performance/actions/feedback";
+} from "@/app/lib/employeeDashboard/performance/actions/feedback";
 import { formatDate } from "@/app/lib/utils";
 import RequestFeedbackModal from "../modals/request-feedback-modal";
 

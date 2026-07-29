@@ -11,9 +11,9 @@ import {
   LeaveBalance,
   CalendarDay,
   AttendanceLog,
-} from "@/app/lib/attendance/definitions";
+} from "@/app/lib/employeeDashboard/attendance/definitions";
 
-import { toggleCheckInStatus, submitWFHRequest } from "@/app/lib/employee/actions";
+import { toggleCheckInStatus, submitWFHRequest } from "@/app/lib/employeeDashboard/employee/actions";
 
 // ----------------------------------------------------------------------
 // 1. Section Header

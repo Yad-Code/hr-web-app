@@ -2,7 +2,7 @@
 
 import { MessageSquare, User, Calendar, ClipboardList } from "lucide-react";
 
-import { Feedback, OneOnOneMeeting } from "@/app/lib/performance/definitions";
+import { Feedback, OneOnOneMeeting } from "@/app/lib/employeeDashboard/performance/definitions";
 
 interface FeedbackTabProps {
   feedback: Feedback[];

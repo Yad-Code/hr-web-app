@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { PaymentMethod } from "@/app/lib/payroll/definitions";
+import { PaymentMethod } from "@/app/lib/employeeDashboard/payroll/definitions";
 
 export default function PaymentMethodsTab({ methods }: { methods: PaymentMethod[] }) {
   const [showAddModal, setShowAddModal] = useState(false);

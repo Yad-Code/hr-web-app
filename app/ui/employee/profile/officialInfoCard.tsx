@@ -1,5 +1,5 @@
 import { Lock, User, Globe, Calendar, Briefcase } from "lucide-react";
-import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
+import { FullEmployeeProfile } from "@/app/lib/employeeDashboard/employee/definitions";
 
 export default function OfficialInfoCard({ profile }: { profile: FullEmployeeProfile }) {
   return (

@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react";
-import { authenticate } from "@/app/lib/employee/auth-actions";
+import { authenticate } from "@/app/lib/employeeDashboard/employee/auth-actions";
 
 export default function LoginForm() {
   const [errorMessage, formAction, isPending] = useActionState(

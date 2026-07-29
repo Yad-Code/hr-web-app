@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { CareerDevelopment, UpdateCareerData } from "@/app/lib/performance/definitions";
+import { CareerDevelopment, UpdateCareerData } from "@/app/lib/employeeDashboard/performance/definitions";
 
 interface EditCareerModalProps {
   isOpen: boolean;
