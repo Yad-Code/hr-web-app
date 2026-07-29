@@ -5,8 +5,8 @@ import { sql } from "../employeeDashboard/employee/db";
 import { auth } from "@/auth";
 import { getCurrentUserRole } from "@/app/lib/employeeDashboard/employee/data";
 import { revalidatePath } from "next/cache";
+import { put, del } from "@vercel/blob";
 
-// Define the response state type for React's useActionState hook
 export type ActionState = {
   success: boolean;
   message: string;
@@ -15,10 +15,9 @@ export type ActionState = {
 export async function updateEmployeeProfile(
   targetUserId: string,
   prevState: ActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<ActionState> {
   try {
-    // 1. Authenticate session
     const session = await auth();
     if (!session?.user) {
       return { success: false, message: "Unauthorized. Please log in again." };
@@ -28,7 +27,6 @@ export async function updateEmployeeProfile(
     const isAdmin = currentRole === "admin";
     const isEditingSelf = session.user.id === targetUserId;
 
-    // 2. Protect against non-admins editing other people's profiles
     if (!isEditingSelf && !isAdmin) {
       return {
         success: false,
@@ -36,15 +34,22 @@ export async function updateEmployeeProfile(
       };
     }
 
-    // 3. Extract form values safely
+    // 1. Extract Official Account Details (Safeguarded against undefined)
     const name = formData.get("name")?.toString() || null;
     const email = formData.get("email")?.toString() || null;
     const department = formData.get("department")?.toString() || null;
     const status = formData.get("status")?.toString() || "active";
 
-    // 4. Update Database
+    // 2. Extract Personal Information Details (Safeguarded against undefined)
+    const preferredName = formData.get("preferredName")?.toString() || null;
+    const maritalStatus = formData.get("maritalStatus")?.toString() || "Single";
+    const bloodGroup = formData.get("bloodGroup")?.toString() || "Unknown";
+    const personalEmail = formData.get("personalEmail")?.toString() || null;
+    const personalPhone = formData.get("personalPhone")?.toString() || null;
+    const currentAddress = formData.get("currentAddress")?.toString() || null;
+
+    // 3. Update Database (Dynamic Role handling)
     if (isAdmin) {
-      // Admins can update name, email, department, status AND role
       const role = formData.get("role")?.toString() || "employee";
       await sql`
         UPDATE users 
@@ -53,23 +58,34 @@ export async function updateEmployeeProfile(
           email = ${email},
           department = ${department},
           status = ${status},
-          role = ${role}
+          role = ${role},
+          preferred_name = ${preferredName},
+          marital_status = ${maritalStatus},
+          blood_group = ${bloodGroup},
+          personal_email = ${personalEmail},
+          personal_phone = ${personalPhone},
+          current_address = ${currentAddress}
         WHERE id = ${targetUserId}::uuid
       `;
     } else {
-      // Non-admins editing themselves CANNOT touch the role column
+      // Non-admins cannot update role
       await sql`
         UPDATE users 
         SET 
           name = ${name},
           email = ${email},
           department = ${department},
-          status = ${status}
+          status = ${status},
+          preferred_name = ${preferredName},
+          marital_status = ${maritalStatus},
+          blood_group = ${bloodGroup},
+          personal_email = ${personalEmail},
+          personal_phone = ${personalPhone},
+          current_address = ${currentAddress}
         WHERE id = ${targetUserId}::uuid
       `;
     }
 
-    // 5. Revalidate Cache for active Next.js routes
     revalidatePath(`/dashboard/employees/${targetUserId}/edit`);
     revalidatePath(`/dashboard/employees`);
     revalidatePath(`/my-profile`);
@@ -81,5 +97,78 @@ export async function updateEmployeeProfile(
       success: false,
       message: "Failed to update profile in database. Please try again.",
     };
+  }
+}
+
+export async function uploadProfilePicture(formData: FormData) {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return { success: false, error: "Unauthorized. Please log in again." };
+    }
+
+    const file = formData.get("avatar") as File;
+    const targetUserId =
+      formData.get("employeeId")?.toString() || session.user?.id;
+
+    // Guard clause: ensures targetUserId is a defined string
+    if (!targetUserId) {
+      return { success: false, error: "User identifier is missing." };
+    }
+
+    if (!file || file.size === 0) {
+      return { success: false, error: "No image file provided." };
+    }
+
+    if (!file.type.startsWith("image/")) {
+      return { success: false, error: "Selected file must be an image." };
+    }
+
+    if (file.size > 4 * 1024 * 1024) {
+      return { success: false, error: "Image must be smaller than 4MB." };
+    }
+
+    // Fetch existing user to retrieve old image URL and identifier for file naming
+    const existingUser = await sql`
+      SELECT image_url, email FROM users WHERE id = ${targetUserId}::uuid
+    `;
+
+    if (!existingUser || existingUser.length === 0) {
+      return { success: false, error: "User not found." };
+    }
+
+    const oldImageUrl = existingUser[0]?.image_url;
+    const userIdentifier = existingUser[0]?.email || targetUserId;
+
+    // 1. Upload new image to Vercel Blob
+    const blob = await put(`avatars/${userIdentifier}-${Date.now()}`, file, {
+      access: "public",
+    });
+
+    // 2. Update Postgres database with the Vercel Blob URL
+    await sql`
+      UPDATE users 
+      SET image_url = ${blob.url} 
+      WHERE id = ${targetUserId}::uuid
+    `;
+
+    // 3. Clean up old blob image safely if it exists on Vercel Blob
+    if (oldImageUrl && oldImageUrl.includes("public.blob.vercel-storage.com")) {
+      try {
+        await del(oldImageUrl);
+      } catch (e) {
+        console.warn("Failed to delete old blob:", e);
+      }
+    }
+
+    // 4. Revalidate cache for all profile & admin edit views
+    revalidatePath(`/dashboard/employees/${targetUserId}/edit`);
+    revalidatePath(`/dashboard/employees`);
+    revalidatePath(`/my-profile`);
+
+    return { success: true, url: blob.url };
+  } catch (error) {
+    console.error("Avatar upload failed:", error);
+    return { success: false, error: "Failed to upload image" };
   }
 }

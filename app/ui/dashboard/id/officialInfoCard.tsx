@@ -16,7 +16,7 @@ export default function OfficialInfoCard({
             Official Information
           </h2>
         </div>
-        <span className="text-[10px] text-slate-400 font-medium">
+        <span className="text-[10px] text-sla   te-400 font-medium">
           Read-only (Admin only)
         </span>
       </div>
@@ -24,7 +24,7 @@ export default function OfficialInfoCard({
       {/* Content List */}
       <div className="space-y-3 text-xs">
         <div className="flex items-start gap-3 py-1 border-b border-slate-50">
-          <Briefcase className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+          <Briefcase className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
           <div className="flex-1">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Employee ID

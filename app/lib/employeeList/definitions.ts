@@ -9,3 +9,19 @@ export interface Employee {
   last_seen_text: string;
   department?: string;
 }
+
+export interface FullEmployeeProfile {
+  id: string;
+  name: string;
+  email: string;
+  department?: string | null;
+  role?: string | null;
+  status?: string | null;
+  image_url?: string | null;
+  preferred_name?: string | null;
+  marital_status?: string | null;
+  blood_group?: string | null;
+  personal_email?: string | null;
+  personal_phone?: string | null;
+  current_address?: string | null;
+}
