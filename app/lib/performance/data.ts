@@ -53,7 +53,7 @@ export async function getPerformanceReviews(userId: string) {
 export async function getUserSkills(userId: string) {
   return sql<Skill[]>`
     SELECT *
-    FROM user_skills
+    FROM skills
     WHERE user_id=${userId}
   `;
 }

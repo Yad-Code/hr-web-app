@@ -4,6 +4,7 @@ import { sql } from "@/app/lib/employee/db";
 import { revalidatePath } from "next/cache";
 import { GoalSchema } from "../validations";
 import { getCurrentUserId } from "./utils";
+import { NewGoalData } from "@/app/lib/performance/definitions"; // Import type
 
 export async function updateGoal(
   goalId: string,
@@ -95,4 +96,30 @@ export async function updateGoalProgress(
   return {
     success: true,
   };
+}
+
+export async function addGoal(goal: NewGoalData) {
+  try {
+    const userId = await getCurrentUserId();
+
+    await sql`
+      INSERT INTO user_goals (user_id, title, description, priority, due_date, progress, status)
+      VALUES (
+        ${userId},
+        ${goal.title},
+        ${goal.description || null},
+        ${goal.priority},
+        ${goal.due_date},
+        0,
+        'In Progress'
+      )
+    `;
+
+    revalidatePath("/my-profile/performance");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to add goal:", error);
+    throw new Error("Failed to create goal.");
+  }
 }

@@ -693,38 +693,14 @@ ON CONFLICT (user_id, cycle) DO NOTHING;
       // ----------------------------------------------------
       // SKILLS
       // ----------------------------------------------------
-      await db`
-       INSERT INTO user_skills (
-        user_id,
-        name,
-        level,
-        label
-       )
-       VALUES
-        (${emp.id}, 'React / Next.js', 95, 'Expert'),
-        (${emp.id}, 'TypeScript', 92, 'Expert'),
-        (${emp.id}, 'PostgreSQL', 85, 'Advanced'),
-        (${emp.id}, 'System Architecture', 80, 'Advanced'),
-        (${emp.id}, 'Docker', 72, 'Intermediate');
-`;
 
-      if (emp.email === "yad@company.com") {
-        await db`
+      await db`
       INSERT INTO skills (user_id, name, label, level) VALUES
         (${emp.id}, 'React & Next.js', 'Technical', 5),
         (${emp.id}, 'PostgreSQL & SQL', 'Architecture', 4),
         (${emp.id}, 'Node.js & Express', 'Technical', 4),
         (${emp.id}, 'System Architecture', 'Architecture', 3)
     `;
-      } else {
-        // Default engineering skills set for other team members
-        await db`
-      INSERT INTO skills (user_id, name, label, level) VALUES
-        (${emp.id}, 'Frontend Development', 'Technical', 4),
-        (${emp.id}, 'API Design', 'Architecture', 3),
-        (${emp.id}, 'Git & Code Review', 'Tools', 4)
-    `;
-      }
 
       // ----------------------------------------------------
       // FEEDBACK

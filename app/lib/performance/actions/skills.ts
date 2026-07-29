@@ -13,7 +13,10 @@ interface AddSkillInput {
 /**
  * Updates an existing skill's proficiency level for the authenticated user.
  */
-export async function updateSkillLevel(skillId: string, level: number): Promise<void> {
+export async function updateSkillLevel(
+  skillId: string,
+  level: number,
+): Promise<void> {
   const userId = await getCurrentUserId();
 
   try {
@@ -33,7 +36,11 @@ export async function updateSkillLevel(skillId: string, level: number): Promise<
 /**
  * Creates and assigns a new skill entry for the authenticated user.
  */
-export async function addSkill({ name, label, level = 1 }: AddSkillInput): Promise<void> {
+export async function addSkill({
+  name,
+  label,
+  level = 1,
+}: AddSkillInput): Promise<void> {
   const userId = await getCurrentUserId();
 
   try {
@@ -46,5 +53,19 @@ export async function addSkill({ name, label, level = 1 }: AddSkillInput): Promi
   } catch (error) {
     console.error("Failed to add skill:", error);
     throw new Error("Failed to add new skill.");
+  }
+}
+
+export async function deleteSkill(skillId: string) {
+  try {
+    await sql`
+      DELETE FROM skills
+      WHERE id = ${skillId}
+    `;
+
+    revalidatePath("/my-profile/performance");
+  } catch (error) {
+    console.error("Failed to delete skill:", error);
+    throw new Error("Failed to delete skill.");
   }
 }

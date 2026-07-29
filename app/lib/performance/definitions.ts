@@ -32,6 +32,13 @@ export type Goal = {
   updated_at: DateValue;
 };
 
+export interface NewGoalData {
+  title: string;
+  description?: string; // Made optional
+  priority: "Low" | "Medium" | "High";
+  due_date: string;
+}
+
 export type PerformanceReview = {
   id: string;
   user_id: string;
@@ -118,3 +125,20 @@ export type SelfAssessment = {
   submitted: boolean;
   submitted_at: DateValue | null;
 };
+
+// OneOnOnes
+
+// Add to app/lib/performance/definitions.ts
+
+export interface RequestMeetingData {
+  topic: string;
+  meeting_date: string;
+  notes?: string;
+}
+
+export interface UpdateCareerData {
+  current_position: string;
+  target_position: string;
+  target_date: string;
+  roadmap?: string;
+}

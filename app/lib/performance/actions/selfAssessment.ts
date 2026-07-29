@@ -64,3 +64,32 @@ export async function reopenSelfAssessment() {
     success: true,
   };
 }
+
+export async function saveSelfAssessmentDraft(formData: FormData) {
+  try {
+    const userId = await getCurrentUserId(); 
+    
+    // Extract fields from the form
+    const cycle = formData.get("cycle") as string;
+    const achievements = formData.get("achievements") as string;
+    const challenges = formData.get("challenges") as string;
+    const futureGoals = formData.get("future_goals") as string;
+
+    // Update the record without changing the submitted status to true
+    await sql`
+      UPDATE self_assessments
+      SET 
+        achievements = ${achievements},
+        challenges = ${challenges},
+        future_goals = ${futureGoals},
+        submitted = false
+      WHERE user_id = ${userId} AND cycle = ${cycle}
+    `;
+
+    revalidatePath("/my-profile/performance");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to save self-assessment draft:", error);
+    return { success: false };
+  }
+}
