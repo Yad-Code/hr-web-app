@@ -283,6 +283,46 @@ CREATE TABLE self_assessments (
     );
     `;
 
+
+    //Payroll tables just added.
+    await db`
+      CREATE TABLE pay_stubs (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id),
+        pay_period_start DATE NOT NULL,
+        pay_period_end DATE NOT NULL,
+        pay_date DATE NOT NULL,
+        gross_pay DECIMAL(10,2) NOT NULL,
+        net_pay DECIMAL(10,2) NOT NULL,
+        status VARCHAR(20) DEFAULT 'paid', -- 'processing', 'paid', 'held'
+        pdf_url TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+    `;
+
+    await db`
+    CREATE TABLE pay_stub_items (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      pay_stub_id UUID NOT NULL REFERENCES pay_stubs(id) ON DELETE CASCADE,
+      type VARCHAR(20) NOT NULL, -- 'earning' or 'deduction'
+      category VARCHAR(50) NOT NULL, -- 'base_salary', 'performance_bonus', 'tax', 'insurance'
+      description VARCHAR(255),
+      amount DECIMAL(10,2) NOT NULL
+);
+    `;
+
+    await db`
+      CREATE TABLE payment_methods (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        bank_name VARCHAR(100) NOT NULL,
+        account_number_masked VARCHAR(20) NOT NULL, -- e.g. "****4321"
+        iban_or_routing VARCHAR(100),
+        is_primary BOOLEAN DEFAULT true,
+        status VARCHAR(20) DEFAULT 'verified' -- 'pending_verification', 'verified'
+);
+    `;
+
     // 3. Hash Passwords
     const adminPassword = await bcrypt.hash("AdminPass123", 10);
     const employeePassword = await bcrypt.hash("EmployeePass123", 10);
