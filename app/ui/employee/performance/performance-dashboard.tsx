@@ -14,7 +14,7 @@ import {
   PerformanceNotification,
   PerformanceHistory,
   SelfAssessment,
-} from "@/app/lib/performance/definitions"; //[cite: 2]
+} from "@/app/lib/performance/definitions";
 
 import PerformanceHeader from "./performance-header";
 import OverviewTab from "./tabs/overview-tab";
@@ -26,20 +26,24 @@ import SelfAssessmentTab from "./tabs/self-assessment-tab";
 import CareerTab from "./tabs/career-tab";
 
 export interface DashboardData {
-  profile: PerformanceProfile | null; //[cite: 2]
-  kpis: KPI[]; //[cite: 2]
-  goals: Goal[]; //[cite: 2]
-  reviews: PerformanceReview[]; //[cite: 2]
-  skills: Skill[]; //[cite: 2]
-  feedback: Feedback[]; //[cite: 2]
-  career: CareerDevelopment | null; //[cite: 2]
-  meetings: OneOnOneMeeting[]; //[cite: 2]
-  notifications: PerformanceNotification[]; //[cite: 2]
-  history: PerformanceHistory[]; //[cite: 2]
-  selfAssessment: SelfAssessment | null; //[cite: 2]
+  profile: PerformanceProfile | null;
+  kpis: KPI[];
+  goals: Goal[];
+  reviews: PerformanceReview[];
+  skills: Skill[];
+  feedback: Feedback[];
+  career: CareerDevelopment | null;
+  meetings: OneOnOneMeeting[];
+  notifications: PerformanceNotification[];
+  history: PerformanceHistory[];
+  selfAssessment: SelfAssessment | null;
 }
 
-export default function PerformanceDashboard({ initialData }: { initialData: DashboardData }) {
+export default function PerformanceDashboard({
+  initialData,
+}: {
+  initialData: DashboardData;
+}) {
   const [activeTab, setActiveTab] = useState("overview");
 
   const tabs = [
@@ -53,26 +57,21 @@ export default function PerformanceDashboard({ initialData }: { initialData: Das
   ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+    <div className="flex flex-col gap-6">
       {/* Profile Header */}
       <PerformanceHeader profile={initialData.profile} />
 
       {/* Tab Controls */}
-      <div style={{ display: "flex", gap: "0.5rem", borderBottom: "1px solid #e2e8f0", paddingBottom: "0.5rem" }}>
+      <div className="flex gap-2 border-b border-slate-200 overflow-x-auto pb-1">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            style={{
-              padding: "0.5rem 1rem",
-              cursor: "pointer",
-              fontWeight: activeTab === tab.id ? "bold" : "normal",
-              borderBottom: activeTab === tab.id ? "2px solid #2563eb" : "none",
-              background: "none",
-              borderTop: "none",
-              borderLeft: "none",
-              borderRight: "none",
-            }}
+            className={`px-4 py-2 text-sm font-medium transition-all whitespace-nowrap cursor-pointer rounded-t-lg ${
+              activeTab === tab.id
+                ? "border-b-2 border-blue-600 text-blue-600 font-bold bg-blue-50/50"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+            }`}
           >
             {tab.label}
           </button>
@@ -86,13 +85,20 @@ export default function PerformanceDashboard({ initialData }: { initialData: Das
             kpis={initialData.kpis}
             history={initialData.history}
             notifications={initialData.notifications}
+            onNavigateTab={setActiveTab} /* <--- Pass state setter here */
           />
         )}
         {activeTab === "goals" && <GoalsTab goals={initialData.goals} />}
-        {activeTab === "reviews" && <ReviewsTab reviews={initialData.reviews} />}
-        {activeTab === "feedback" && <FeedbackTab feedbackList={initialData.feedback} />}
+        {activeTab === "reviews" && (
+          <ReviewsTab reviews={initialData.reviews} />
+        )}
+        {activeTab === "feedback" && (
+          <FeedbackTab feedbackList={initialData.feedback} />
+        )}
         {activeTab === "skills" && <SkillsTab skills={initialData.skills} />}
-        {activeTab === "self-assessment" && <SelfAssessmentTab assessment={initialData.selfAssessment} />}
+        {activeTab === "self-assessment" && (
+          <SelfAssessmentTab assessment={initialData.selfAssessment} />
+        )}
         {activeTab === "career" && (
           <CareerTab
             career={initialData.career}

@@ -1,93 +1,173 @@
 // app/ui/employee/performance/tabs/overview-tab.tsx
 "use client";
 
-import { KPI, PerformanceHistory, PerformanceNotification } from "@/app/lib/performance/definitions";
+import {
+  KPI,
+  PerformanceHistory,
+  PerformanceNotification,
+} from "@/app/lib/performance/definitions";
 import { formatDate } from "@/app/lib/utils";
+import PerformanceChart from "./performance-chart";
 
 interface OverviewTabProps {
   kpis: KPI[];
   history: PerformanceHistory[];
   notifications: PerformanceNotification[];
+  onNavigateTab?: (tabName: string) => void; // Optional tab switching callback
 }
 
-export default function OverviewTab({ kpis, history, notifications }: OverviewTabProps) {
+export default function OverviewTab({
+  kpis,
+  history,
+  notifications,
+  onNavigateTab,
+}: OverviewTabProps) {
+  const unreadNotifications = notifications.filter((n) => !n.is_read);
+
+  // Helper for progress bar color coding
+  const getMetricBarColor = (val: number) => {
+    if (val >= 90) return "bg-emerald-500";
+    if (val >= 75) return "bg-blue-500";
+    return "bg-amber-500";
+  };
+
   return (
-    <div className="space-y-8">
-      {/* KPI Cards */}
+    <div className="space-y-8 max-w-5xl">
+      {/* 1. Action Needed Banner (Only shows when unread/urgent items exist) */}
+      {unreadNotifications.length > 0 && (
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="p-2 bg-blue-600 text-white rounded-lg text-xs font-bold">
+              {unreadNotifications.length}
+            </span>
+            <div>
+              <p className="text-sm font-bold text-slate-800">Action Needed</p>
+              <p className="text-xs text-slate-600">
+                {unreadNotifications[0].title}:{" "}
+                {unreadNotifications[0].description}
+              </p>
+            </div>
+          </div>
+          {onNavigateTab && (
+            <button
+              onClick={() => onNavigateTab("feedback")}
+              className="text-xs font-semibold bg-white border border-blue-300 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap"
+            >
+              View Feedback →
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* 2. Key Performance Indicators Grid */}
       <section>
-        <h2 className="text-lg font-bold text-slate-800 mb-4">Key Performance Indicators</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-bold text-slate-800">
+            Key Performance Indicators
+          </h2>
+          <span className="text-xs text-slate-500 font-medium">
+            Current Review Cycle
+          </span>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {kpis.map((kpi) => (
-            <div key={kpi.id} className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
-              <p className="text-sm text-slate-500 font-medium">{kpi.label}</p>
-              <p className="text-2xl font-bold text-slate-900 mt-2">{kpi.value}</p>
-              <div className="flex items-center justify-between mt-4">
-                <span className="text-xs text-slate-500">Target: {kpi.target}</span>
-                <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                  kpi.is_up ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                }`}>
+            <div
+              key={kpi.id}
+              className="p-4 bg-white border border-slate-200 rounded-xl shadow-xs space-y-2"
+            >
+              <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
+                {kpi.label}
+              </p>
+              <div className="flex items-baseline justify-between">
+                <span className="text-2xl font-extrabold text-slate-900">
+                  {kpi.value}
+                </span>
+                <span
+                  className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                    kpi.is_up
+                      ? "bg-emerald-100 text-emerald-800"
+                      : "bg-amber-100 text-amber-800"
+                  }`}
+                >
                   {kpi.trend}
                 </span>
               </div>
+              <p className="text-xs text-slate-400">
+                Target:{" "}
+                <span className="font-semibold text-slate-600">
+                  {kpi.target}
+                </span>
+              </p>
             </div>
           ))}
         </div>
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Monthly Metrics Breakdown */}
-        <section className="lg:col-span-2 bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
-          <h2 className="text-lg font-bold text-slate-800">Monthly Performance Breakdown</h2>
+        {/* 3. Monthly Visual Breakdown */}
+        <section className="lg:col-span-2 bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+            <h2 className="text-base font-bold text-slate-800">
+              Monthly Performance Trends
+            </h2>
+            <span className="text-xs text-slate-400">
+              Last {history.length} Months
+            </span>
+          </div>
+
           {history.length === 0 ? (
-            <p className="text-sm text-slate-500">No history data logged.</p>
+            <p className="text-xs text-slate-500 py-6 text-center">
+              No monthly metrics logged yet.
+            </p>
           ) : (
-            <div className="space-y-4">
-              {history.map((record) => (
-                <div key={record.id} className="bg-white p-4 rounded-lg border border-slate-200 space-y-3">
-                  <span className="text-xs font-bold text-slate-500 uppercase">{formatDate(record.month)}</span>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                    <div>
-                      <p className="text-slate-500">Productivity</p>
-                      <p className="text-base font-bold text-slate-900">{record.productivity}%</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-500">Quality</p>
-                      <p className="text-base font-bold text-slate-900">{record.quality}%</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-500">Teamwork</p>
-                      <p className="text-base font-bold text-slate-900">{record.teamwork}%</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-500">Attendance</p>
-                      <p className="text-base font-bold text-slate-900">{record.attendance}%</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <PerformanceChart history={history} />
           )}
         </section>
 
-        {/* Notifications Sidebar */}
-        <section className="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
-          <h2 className="text-lg font-bold text-slate-800">Updates & Notifications</h2>
-          {notifications.length === 0 ? (
-            <p className="text-sm text-slate-500">No notifications.</p>
-          ) : (
-            <div className="space-y-3">
-              {notifications.map((notif) => (
-                <div key={notif.id} className="p-3 bg-white rounded-lg border border-slate-200 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-blue-600">{notif.type}</span>
-                    {!notif.is_read && <span className="w-2 h-2 rounded-full bg-blue-600"></span>}
-                  </div>
-                  <p className="text-sm font-semibold text-slate-800">{notif.title}</p>
-                  <p className="text-xs text-slate-500">{notif.description}</p>
-                </div>
-              ))}
-            </div>
-          )}
+        {/* 4. Quick Actions Sidebar */}
+        <section className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4 h-fit">
+          <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">
+            Quick Actions
+          </h2>
+
+          <div className="space-y-2">
+            <button
+              onClick={() => onNavigateTab && onNavigateTab("self-assessment")}
+              className="w-full p-3 text-left bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-xl transition-all group"
+            >
+              <p className="text-xs font-bold text-slate-800 group-hover:text-blue-700">
+                Self Assessment
+              </p>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Edit draft or view current review cycle
+              </p>
+            </button>
+
+            <button
+              onClick={() => onNavigateTab && onNavigateTab("career")}
+              className="w-full p-3 text-left bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-xl transition-all group"
+            >
+              <p className="text-xs font-bold text-slate-800 group-hover:text-blue-700">
+                Schedule 1:1 Sync
+              </p>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Book a performance alignment meeting
+              </p>
+            </button>
+
+            <button
+              onClick={() => onNavigateTab && onNavigateTab("goals")}
+              className="w-full p-3 text-left bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-xl transition-all group"
+            >
+              <p className="text-xs font-bold text-slate-800 group-hover:text-blue-700">
+                Review Active Goals
+              </p>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Track sprint & OKR goal progress
+              </p>
+            </button>
+          </div>
         </section>
       </div>
     </div>
