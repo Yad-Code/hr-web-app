@@ -13,15 +13,19 @@ export function EmployeeSearchListClient({
 }: EmployeeSearchListClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Instantaneous case-insensitive client-side filter
-  const filteredEmployees = initialEmployees.filter(
-    (employee) =>
-      employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      employee.email.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  // Instantaneous case-insensitive client-side filter (Name, Email, or Department)
+  const filteredEmployees = initialEmployees.filter((employee) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      employee.name.toLowerCase().includes(query) ||
+      employee.email.toLowerCase().includes(query) ||
+      employee.department?.toLowerCase().includes(query)
+    );
+  });
 
+  // Case-insensitive status match to handle 'Active' vs 'active' from PostgreSQL
   const activeCount = initialEmployees.filter(
-    (e) => e.status === "active",
+    (e) => e.status?.toLowerCase() === "active",
   ).length;
 
   return (
@@ -68,14 +72,15 @@ export function EmployeeSearchListClient({
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search employees by name or email..."
-          className="block w-full pl-10 pr-10 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+          placeholder="Search by name, email, or department..."
+          className="block w-full pl-10 pr-10 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-xs"
         />
         {searchQuery && (
           <button
             type="button"
             onClick={() => setSearchQuery("")}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+            aria-label="Clear search input"
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
           >
             <svg
               className="h-4 w-4"
@@ -102,10 +107,10 @@ export function EmployeeSearchListClient({
           </p>
         </div>
       ) : (
-        <div className="divide-y divide-slate-100 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="divide-y divide-slate-100 bg-white rounded-2xl border border-slate-100 shadow-xs overflow-hidden">
           {filteredEmployees.map((employee) => {
             const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.name)}&background=f1f5f9&color=64748b`;
-            const isActive = employee.status === "active";
+            const isActive = employee.status?.toLowerCase() === "active";
 
             return (
               <div
@@ -131,7 +136,7 @@ export function EmployeeSearchListClient({
                       <h2 className="text-sm font-bold text-slate-900 tracking-tight truncate">
                         {employee.name}
                       </h2>
-                      {employee.role === "admin" && (
+                      {employee.role?.toLowerCase() === "admin" && (
                         <span className="px-1.5 py-0.5 text-[9px] font-extrabold tracking-wider uppercase bg-rose-50 text-rose-600 rounded border border-rose-100 shrink-0">
                           Admin
                         </span>

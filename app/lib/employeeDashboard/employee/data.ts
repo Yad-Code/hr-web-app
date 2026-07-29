@@ -11,6 +11,7 @@ export interface Employee {
   image_url: string | null;
   status: "active" | "offline";
   last_seen_text: string;
+  department?: string;
 }
 
 export interface PendingRequest {
@@ -78,7 +79,7 @@ export async function getProfileData(email: string) {
 export async function fetchEmployeeStatusList(): Promise<Employee[]> {
   try {
     const rows = await sql`
-      SELECT id, name, email, role, image_url, last_seen_at
+      SELECT id, name, email, role, image_url, last_seen_at, department
       FROM users
       ORDER BY name ASC
     `;
@@ -99,6 +100,7 @@ export async function fetchEmployeeStatusList(): Promise<Employee[]> {
         email: row.email,
         role: row.role,
         image_url: row.image_url,
+        department: row.department || "General", // 👈 Added department mapping
         status: isActiveNow ? "active" : "offline",
         last_seen_text: isActiveNow
           ? "Active now"
@@ -211,7 +213,7 @@ export function calculateWorkHours(checkIn: string, checkOut: string): string {
 // Fetch today's attendance record
 export async function getTodayAttendance(
   userId: string,
-  date: string
+  date: string,
 ): Promise<AttendanceRecord | null> {
   try {
     const records = await sql<AttendanceRecord[]>`
@@ -233,7 +235,7 @@ export async function createCheckIn(
   userId: string,
   date: string,
   checkInTime: string,
-  location: "Office" | "Remote" = "Office"
+  location: "Office" | "Remote" = "Office",
 ) {
   try {
     await sql`
@@ -250,7 +252,7 @@ export async function createCheckIn(
 export async function updateCheckOut(
   id: string,
   checkOutTime: string,
-  workHours: string
+  workHours: string,
 ) {
   try {
     await sql`
