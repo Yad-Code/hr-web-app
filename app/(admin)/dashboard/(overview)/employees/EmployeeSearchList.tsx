@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link"; // 👈 1. Import Next.js Link
 import { Employee } from "@/app/lib/employeeDashboard/employee/data";
 
 interface EmployeeSearchListClientProps {
@@ -115,7 +116,7 @@ export function EmployeeSearchListClient({
             return (
               <div
                 key={employee.id}
-                className="flex items-center justify-between p-4 hover:bg-slate-50/40 transition-colors"
+                className="flex items-center justify-between p-4 hover:bg-slate-50/40 transition-colors gap-3"
               >
                 <div className="flex items-center gap-3.5 min-w-0">
                   <div className="relative w-11 h-11 rounded-full shrink-0">
@@ -147,12 +148,25 @@ export function EmployeeSearchListClient({
                     </p>
                   </div>
                 </div>
-                <div className="text-right shrink-0 pl-2">
+
+                {/* 👈 2. Action Area: Last Seen Text + Admin Edit Link */}
+                <div className="flex items-center gap-3 shrink-0 pl-2">
                   <span
-                    className={`text-xs font-semibold ${isActive ? "text-emerald-600" : "text-slate-400 font-medium"}`}
+                    className={`text-xs font-semibold hidden sm:inline ${
+                      isActive
+                        ? "text-emerald-600"
+                        : "text-slate-400 font-medium"
+                    }`}
                   >
                     {employee.last_seen_text}
                   </span>
+
+                  <Link
+                    href={`/admin/employees/${employee.id}`}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all shadow-xs"
+                  >
+                    Edit Profile
+                  </Link>
                 </div>
               </div>
             );

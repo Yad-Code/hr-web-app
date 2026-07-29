@@ -266,3 +266,43 @@ export async function updateCheckOut(
     throw error;
   }
 }
+
+export async function getProfileById(id: string) {
+  try {
+    const users = await sql`
+      SELECT * 
+      FROM users 
+      WHERE id = ${id}::uuid
+    `;
+
+    if (!users[0]) return null;
+
+    const user = users[0];
+
+    return {
+      id: user.id,
+      userId: user.user_id || user.id,
+      employee_id: user.employee_id || user.id.slice(0, 8),
+      name: user.name,
+      preferred_name: user.preferred_name || user.name,
+      department: user.department || "General",
+      branch: user.branch || "Main Branch",
+      date_of_birth: user.date_of_birth || null,
+      age: user.age || null,
+      gender: user.gender || "N/A",
+      nationality: user.nationality || "N/A",
+      marital_status: user.marital_status || "Single",
+      blood_group: user.blood_group || "Unknown",
+      email: user.email,
+      personal_email: user.personal_email || user.email,
+      personal_phone: user.personal_phone || "",
+      current_address: user.current_address || "",
+      role: user.role || "employee",
+      status: user.status || "Active",
+      image_url: user.image_url || null,
+    };
+  } catch (error) {
+    console.error("Failed to fetch employee profile by ID:", error);
+    return null;
+  }
+}
