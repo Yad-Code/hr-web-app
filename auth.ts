@@ -10,7 +10,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const { verifyUserCredentials } = await import("@/app/lib/employee/auth-actions");
+        const { verifyUserCredentials } = await import("@/app/lib/employeeDashboard/employee/auth-actions");
         
         return await verifyUserCredentials(
           credentials.email as string, 

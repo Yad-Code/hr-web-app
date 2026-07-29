@@ -13,6 +13,7 @@ export async function GET() {
     await db`DROP TABLE IF EXISTS performance_notifications`;
     await db`DROP TABLE IF EXISTS self_assessments`;
     await db`DROP TABLE IF EXISTS one_on_one_meetings`;
+
     // new tables
     await db`DROP TABLE IF EXISTS user_feedback`;
     await db`DROP TABLE IF EXISTS user_skills`;
@@ -31,6 +32,10 @@ export async function GET() {
     await db`DROP TABLE IF EXISTS users CASCADE`;
     await db`DROP TYPE IF EXISTS user_role`;
     await db`DROP TYPE IF EXISTS user_status`;
+    await db`DROP TABLE IF EXISTS job_postings`;
+    await db`DROP TABLE IF EXISTS payment_methods`;
+    await db`DROP TABLE IF EXISTS pay_stub_items`;
+    await db`DROP TABLE IF EXISTS pay_stubs`;
     // 2. Create Types & Tables
     await db`CREATE TYPE user_role AS ENUM ('admin', 'employee')`;
 
@@ -283,7 +288,6 @@ CREATE TABLE self_assessments (
     );
     `;
 
-
     //Payroll tables just added.
     await db`
       CREATE TABLE pay_stubs (
@@ -322,6 +326,18 @@ CREATE TABLE self_assessments (
         status VARCHAR(20) DEFAULT 'verified' -- 'pending_verification', 'verified'
 );
     `;
+
+    await db`
+  CREATE TABLE job_postings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(255) NOT NULL,
+    department VARCHAR(100) NOT NULL,
+    type VARCHAR(50) DEFAULT 'Full-time',
+    location VARCHAR(100) DEFAULT 'Remote',
+    status VARCHAR(50) DEFAULT 'Open',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  )
+`;
 
     // 3. Hash Passwords
     const adminPassword = await bcrypt.hash("AdminPass123", 10);
@@ -783,6 +799,13 @@ VALUES
     'Consider documenting architectural decisions earlier so the rest of the team can follow implementation more easily.',
     false
 );
+`;
+
+await db`
+  INSERT INTO job_postings (title, department, type, location, status)
+  VALUES
+    ('Senior Frontend Engineer', 'Software Engineering', 'Full-time', 'Remote', 'Open'),
+    ('Product Designer', 'UI/UX Design', 'Full-time', 'HQ - Sulaymaniyah', 'Open')
 `;
       //----------------------------------
     }

@@ -14,7 +14,7 @@ export default function LoginPage() {
         }}
       />
 
-      <div className="w-full max-w-[440px] z-10 flex flex-col items-center">
+      <div className="w-full max-w-110 z-10 flex flex-col items-center">
         
         {/* App Logo & Header */}
         <div className="flex flex-col items-center mb-6">

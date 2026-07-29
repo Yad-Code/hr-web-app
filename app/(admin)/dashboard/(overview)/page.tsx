@@ -1,22 +1,16 @@
 // app/(admin)/dashboard/page.tsx
 import { Suspense } from "react";
-import { Card } from "@/app/ui/dashboard/cards";
+import AdminCardsWrapper from "@/app/ui/dashboard/cards-wrapper"; // Import the new wrapper
 import { RetentionEngagementChart } from "@/app/ui/dashboard/line-chart";
 import { QuickOperationsWidget } from "@/app/ui/dashboard/quick-operations";
 import { lusitana } from "@/app/ui/fonts";
 import {
   RetentionEngagementChartSkeleton,
   EmployeeActivitySkeleton,
+  CardsGridSkeleton,
 } from "@/app/ui/skeletons";
 
 export default async function Page() {
-  const titles = [
-    "Total HeadCount",
-    "Open Positions",
-    "Pending Requests",
-    "Avg. Attendance Rate",
-  ];
-
   return (
     <main className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-fadeIn">
       {/* Admin Dashboard Header */}
@@ -32,49 +26,9 @@ export default async function Page() {
       </div>
 
       {/* Top Summary Cards Grid */}
-      <Suspense>
-        <div className="grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-          <Card
-            title={titles[0]}
-            value="247"
-            type="users"
-            trend={
-              <span className="text-emerald-600 font-semibold text-xs">
-                +4.5% This month
-              </span>
-            }
-          />
-          <Card
-            title={titles[1]}
-            value="18"
-            type="positions"
-            trend={
-              <span className="text-emerald-600 font-semibold text-xs">
-                +2 This month
-              </span>
-            }
-          />
-          <Card
-            title={titles[2]}
-            value="34"
-            type="pending"
-            trend={
-              <span className="text-emerald-600 font-semibold text-xs">
-                +9 Pending
-              </span>
-            }
-          />
-          <Card
-            title={titles[3]}
-            value="48"
-            type="attendance"
-            trend={
-              <span className="text-emerald-600 font-semibold text-xs">
-                +3% This Season
-              </span>
-            }
-          />
-        </div>
+      {/* The Suspense boundary now correctly waits for the DB queries to finish */}
+      <Suspense fallback={<CardsGridSkeleton />}>
+        <AdminCardsWrapper />
       </Suspense>
 
       {/* Main Analytics & Operations Content Layout */}

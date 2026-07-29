@@ -1,6 +1,6 @@
 // app/my-profile/performance/page.tsx
-import { getCurrentUserId } from "@/app/lib/performance/actions/utils";
-import { getPerformanceDashboard } from "@/app/lib/performance/data";
+import { getCurrentUserId } from "@/app/lib/employeeDashboard/performance/actions/utils";
+import { getPerformanceDashboard } from "@/app/lib/employeeDashboard/performance/data";
 import PerformanceDashboard from "@/app/ui/employee/performance/performance-dashboard";
 
 export default async function PerformancePage() {
