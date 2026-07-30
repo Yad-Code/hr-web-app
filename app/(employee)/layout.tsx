@@ -1,5 +1,5 @@
 import SideNav from "../ui/dashboard/sidnav";
-import { TopNavbar } from "@/app/ui/dashboard/top-navbar";
+import { TopNavbar } from "@/app/ui/employee/top-navbar";
 import { auth } from "@/auth"; // 👈 Pull sessions securely via Auth.js
 
 export default async function Layout({ children }: { children: React.ReactNode }) {
