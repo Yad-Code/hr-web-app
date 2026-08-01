@@ -153,7 +153,9 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
             tracking.
           </p>
         </div>
-        <AttendanceHeaderActions logs={dailyLogs} />
+
+        {/* Pass the targetDate prop here! */}
+        <AttendanceHeaderActions logs={dailyLogs} targetDate={targetDate} />
       </div>
 
       <AttendanceKpiCards stats={kpis} />
