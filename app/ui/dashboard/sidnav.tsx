@@ -17,7 +17,7 @@ export default async function SideNav({ role }: SideNavProps) {
           </div>
           <div className="text-left leading-tight">
             <h2 className="text-base font-bold text-slate-900 tracking-tight">
-              Razga
+              Comp
             </h2>
             <p className="text-xs font-medium text-slate-400">
               HR Operations Suite

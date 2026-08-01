@@ -72,12 +72,12 @@ const links = {
       href: "/my-profile/attendance",
       icon: Clock,
     },
-    {
-      name: "My Requests",
-      sub: "Leave & WFH applications",
-      href: "/my-profile/requests",
-      icon: FileCheck2,
-    },
+    // {
+    //   name: "My Requests",
+    //   sub: "Leave & WFH applications",
+    //   href: "/my-profile/requests",
+    //   icon: FileCheck2,
+    // },
     {
       name: "My Performance",
       sub: "KPIs & past reviews",

@@ -55,7 +55,6 @@ export default async function AdminPerformancePage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8">
-      {/* Header Banner */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
           Performance & Talent Management
@@ -65,18 +64,14 @@ export default async function AdminPerformancePage() {
         </p>
       </div>
 
-      {/* KPI Cards Grid Component */}
       <PerformanceKpiCards stats={kpiStats} />
 
-      {/* Main Grid Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column (2 spans): Reviews & Goals */}
         <div className="lg:col-span-2 space-y-8">
           <RecentReviewsList reviews={recentReviews} />
           <GoalTrackerList goals={teamGoals} />
         </div>
 
-        {/* Right Column (1 span): 1-on-1s */}
         <div className="space-y-8">
           <UpcomingSyncsList meetings={upcomingMeetings} />
         </div>

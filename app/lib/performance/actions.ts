@@ -4,9 +4,6 @@
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { revalidatePath } from "next/cache";
 
-/**
- * 1. Create a new goal for an employee
- */
 export async function createEmployeeGoal(formData: FormData) {
   const userId = formData.get("user_id") as string;
   const title = formData.get("title") as string;
