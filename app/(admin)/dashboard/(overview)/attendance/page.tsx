@@ -11,9 +11,44 @@ import { LeaveRequestsList } from "./_components/leave-requests-list";
 import { AttendanceHeaderActions } from "./_components/attendance-header-actions";
 import { ShiftRulesCard } from "./_components/shift-rules-card";
 
-export default async function AdminAttendancePage() {
-  // Target date aligned with seeded attendance records
-  const targetDate = "2026-07-21";
+interface PageProps {
+  searchParams: Promise<{ date?: string }>;
+}
+
+// Explicit database row types to avoid 'any'
+interface AttendanceDbRow {
+  id: string;
+  employee_name: string;
+  department: string;
+  image_url: string | null;
+  status: "Present" | "Late" | "Absent" | "On Leave";
+  check_in: string | null;
+  check_out: string | null;
+  work_hours: string | null;
+}
+
+interface LeaveRequestDbRow {
+  id: string;
+  employee_name: string;
+  image_url: string | null;
+  leave_type: string;
+  start_date: string;
+  end_date: string;
+  days: number;
+  status: string;
+}
+
+interface ShiftDbRow {
+  shift_type: string;
+  shift_start: string;
+  shift_end: string;
+}
+
+export default async function AdminAttendancePage({ searchParams }: PageProps) {
+  const resolvedParams = await searchParams;
+
+  // Fallback to seeded date if no date query param is provided
+  const targetDate = resolvedParams.date || "2026-07-21";
 
   // 1. Fetch Total Employees Count
   const [totalResult] = await db`
@@ -21,8 +56,8 @@ export default async function AdminAttendancePage() {
   `;
   const totalEmployees = totalResult?.count || 0;
 
-  // 2. Fetch Daily Attendance Logs for the target date
-  const attendanceRows = await db`
+  // 2. Fetch Daily Attendance Logs for the selected target date
+  const attendanceRows = (await db`
     SELECT 
       a.id,
       u.name AS employee_name,
@@ -35,9 +70,9 @@ export default async function AdminAttendancePage() {
     FROM attendance a
     JOIN users u ON a.user_id = u.id
     WHERE a.date = ${targetDate}
-  `;
+  `) as unknown as AttendanceDbRow[];
 
-  const dailyLogs: DailyAttendanceRow[] = attendanceRows.map((row: any) => ({
+  const dailyLogs: DailyAttendanceRow[] = attendanceRows.map((row) => ({
     id: row.id,
     employeeName: row.employee_name,
     department: row.department,
@@ -48,7 +83,7 @@ export default async function AdminAttendancePage() {
     workHours: row.work_hours,
   }));
 
-  // Calculate live KPIs from fetched records
+  // Calculate live KPIs based on fetched records
   const presentToday = dailyLogs.filter((l) => l.status === "Present").length;
   const lateToday = dailyLogs.filter((l) => l.status === "Late").length;
   const absentToday = dailyLogs.filter((l) => l.status === "Absent").length;
@@ -62,41 +97,43 @@ export default async function AdminAttendancePage() {
     onLeaveToday,
   };
 
-  // 3. Fetch Time-Off/Leave Requests from the requests table
-  const requestRows = await db`
+  // 3. Fetch Leave Requests from database
+  const requestRows = (await db`
     SELECT 
       r.id,
       u.name AS employee_name,
       u.image_url,
-      r.type,
-      r.description,
+      r.leave_type,
+      r.start_date,
+      r.end_date,
+      r.days,
       r.status
-    FROM requests r
-    JOIN users u ON r.employee_id = u.id
-  `;
+    FROM leave_requests r
+    JOIN users u ON r.user_id = u.id
+  `) as unknown as LeaveRequestDbRow[];
 
-  const leaveRequests: LeaveRequestRow[] = requestRows.map((row: any) => ({
+  const leaveRequests: LeaveRequestRow[] = requestRows.map((row) => ({
     id: row.id,
     employeeName: row.employee_name,
     imageUrl: row.image_url,
-    leaveType: row.type === "time-off" ? "Annual Vacation" : row.type,
-    startDate: "Jul 28",
-    endDate: "Jul 30",
-    days: 2,
+    leaveType: row.leave_type,
+    startDate: row.start_date,
+    endDate: row.end_date,
+    days: row.days,
     status: (row.status.charAt(0).toUpperCase() + row.status.slice(1)) as
       | "Pending"
       | "Approved"
       | "Rejected",
   }));
 
-  // 4. Fetch dynamic shift configurations from employee records
-  const shiftRows = await db`
+  // 4. Fetch Shift Configurations
+  const shiftRows = (await db`
     SELECT DISTINCT shift_type, shift_start, shift_end 
     FROM users 
     WHERE role = 'employee'
-  `;
+  `) as unknown as ShiftDbRow[];
 
-  const shifts: ShiftRule[] = shiftRows.map((row: any, index: number) => ({
+  const shifts: ShiftRule[] = shiftRows.map((row, index) => ({
     id: `s_${index + 1}`,
     shiftName: row.shift_type,
     startTime: row.shift_start,
@@ -106,7 +143,6 @@ export default async function AdminAttendancePage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 bg-slate-50/50 dark:bg-transparent min-h-screen">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
@@ -120,10 +156,8 @@ export default async function AdminAttendancePage() {
         <AttendanceHeaderActions logs={dailyLogs} />
       </div>
 
-      {/* KPI Overviews */}
       <AttendanceKpiCards stats={kpis} />
 
-      {/* Main Layout Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8 h-full">
           <DailyAttendanceTable logs={dailyLogs} />

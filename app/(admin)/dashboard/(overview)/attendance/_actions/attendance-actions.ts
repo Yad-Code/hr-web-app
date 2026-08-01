@@ -14,13 +14,13 @@ export async function overrideAttendanceRecord(formData: FormData) {
       return { success: false, error: "Record ID is missing." };
     }
 
+    // Fixed: Target the correct 'attendance' table and column names from the seed schema
     await db`
-      UPDATE daily_attendance
+      UPDATE attendance
       SET 
         status = ${status},
-        check_in_time = ${checkInTime || null},
-        check_out_time = ${checkOutTime || null},
-        updated_at = NOW()
+        check_in = ${checkInTime || null},
+        check_out = ${checkOutTime || null}
       WHERE id = ${recordId}
     `;
 
