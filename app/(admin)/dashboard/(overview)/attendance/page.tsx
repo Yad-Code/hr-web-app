@@ -46,9 +46,10 @@ interface ShiftDbRow {
 
 export default async function AdminAttendancePage({ searchParams }: PageProps) {
   const resolvedParams = await searchParams;
+  const todayString = new Date().toISOString().split("T")[0];
 
   // Fallback to seeded date if no date query param is provided
-  const targetDate = resolvedParams.date || "2026-07-21";
+  const targetDate = resolvedParams.date || todayString;
 
   // 1. Fetch Total Employees Count
   const [totalResult] = await db`
