@@ -203,7 +203,7 @@ export function TopNavbar({ user }: TopNavbarProps) {
               </div>
 
               {/* List Content */}
-              <div className="max-h-[320px] overflow-y-auto divide-y divide-slate-100">
+              <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
                 {isLoading ? (
                   <div className="p-8 flex items-center justify-center text-slate-400 gap-2 text-xs">
                     <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
