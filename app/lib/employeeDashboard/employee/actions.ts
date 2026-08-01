@@ -392,3 +392,121 @@ export async function submitWFHRequest(formData: FormData) {
     return { success: false, error: "Could not submit leave request." };
   }
 }
+
+
+export async function approveLeaveRequest(requestId: string) {
+  try {
+    // 1. Fetch the request details from leave_requests
+    const requests = await sql`
+      SELECT id, user_id, type, leave_category, total_days, hours, status 
+      FROM leave_requests 
+      WHERE id = ${requestId}
+    `;
+
+    if (!requests || requests.length === 0) {
+      return { success: false, error: "Request not found." };
+    }
+
+    const request = requests[0];
+
+    // Guard against approving requests that are already processed
+    if (request.status !== "Pending") {
+      return {
+        success: false,
+        error: `Request has already been ${request.status.toLowerCase()}.`,
+      };
+    }
+
+    const { user_id, type, leave_category, total_days, hours } = request;
+
+    // 2. Perform deductions based on request type
+    if (type === "dayoff") {
+      if (leave_category === "annual") {
+        const [balance] = await sql`
+          SELECT annual_remaining FROM leave_balances WHERE user_id = ${user_id}
+        `;
+
+        if (balance && balance.annual_remaining < total_days) {
+          return {
+            success: false,
+            error: `Employee has insufficient Annual Leave balance (${balance.annual_remaining} left).`,
+          };
+        }
+
+        await sql`
+          UPDATE leave_balances 
+          SET annual_remaining = annual_remaining - ${total_days}
+          WHERE user_id = ${user_id}
+        `;
+      } else if (leave_category === "sick") {
+        const [balance] = await sql`
+          SELECT sick_remaining FROM leave_balances WHERE user_id = ${user_id}
+        `;
+
+        if (balance && balance.sick_remaining < total_days) {
+          return {
+            success: false,
+            error: `Employee has insufficient Sick Leave balance (${balance.sick_remaining} left).`,
+          };
+        }
+
+        await sql`
+          UPDATE leave_balances 
+          SET sick_remaining = sick_remaining - ${total_days}
+          WHERE user_id = ${user_id}
+        `;
+      }
+      // 'unpaid' category requires no balance deduction
+    } else if (type === "timeoff") {
+      const [balance] = await sql`
+        SELECT monthly_remaining_hours FROM leave_balances WHERE user_id = ${user_id}
+      `;
+
+      if (balance && balance.monthly_remaining_hours < hours) {
+        return {
+          success: false,
+          error: `Employee has insufficient monthly hours remaining (${balance.monthly_remaining_hours} hrs left).`,
+        };
+      }
+
+      await sql`
+        UPDATE leave_balances 
+        SET monthly_remaining_hours = monthly_remaining_hours - ${hours}
+        WHERE user_id = ${user_id}
+      `;
+    }
+    // WFH & Shift Exchange require no balance deductions
+
+    // 3. Mark request as Approved
+    await sql`
+      UPDATE leave_requests 
+      SET status = 'Approved', updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${requestId}
+    `;
+
+    // 4. Revalidate cache for both Admin and Employee views
+    revalidatePath("/dashboard");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error approving leave request:", error);
+    return { success: false, error: "Failed to approve request." };
+  }
+}
+
+export async function rejectLeaveRequest(requestId: string) {
+  try {
+    await sql`
+      UPDATE leave_requests 
+      SET status = 'Rejected', updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${requestId}
+    `;
+
+    revalidatePath("/dashboard");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error rejecting leave request:", error);
+    return { success: false, error: "Failed to decline request." };
+  }
+}

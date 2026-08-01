@@ -31,10 +31,10 @@ interface LeaveRequestDbRow {
   id: string;
   employee_name: string;
   image_url: string | null;
-  leave_type: string;
+  type: string; // Changed from leave_type
   start_date: string;
   end_date: string;
-  days: number;
+  total_days: number; // Changed from days
   status: string;
 }
 
@@ -97,16 +97,16 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
     onLeaveToday,
   };
 
-  // 3. Fetch Leave Requests from database
+  // Fetch Leave Requests from database
   const requestRows = (await db`
     SELECT 
       r.id,
       u.name AS employee_name,
       u.image_url,
-      r.leave_type,
+      r.type,        
       r.start_date,
       r.end_date,
-      r.days,
+      r.total_days,     
       r.status
     FROM leave_requests r
     JOIN users u ON r.user_id = u.id
@@ -116,10 +116,10 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
     id: row.id,
     employeeName: row.employee_name,
     imageUrl: row.image_url,
-    leaveType: row.leave_type,
+    leaveType: row.type,
     startDate: row.start_date,
     endDate: row.end_date,
-    days: row.days,
+    days: row.total_days,
     status: (row.status.charAt(0).toUpperCase() + row.status.slice(1)) as
       | "Pending"
       | "Approved"

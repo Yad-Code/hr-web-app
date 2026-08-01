@@ -10,12 +10,13 @@ export default async function AdminCardsWrapper() {
     pendingRequestsResult,
     attendanceResult,
   ] = await Promise.all([
+    // Optional: Add `WHERE role = 'employee'` if you don't want admins in headcount
     db`SELECT COUNT(*) FROM users`,
     db`SELECT COUNT(*) FROM job_postings WHERE status = 'Open'`,
-    db`SELECT 
-        (SELECT COUNT(*) FROM requests WHERE LOWER(status) = 'pending') + 
-        (SELECT COUNT(*) FROM wfh_requests WHERE LOWER(status) = 'pending') 
-       AS total`,
+
+    // Updated: Replaces the old two-table subquery with the new leave_requests table
+    db`SELECT COUNT(*) as total FROM leave_requests WHERE status ILIKE 'pending'`,
+
     db`SELECT AVG(attendance) as average FROM performance_history`,
   ]);
 
@@ -23,7 +24,7 @@ export default async function AdminCardsWrapper() {
   const headcount = headcountResult[0].count;
   const openPositions = openPositionsResult[0].count;
   const pendingRequests = pendingRequestsResult[0].total;
-  
+
   // Round the average attendance to a clean whole number percentage
   const avgAttendance = Math.round(Number(attendanceResult[0].average)) || 0;
 
@@ -35,7 +36,7 @@ export default async function AdminCardsWrapper() {
         type="users"
         trend={
           <span className="text-emerald-600 font-semibold text-xs">
-            +4.5% This month
+            {headcount > 0 ? `+${headcount} Employees` : "No Employees Found"}
           </span>
         }
       />
@@ -45,7 +46,9 @@ export default async function AdminCardsWrapper() {
         type="positions"
         trend={
           <span className="text-slate-500 font-semibold text-xs">
-            Updated just now
+            {openPositions > 0
+              ? `${openPositions} Open Positions`
+              : "No Open Positions"}
           </span>
         }
       />
@@ -55,7 +58,9 @@ export default async function AdminCardsWrapper() {
         type="pending"
         trend={
           <span className="text-amber-600 font-semibold text-xs">
-            Needs attention
+            {pendingRequests > 0
+              ? `+${pendingRequests} Pending`
+              : "No Pending Requests"}
           </span>
         }
       />
@@ -65,7 +70,9 @@ export default async function AdminCardsWrapper() {
         type="attendance"
         trend={
           <span className="text-emerald-600 font-semibold text-xs">
-            +3% This Season
+            {avgAttendance > 0
+              ? `+${avgAttendance}% This month`
+              : "No Attendance Data"}
           </span>
         }
       />

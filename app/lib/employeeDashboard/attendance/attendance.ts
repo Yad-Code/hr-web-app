@@ -52,7 +52,6 @@ export async function getAttendanceData(
   const currentYearNum = now.getFullYear();
 
   try {
-    // If no userId provided, return sensible defaults
     if (!userId) {
       return getFallbackAttendanceData(currentMonthName, currentYearNum);
     }
@@ -75,7 +74,16 @@ export async function getAttendanceData(
       LIMIT 30
     `;
 
+    // 3. Fetch real leave balances
+    const balanceLogs = await sql`
+      SELECT annual_total, annual_remaining, sick_total, sick_remaining, monthly_total_hours, monthly_remaining_hours
+      FROM leave_balances
+      WHERE user_id = ${userId}
+      LIMIT 1
+    `;
+
     const todayRecord = todayLogs[0];
+    const balanceRecord = balanceLogs[0];
 
     return {
       today: {
@@ -92,13 +100,14 @@ export async function getAttendanceData(
         lateArrivals: monthlyLogs.filter((l) => l.status === "Late").length,
         totalHoursLogged: 168,
       },
+      // Now using live database values with fallbacks
       leaveBalance: {
-        annualRemaining: 12,
-        annualTotal: 18,
-        sickRemaining: 5,
-        sickTotal: 10,
-        monthlyTotalHours: 16, // Added
-        monthlyRemainingHours: 12, // Added (adjust query here when DB logic is ready)
+        annualRemaining: balanceRecord?.annual_remaining ?? 0,
+        annualTotal: balanceRecord?.annual_total ?? 20,
+        sickRemaining: balanceRecord?.sick_remaining ?? 0,
+        sickTotal: balanceRecord?.sick_total ?? 10,
+        monthlyTotalHours: balanceRecord?.monthly_total_hours ?? 16,
+        monthlyRemainingHours: balanceRecord?.monthly_remaining_hours ?? 0,
       },
       currentMonth: currentMonthName,
       currentYear: currentYearNum,
