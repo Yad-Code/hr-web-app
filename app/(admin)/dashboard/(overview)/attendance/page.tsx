@@ -6,6 +6,7 @@ import {
 import { AttendanceKpiCards } from "./_components/attendance-kpi-cards";
 import { DailyAttendanceTable } from "./_components/daily-attendance-table";
 import { LeaveRequestsList } from "./_components/leave-requests-list";
+import { AttendanceHeaderActions } from "./_components/attendance-header-actions";
 
 export default async function AdminAttendancePage() {
   // TODO: Replace with actual PostgreSQL queries using your sql tag
@@ -87,15 +88,20 @@ export default async function AdminAttendancePage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 bg-slate-50/50 dark:bg-transparent min-h-screen">
-      {/* Header Banner */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-          Time & Attendance
-        </h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
-          Monitor daily workforce availability and manage time-off requests
-          across Yad Corp.
-        </p>
+      {/* Header Banner with Interactive Client Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+            Time & Attendance
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
+            Monitor daily workforce availability and manage time-off requests
+            across Yad Corp.
+          </p>
+        </div>
+
+        {/* Client Component for Date Picker & Export */}
+        <AttendanceHeaderActions logs={mockDailyLogs} />
       </div>
 
       {/* KPI Overviews */}
@@ -104,7 +110,8 @@ export default async function AdminAttendancePage() {
       {/* Main Layout Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column (Log Table) */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className="lg:col-span-2 space-y-8 h-full">
+          {/* Client Component Table with Built-in Search & Filters */}
           <DailyAttendanceTable logs={mockDailyLogs} />
         </div>
 

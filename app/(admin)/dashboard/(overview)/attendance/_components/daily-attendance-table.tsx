@@ -1,6 +1,22 @@
+"use client";
+
+import { useState } from "react";
+import { Search, Filter } from "lucide-react";
 import { DailyAttendanceRow } from "../types";
 
 export function DailyAttendanceTable({ logs }: { logs: DailyAttendanceRow[] }) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+
+  // Apply Search & Filter logic
+  const filteredLogs = logs.filter((log) => {
+    const matchesSearch =
+      log.employeeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.department.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === "All" || log.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
   const getStatusStyles = (status: DailyAttendanceRow["status"]) => {
     switch (status) {
       case "Present":
@@ -17,14 +33,46 @@ export function DailyAttendanceTable({ logs }: { logs: DailyAttendanceRow[] }) {
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden">
-      <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
-        <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-          Todays Activity Log
+    <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden flex flex-col h-full">
+      {/* Top Bar: Search & Filters */}
+      <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
+          Activity Log
         </h2>
+
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          {/* Search Bar */}
+          <div className="relative w-full sm:w-64">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search employee..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-md text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#009473] focus:ring-1 focus:ring-[#009473] transition"
+            />
+          </div>
+
+          {/* Status Filter */}
+          <div className="relative">
+            <Filter className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="pl-8 pr-8 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-md text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus:border-[#009473] appearance-none cursor-pointer"
+            >
+              <option value="All">All Statuses</option>
+              <option value="Present">Present</option>
+              <option value="Late">Late</option>
+              <option value="Absent">Absent</option>
+              <option value="On Leave">On Leave</option>
+            </select>
+          </div>
+        </div>
       </div>
 
-      <div className="overflow-x-auto">
+      {/* Table Content */}
+      <div className="overflow-x-auto flex-1">
         <table className="w-full text-left text-sm whitespace-nowrap">
           <thead className="bg-slate-50/50 dark:bg-slate-800/50 text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800">
             <tr>
@@ -36,47 +84,58 @@ export function DailyAttendanceTable({ logs }: { logs: DailyAttendanceRow[] }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-            {logs.map((log) => (
-              <tr
-                key={log.id}
-                className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition"
-              >
-                <td className="px-4 py-3 flex items-center gap-3">
-                  <img
-                    src={
-                      log.imageUrl ||
-                      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
-                    }
-                    alt={log.employeeName}
-                    className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700"
-                  />
-                  <div>
-                    <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                      {log.employeeName}
-                    </p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                      {log.department}
-                    </p>
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`px-2 py-1 rounded-md text-[10px] font-bold border ${getStatusStyles(log.status)}`}
-                  >
-                    {log.status}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-300">
-                  {log.checkInTime || "--:--"}
-                </td>
-                <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-300">
-                  {log.checkOutTime || "--:--"}
-                </td>
-                <td className="px-4 py-3 text-xs font-medium text-slate-900 dark:text-slate-100 text-right">
-                  {log.workHours || "-"}
+            {filteredLogs.length > 0 ? (
+              filteredLogs.map((log) => (
+                <tr
+                  key={log.id}
+                  className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition"
+                >
+                  <td className="px-4 py-3 flex items-center gap-3">
+                    <img
+                      src={
+                        log.imageUrl ||
+                        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
+                      }
+                      alt={log.employeeName}
+                      className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700"
+                    />
+                    <div>
+                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                        {log.employeeName}
+                      </p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                        {log.department}
+                      </p>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`px-2 py-1 rounded-md text-[10px] font-bold border ${getStatusStyles(log.status)}`}
+                    >
+                      {log.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-300">
+                    {log.checkInTime || "--:--"}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-300">
+                    {log.checkOutTime || "--:--"}
+                  </td>
+                  <td className="px-4 py-3 text-xs font-medium text-slate-900 dark:text-slate-100 text-right">
+                    {log.workHours || "-"}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="px-4 py-12 text-center text-xs text-slate-400"
+                >
+                  No records match your search criteria.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
