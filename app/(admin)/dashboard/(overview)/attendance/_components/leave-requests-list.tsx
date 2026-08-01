@@ -71,9 +71,16 @@ export function LeaveRequestsList({
 
                 <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700/50">
                   <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
-                    {request.startDate} - {request.endDate}
+                    {new Date(request.startDate).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                    {" - "}
+                    {new Date(request.endDate).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}
                   </span>
-
                   <div className="flex gap-1.5">
                     {/* Reject Button */}
                     <button
