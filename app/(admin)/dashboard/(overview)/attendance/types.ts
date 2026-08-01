@@ -15,6 +15,7 @@ export interface DailyAttendanceRow {
   checkInTime: string | null;
   checkOutTime: string | null;
   workHours: string | null;
+  shiftName?: string;
 }
 
 export interface LeaveRequestRow {
@@ -25,5 +26,13 @@ export interface LeaveRequestRow {
   startDate: string;
   endDate: string;
   days: number;
-  status: "Pending";
+  status: "Pending" | "Approved" | "Rejected";
+}
+
+export interface ShiftRule {
+  id: string;
+  shiftName: string;
+  startTime: string;
+  endTime: string;
+  gracePeriodMinutes: number;
 }

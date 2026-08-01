@@ -36,6 +36,12 @@ export async function GET() {
     await db`DROP TABLE IF EXISTS payment_methods`;
     await db`DROP TABLE IF EXISTS pay_stub_items`;
     await db`DROP TABLE IF EXISTS pay_stubs`;
+
+    //ADMIN Time and Attendance tables
+    await db`DROP TABLE IF EXISTS leave_requests`;
+    await db`DROP TABLE IF EXISTS daily_attendance`;
+    await db`DROP TABLE IF EXISTS shift_rules`;
+
     // 2. Create Types & Tables
     await db`CREATE TYPE user_role AS ENUM ('admin', 'employee')`;
 
@@ -394,6 +400,40 @@ CREATE TABLE self_assessments (
         )
       RETURNING id, role, name;
     `;
+
+    //ADMIN: Time and Attendance Tables
+
+    await db`
+  CREATE TABLE leave_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    leave_type VARCHAR(100) NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    days INT NOT NULL,
+    status VARCHAR(50) DEFAULT 'Pending' NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  )
+`;
+
+    await db`
+  CREATE TABLE shift_rules (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    shift_name VARCHAR(100) NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    grace_period_minutes INT DEFAULT 15 NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  )
+`;
+
+    await db`
+  INSERT INTO shift_rules (shift_name, start_time, end_time, grace_period_minutes)
+  VALUES 
+    ('Standard Shift (GMT+3)', '09:00:00', '17:00:00', 15),
+    ('Engineering Flex', '10:00:00', '18:00:00', 30)
+`;
 
     // 5. Seed Leave Balances, Schedules, Requests, Attendance & Performance
 
@@ -801,7 +841,7 @@ VALUES
 );
 `;
 
-await db`
+      await db`
   INSERT INTO job_postings (title, department, type, location, status)
   VALUES
     ('Senior Frontend Engineer', 'Software Engineering', 'Full-time', 'Remote', 'Open'),
