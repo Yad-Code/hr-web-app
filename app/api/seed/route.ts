@@ -448,8 +448,24 @@ CREATE TABLE self_assessments (
     for (const emp of employees) {
       // Basic HR Data for all employees
       await db`
-        INSERT INTO leave_balances (user_id, annual_total, annual_remaining, sick_total, sick_remaining)
-        VALUES (${emp.id}, 20, 14, 10, 8)
+        INSERT INTO leave_balances (
+          user_id, 
+          annual_total, 
+          annual_remaining, 
+          sick_total, 
+          sick_remaining,
+          monthly_total_hours,
+          monthly_remaining_hours
+        )
+        VALUES (
+          ${emp.id}, 
+          20, 
+          14, 
+          10, 
+          8,
+          16,
+          16
+        );
       `;
 
       // Specific Data just for your test user

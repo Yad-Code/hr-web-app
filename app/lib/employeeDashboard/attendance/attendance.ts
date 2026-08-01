@@ -23,6 +23,8 @@ export interface AttendanceData {
     annualTotal: number;
     sickRemaining: number;
     sickTotal: number;
+    monthlyTotalHours: number; // Added
+    monthlyRemainingHours: number; // Added
   };
   currentMonth: string;
   currentYear: number;
@@ -42,7 +44,9 @@ export interface AttendanceData {
   }>;
 }
 
-export async function getAttendanceData(userId?: string): Promise<AttendanceData> {
+export async function getAttendanceData(
+  userId?: string,
+): Promise<AttendanceData> {
   const now = new Date();
   const currentMonthName = now.toLocaleString("default", { month: "long" });
   const currentYearNum = now.getFullYear();
@@ -93,10 +97,12 @@ export async function getAttendanceData(userId?: string): Promise<AttendanceData
         annualTotal: 18,
         sickRemaining: 5,
         sickTotal: 10,
+        monthlyTotalHours: 16, // Added
+        monthlyRemainingHours: 12, // Added (adjust query here when DB logic is ready)
       },
       currentMonth: currentMonthName,
       currentYear: currentYearNum,
-      calendarDays: [], // Populate with calendar grid mapping if needed
+      calendarDays: [],
       attendanceLog: monthlyLogs.map((log) => ({
         id: log.id,
         date: new Date(log.date).toLocaleDateString("en-US", {
@@ -117,7 +123,10 @@ export async function getAttendanceData(userId?: string): Promise<AttendanceData
   }
 }
 
-function getFallbackAttendanceData(month: string, year: number): AttendanceData {
+function getFallbackAttendanceData(
+  month: string,
+  year: number,
+): AttendanceData {
   return {
     today: {
       checkIn: "08:55 AM",
@@ -138,6 +147,8 @@ function getFallbackAttendanceData(month: string, year: number): AttendanceData 
       annualTotal: 20,
       sickRemaining: 6,
       sickTotal: 10,
+      monthlyTotalHours: 16, // Added
+      monthlyRemainingHours: 14, // Added
     },
     currentMonth: month,
     currentYear: year,

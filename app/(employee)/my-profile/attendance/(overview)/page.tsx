@@ -1,7 +1,6 @@
-// app/my-profile/attendance/page.tsx (or wherever your attendance page is)
 import { Suspense } from "react";
 import { auth } from "@/auth";
-import { sql } from "@/app/lib/employeeDashboard/employee/db"; // <-- Make sure sql is imported
+import { sql } from "@/app/lib/employeeDashboard/employee/db";
 import { getAttendanceData } from "@/app/lib/employeeDashboard/attendance/attendance";
 import {
   TodayStatusCard,
@@ -10,7 +9,7 @@ import {
   ShiftSummaryCard,
   LeaveBalanceCard,
   AttendanceLogTable,
-  WFHRequestModal,
+  AbsenceRequestModal,
   SectionHeader,
 } from "@/app/ui/employee/my-attendance/my-attendance";
 import {
@@ -48,8 +47,8 @@ async function AttendanceContent({ userId }: { userId: string }) {
       <div className="grid gap-6 grid-cols-1 xl:grid-cols-3">
         <div className="xl:col-span-2">
           <AttendanceCalendar
-            currentMonth="July"
-            currentYear={2026}
+            currentMonth={data.currentMonth || "July"}
+            currentYear={data.currentYear || 2026}
             calendarDays={[]}
           />
         </div>
@@ -64,6 +63,9 @@ async function AttendanceContent({ userId }: { userId: string }) {
         month={data.currentMonth}
         year={data.currentYear}
       />
+
+      {/* Moved inside so it receives the user's fetched leave balances */}
+      <AbsenceRequestModal leaveBalance={data.leaveBalance} />
     </>
   );
 }
@@ -72,7 +74,11 @@ export default async function EmployeeAttendancePage() {
   const session = await auth();
 
   if (!session?.user?.email) {
-    return <div className="p-6 text-center text-slate-500">Unauthorized: Please log in.</div>;
+    return (
+      <div className="p-6 text-center text-slate-500">
+        Unauthorized: Please log in.
+      </div>
+    );
   }
 
   // 1. Resolve actual Postgres UUID using verified email
@@ -81,7 +87,11 @@ export default async function EmployeeAttendancePage() {
   `;
 
   if (!userQuery || userQuery.length === 0) {
-    return <div className="p-6 text-center text-slate-500">User not found in database.</div>;
+    return (
+      <div className="p-6 text-center text-slate-500">
+        User not found in database.
+      </div>
+    );
   }
 
   const dbUserId = userQuery[0].id;
@@ -114,8 +124,6 @@ export default async function EmployeeAttendancePage() {
       >
         <AttendanceContent userId={dbUserId} />
       </Suspense>
-
-      <WFHRequestModal />
     </main>
   );
 }

@@ -2,8 +2,16 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { MapPin, Loader2, X, Plus, ChevronLeft, ChevronRight, Clock} from "lucide-react";
- 
+import {
+  MapPin,
+  Loader2,
+  X,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+} from "lucide-react";
+
 // Import clean types from definitions
 import {
   TodayAttendance,
@@ -13,7 +21,10 @@ import {
   AttendanceLog,
 } from "@/app/lib/employeeDashboard/attendance/definitions";
 
-import { toggleCheckInStatus, submitWFHRequest } from "@/app/lib/employeeDashboard/employee/actions";
+import {
+  toggleCheckInStatus,
+  submitWFHRequest,
+} from "@/app/lib/employeeDashboard/employee/actions";
 
 // ----------------------------------------------------------------------
 // 1. Section Header
@@ -412,6 +423,9 @@ export function ShiftSummaryCard({ data }: { data?: TodayAttendance }) {
 // ----------------------------------------------------------------------
 // 6. Leave Balance Card
 // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// 6. Leave Balance Card
+// ----------------------------------------------------------------------
 export function LeaveBalanceCard({
   leaveBalance,
 }: {
@@ -420,14 +434,24 @@ export function LeaveBalanceCard({
   return (
     <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-xs text-left">
       <h3 className="text-sm font-bold text-slate-900 mb-3">Leave Balances</h3>
-      <div className="space-y-2 text-xs">
-        <div className="flex justify-between text-slate-600">
+      <div className="space-y-3 text-xs">
+        {/* Monthly Time-Off Hours */}
+        <div className="flex justify-between items-center p-2 bg-indigo-50/50 rounded-lg border border-indigo-50">
+          <span className="text-indigo-900 font-medium">Monthly Time-Off</span>
+          <span className="font-bold text-indigo-700">
+            {leaveBalance.monthlyRemainingHours} /{" "}
+            {leaveBalance.monthlyTotalHours} hrs
+          </span>
+        </div>
+
+        {/* Existing Annual and Sick Leaves */}
+        <div className="flex justify-between text-slate-600 px-1">
           <span>Annual Leave</span>
           <span className="font-semibold">
             {leaveBalance.annualRemaining} / {leaveBalance.annualTotal} days
           </span>
         </div>
-        <div className="flex justify-between text-slate-600">
+        <div className="flex justify-between text-slate-600 px-1">
           <span>Sick Leave</span>
           <span className="font-semibold">
             {leaveBalance.sickRemaining} / {leaveBalance.sickTotal} days
@@ -494,15 +518,86 @@ export function AttendanceLogTable({
 }
 
 // ----------------------------------------------------------------------
-// 8. WFH Request Modal
+// 8. Unified Absence & Shift Request Modal (With Balance Validation)
 // ----------------------------------------------------------------------
-export function WFHRequestModal() {
-  const [isOpen, setIsOpen] = useState(false);
+type RequestType = "wfh" | "timeoff" | "dayoff" | "exchange";
+type LeaveCategory = "annual" | "sick" | "unpaid";
+
+export function AbsenceRequestModal({
+      leaveBalance,
+    }: {
+      leaveBalance?: LeaveBalance;
+    }) {
+    const [isOpen, setIsOpen] = useState(false);
+  const [requestType, setRequestType] = useState<RequestType>("wfh");
+  const [leaveCategory, setLeaveCategory] = useState<LeaveCategory>("annual");
+  const [hours, setHours] = useState<number | "">("");
   const [isPending, startTransition] = useTransition();
+
+  // Date states for calculating full day off duration
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
+  // Calculate inclusive number of days between start & end dates
+  const calculateTotalDays = () => {
+    if (!startDate || !endDate) return 0;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = end.getTime() - start.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays > 0 ? diffDays : 0;
+  };
+
+  const totalDays = calculateTotalDays();
+
+  // --------------------------------------------------------------------
+  // Dynamic Balance Validation Helper
+  // --------------------------------------------------------------------
+  const getValidationError = (): string | null => {
+    if (!leaveBalance) return null;
+
+    // 1. Check Monthly Hourly Time-Off
+    if (requestType === "timeoff") {
+      const requestedHours = Number(hours) || 0;
+      if (requestedHours > leaveBalance.monthlyRemainingHours) {
+        return `Requested hours (${requestedHours}h) exceed your remaining monthly balance (${leaveBalance.monthlyRemainingHours}h available).`;
+      }
+    }
+
+    // 2. Check Day Off Balances (Annual / Sick)
+    if (requestType === "dayoff" && totalDays > 0) {
+      if (
+        leaveCategory === "annual" &&
+        totalDays > leaveBalance.annualRemaining
+      ) {
+        return `Requested duration (${totalDays} days) exceeds remaining Annual Leave (${leaveBalance.annualRemaining} days available).`;
+      }
+
+      if (leaveCategory === "sick" && totalDays > leaveBalance.sickRemaining) {
+        return `Requested duration (${totalDays} days) exceeds remaining Sick Leave (${leaveBalance.sickRemaining} days available).`;
+      }
+    }
+
+    return null;
+  };
+
+  const validationError = getValidationError();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Prevent submission if balance is exceeded
+    if (validationError) {
+      return;
+    }
+
     const formData = new FormData(e.currentTarget);
+    formData.append("type", requestType);
+
+    if (requestType === "dayoff") {
+      formData.append("totalDays", totalDays.toString());
+      formData.append("leaveCategory", leaveCategory);
+    }
 
     startTransition(async () => {
       const result = await submitWFHRequest(formData);
@@ -522,17 +617,18 @@ export function WFHRequestModal() {
         className="fixed bottom-6 right-6 flex items-center gap-2 px-4 py-3 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-full shadow-lg transition-all active:scale-95 cursor-pointer z-40"
       >
         <Plus className="w-4 h-4" />
-        Request WFH
+        New Request
       </button>
 
       {isOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl space-y-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-sm font-bold text-slate-900">
-                Request Work From Home
+                Submit Request
               </h3>
               <button
+                type="button"
                 onClick={() => setIsOpen(false)}
                 className="text-slate-400 hover:text-slate-600 cursor-pointer"
               >
@@ -541,21 +637,193 @@ export function WFHRequestModal() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 text-left">
+              {/* Type Selector */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                  Date
+                  Request Type
                 </label>
-                <input
-                  type="date"
-                  name="date"
-                  required
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-indigo-600"
-                />
+                <select
+                  value={requestType}
+                  onChange={(e) =>
+                    setRequestType(e.target.value as RequestType)
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-indigo-600 cursor-pointer bg-white"
+                >
+                  <option value="wfh">Work From Home (WFH)</option>
+                  <option value="dayoff">Full Day Off</option>
+                  <option value="timeoff">Time-Off (Hourly)</option>
+                  <option value="exchange">Shift / Day Exchange</option>
+                </select>
               </div>
 
+              {/* ------------------------------------------------------------- */}
+              {/* FULL DAY OFF                                                  */}
+              {/* ------------------------------------------------------------- */}
+              {requestType === "dayoff" && (
+                <>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                      Leave Category
+                    </label>
+                    <select
+                      value={leaveCategory}
+                      onChange={(e) =>
+                        setLeaveCategory(e.target.value as LeaveCategory)
+                      }
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-indigo-600 cursor-pointer bg-white"
+                    >
+                      <option value="annual">
+                        Annual Leave ({leaveBalance?.annualRemaining ?? 0} days
+                        remaining)
+                      </option>
+                      <option value="sick">
+                        Sick Leave ({leaveBalance?.sickRemaining ?? 0} days
+                        remaining)
+                      </option>
+                      <option value="unpaid">Unpaid Leave</option>
+                    </select>
+                  </div>
+
+                  {/* Date Range Selection */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Start Date
+                      </label>
+                      <input
+                        type="date"
+                        name="startDate"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-indigo-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        End Date
+                      </label>
+                      <input
+                        type="date"
+                        name="endDate"
+                        min={startDate}
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-indigo-600"
+                      />
+                    </div>
+                  </div>
+
+                  {startDate && endDate && totalDays > 0 && (
+                    <div className="p-2.5 bg-indigo-50/60 rounded-xl border border-indigo-100 flex justify-between items-center text-xs">
+                      <span className="text-indigo-900 font-medium">
+                        Total Days Requested
+                      </span>
+                      <span className="font-bold text-indigo-700 bg-indigo-100/70 px-2 py-0.5 rounded-md">
+                        {totalDays} {totalDays === 1 ? "Day" : "Days"}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* ------------------------------------------------------------- */}
+              {/* SHIFT EXCHANGE                                                */}
+              {/* ------------------------------------------------------------- */}
+              {requestType === "exchange" && (
+                <>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                      Original Day Off / Shift Date
+                    </label>
+                    <input
+                      type="date"
+                      name="originalDate"
+                      required
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-indigo-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                      Target Exchange Date
+                    </label>
+                    <input
+                      type="date"
+                      name="exchangeDate"
+                      required
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-indigo-600"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* ------------------------------------------------------------- */}
+              {/* HOURLY TIME-OFF                                               */}
+              {/* ------------------------------------------------------------- */}
+              {requestType === "timeoff" && (
+                <>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      name="date"
+                      required
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-indigo-600"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase">
+                        Hours Requested
+                      </label>
+                      <span className="text-[10px] text-indigo-600 font-semibold">
+                        {leaveBalance?.monthlyRemainingHours ?? 0} hrs available
+                        this month
+                      </span>
+                    </div>
+                    <input
+                      type="number"
+                      name="hours"
+                      min="1"
+                      max="8"
+                      value={hours}
+                      onChange={(e) =>
+                        setHours(
+                          e.target.value === "" ? "" : Number(e.target.value),
+                        )
+                      }
+                      required
+                      placeholder="e.g. 2"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-indigo-600"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* ------------------------------------------------------------- */}
+              {/* WFH                                                           */}
+              {/* ------------------------------------------------------------- */}
+              {requestType === "wfh" && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    name="date"
+                    required
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-indigo-600"
+                  />
+                </div>
+              )}
+
+              {/* Shared Field: Reason */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                  Reason
+                  Reason / Notes
                 </label>
                 <textarea
                   name="reason"
@@ -566,18 +834,26 @@ export function WFHRequestModal() {
                 />
               </div>
 
+              {/* Validation Warning Alert */}
+              {validationError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-medium">
+                  {validationError}
+                </div>
+              )}
+
+              {/* Actions */}
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                  className="px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={isPending}
-                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all disabled:opacity-50 cursor-pointer"
+                  disabled={isPending || Boolean(validationError)}
+                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {isPending && (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />

@@ -1,6 +1,11 @@
 // @/app/lib/definitions/attendance.ts
 
-export type AttendanceStatus = "Present" | "Late" | "Absent" | "On Leave" | "Weekend";
+export type AttendanceStatus =
+  | "Present"
+  | "Late"
+  | "Absent"
+  | "On Leave"
+  | "Weekend";
 
 export interface TodayAttendance {
   status: string;
@@ -23,6 +28,8 @@ export interface LeaveBalance {
   annualRemaining: number;
   sickTotal: number;
   sickRemaining: number;
+  monthlyTotalHours: number;
+  monthlyRemainingHours: number;
 }
 
 export interface CalendarDay {
