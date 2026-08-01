@@ -1,7 +1,7 @@
 // app/(admin)/dashboard/page.tsx
 import { Suspense } from "react";
-import AdminCardsWrapper from "@/app/ui/dashboard/cards-wrapper"; // Import the new wrapper
-import { RetentionEngagementChart } from "@/app/ui/dashboard/line-chart";
+import AdminCardsWrapper from "@/app/ui/dashboard/cards-wrapper";
+import AdminChartWrapper from "@/app/ui/dashboard/chart-wrapper"; // 1. Import the new chart wrapper
 import { QuickOperationsWidget } from "@/app/ui/dashboard/quick-operations";
 import { lusitana } from "@/app/ui/fonts";
 import {
@@ -26,7 +26,6 @@ export default async function Page() {
       </div>
 
       {/* Top Summary Cards Grid */}
-      {/* The Suspense boundary now correctly waits for the DB queries to finish */}
       <Suspense fallback={<CardsGridSkeleton />}>
         <AdminCardsWrapper />
       </Suspense>
@@ -36,7 +35,8 @@ export default async function Page() {
         {/* Retention & Engagement Line Chart Panel */}
         <div className="xl:col-span-2 flex flex-col justify-between w-full">
           <Suspense fallback={<RetentionEngagementChartSkeleton />}>
-            <RetentionEngagementChart />
+            {/* 2. Replace RetentionEngagementChart with the new AdminChartWrapper */}
+            <AdminChartWrapper />
           </Suspense>
         </div>
 
