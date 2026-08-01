@@ -1,8 +1,8 @@
 import { fetchPendingAdminRequests } from "@/app/lib/employeeDashboard/employee/data";
 import { RequestItem } from "./request-items";
 import { EmployeeOperations } from "./employee-operations";
+import { AutoRefresh } from "../employee/my-attendance/auto-refresh"; // Import the client refresher
 
-// 1. Declare the strict shape your RequestItem component requires
 interface PendingRequestType {
   id: string;
   type: string;
@@ -18,14 +18,15 @@ interface QuickOperationsProps {
 }
 
 export async function QuickOperationsWidget({ isAdmin }: QuickOperationsProps) {
-  // 2. Type cast the array response so TypeScript safely tracks the structural properties
-  const pendingRequests = isAdmin 
-    ? (await fetchPendingAdminRequests()) as PendingRequestType[] 
+  const pendingRequests = isAdmin
+    ? ((await fetchPendingAdminRequests()) as PendingRequestType[])
     : [];
 
   return (
-    <div className="bg-white border border-slate-100 rounded-2xl shadow-sm flex flex-col xl:min-h-[420px] w-full overflow-hidden">
-      
+    <div className="bg-white border border-slate-100 rounded-2xl shadow-sm flex flex-col xl:min-h-105 w-full overflow-hidden">
+      {/* 1. Trigger background server refresh every 10 seconds for admins */}
+      {isAdmin && <AutoRefresh intervalMs={10000} />}
+
       {/* Unified Dynamic Header */}
       <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
         <div>
@@ -33,7 +34,9 @@ export async function QuickOperationsWidget({ isAdmin }: QuickOperationsProps) {
             {isAdmin ? "Pending Approvals" : "Quick Operations"}
           </h3>
           <p className="text-[11px] font-medium text-slate-500 mt-0.5">
-            {isAdmin ? "Action required on team requests" : "Submit new requests"}
+            {isAdmin
+              ? "Action required on team requests"
+              : "Submit new requests"}
           </p>
         </div>
         {isAdmin && pendingRequests.length > 0 && (
@@ -54,7 +57,9 @@ export async function QuickOperationsWidget({ isAdmin }: QuickOperationsProps) {
             </div>
             <div>
               <p className="text-sm font-bold text-slate-700">All caught up!</p>
-              <p className="text-xs text-slate-400 mt-1">No pending requests to review.</p>
+              <p className="text-xs text-slate-400 mt-1">
+                No pending requests to review.
+              </p>
             </div>
           </div>
         ) : (

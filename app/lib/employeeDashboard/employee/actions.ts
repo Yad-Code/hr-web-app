@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { put, del } from "@vercel/blob";
-import { z } from "zod"; 
+import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { ActionState } from "./definitions";
 import {
@@ -12,7 +12,7 @@ import {
   getFormattedTime,
   calculateWorkHours,
 } from "@/app/lib/employeeDashboard/employee/data";
-import { sql } from "@/app/lib/employeeDashboard/employee/db";   
+import { sql } from "@/app/lib/employeeDashboard/employee/db";
 
 // ==========================================
 // SCHEMAS & VALIDATION
@@ -249,7 +249,6 @@ export async function toggleCheckInStatus(
 // ==========================================
 // WFH REQUEST ACTION
 // ==========================================
-
 export async function submitWFHRequest(formData: FormData) {
   const session = await auth();
 
@@ -257,15 +256,15 @@ export async function submitWFHRequest(formData: FormData) {
     return { success: false, error: "Unauthorized" };
   }
 
-  const requestDate = formData.get("date") as string;
+  const type = (formData.get("type") as string) || "wfh";
   const reason = formData.get("reason") as string;
 
-  if (!requestDate || !reason) {
-    return { success: false, error: "All fields are required." };
+  if (!reason) {
+    return { success: false, error: "Reason is required." };
   }
 
   try {
-    // Resolve actual Postgres UUID using verified email
+    // 1. Resolve Postgres UUID for current user
     const userQuery = await sql`
       SELECT id FROM users WHERE email = ${session.user.email}
     `;
@@ -276,15 +275,120 @@ export async function submitWFHRequest(formData: FormData) {
 
     const userId = userQuery[0].id;
 
-    await sql`
-      INSERT INTO wfh_requests (user_id, request_date, reason, status)
-      VALUES (${userId}, ${requestDate}, ${reason}, 'Pending')
+    // 2. Fetch balance for backend validation
+    const [balance] = await sql`
+      SELECT annual_remaining, sick_remaining, monthly_remaining_hours
+      FROM leave_balances
+      WHERE user_id = ${userId}
     `;
 
+    let startDate: string | null = null;
+    let endDate: string | null = null;
+    let leaveCategory: string | null = null;
+    let totalDays: number = 0;
+    let hours: number = 0;
+    let originalDate: string | null = null;
+    let exchangeDate: string | null = null;
+
+    // 3. Extract request parameters based on type
+    if (type === "wfh") {
+      startDate = formData.get("date") as string;
+      endDate = startDate;
+      totalDays = 1;
+      if (!startDate)
+        return { success: false, error: "Date is required for WFH." };
+    } else if (type === "dayoff") {
+      startDate = formData.get("startDate") as string;
+      endDate = formData.get("endDate") as string;
+      leaveCategory = (formData.get("leaveCategory") as string) || "annual";
+      totalDays = Number(formData.get("totalDays")) || 1;
+
+      if (!startDate || !endDate) {
+        return { success: false, error: "Start and end dates are required." };
+      }
+
+      // Balance guardrails
+      if (balance) {
+        if (
+          leaveCategory === "annual" &&
+          totalDays > balance.annual_remaining
+        ) {
+          return {
+            success: false,
+            error: `Insufficient Annual Leave (${balance.annual_remaining} days remaining).`,
+          };
+        }
+        if (leaveCategory === "sick" && totalDays > balance.sick_remaining) {
+          return {
+            success: false,
+            error: `Insufficient Sick Leave (${balance.sick_remaining} days remaining).`,
+          };
+        }
+      }
+    } else if (type === "timeoff") {
+      startDate = formData.get("date") as string;
+      endDate = startDate;
+      hours = Number(formData.get("hours")) || 0;
+
+      if (!startDate || hours <= 0) {
+        return { success: false, error: "Date and valid hours are required." };
+      }
+
+      if (balance && hours > balance.monthly_remaining_hours) {
+        return {
+          success: false,
+          error: `Insufficient monthly hours (${balance.monthly_remaining_hours} hrs remaining).`,
+        };
+      }
+    } else if (type === "exchange") {
+      originalDate = formData.get("originalDate") as string;
+      exchangeDate = formData.get("exchangeDate") as string;
+
+      if (!originalDate || !exchangeDate) {
+        return {
+          success: false,
+          error: "Original date and exchange date are required.",
+        };
+      }
+    }
+
+    // 4. Insert into updated leave_requests table
+    await sql`
+      INSERT INTO leave_requests (
+        user_id,
+        type,
+        leave_category,
+        start_date,
+        end_date,
+        total_days,
+        hours,
+        original_date,
+        exchange_date,
+        reason,
+        status
+      )
+      VALUES (
+        ${userId},
+        ${type},
+        ${leaveCategory},
+        ${startDate},
+        ${endDate},
+        ${totalDays},
+        ${hours},
+        ${originalDate},
+        ${exchangeDate},
+        ${reason},
+        'Pending'
+      )
+    `;
+
+    // 5. Revalidate cache for real-time UI updates
     revalidatePath("/my-profile/attendance");
+    revalidatePath("/dashboard");
+
     return { success: true };
   } catch (error) {
-    console.error("WFH request error:", error);
-    return { success: false, error: "Could not submit WFH request." };
+    console.error("Leave request error:", error);
+    return { success: false, error: "Could not submit leave request." };
   }
 }

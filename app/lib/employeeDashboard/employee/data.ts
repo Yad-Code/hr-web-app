@@ -127,14 +127,24 @@ export async function fetchPendingAdminRequests() {
       SELECT 
         r.id,
         r.type,
-        r.description,
+        CASE 
+          WHEN r.type = 'dayoff' THEN 
+            CONCAT(UPPER(LEFT(COALESCE(r.leave_category, 'annual'), 1)), SUBSTRING(COALESCE(r.leave_category, 'annual'), 2), ' Leave (', r.total_days, ' ', CASE WHEN r.total_days = 1 THEN 'day' ELSE 'days' END, ') - ', r.reason)
+          WHEN r.type = 'timeoff' THEN 
+            CONCAT('Hourly Time-Off (', r.hours, ' hrs) - ', r.reason)
+          WHEN r.type = 'wfh' THEN 
+            CONCAT('Work From Home - ', r.reason)
+          WHEN r.type = 'exchange' THEN 
+            CONCAT('Shift Exchange - ', r.reason)
+          ELSE r.reason
+        END AS description,
         r.status,
         r.created_at,
-        u.name as employee_name,
-        u.image_url as employee_image
-      FROM requests r
-      JOIN users u ON r.employee_id = u.id
-      WHERE r.status = 'pending'
+        u.name AS employee_name,
+        u.image_url AS employee_image
+      FROM leave_requests r
+      JOIN users u ON r.user_id = u.id
+      WHERE r.status ILIKE 'pending'
       ORDER BY r.created_at DESC
     `;
     return data;
