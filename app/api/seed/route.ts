@@ -130,8 +130,10 @@ export async function GET() {
         annual_total INT DEFAULT 20 NOT NULL,
         annual_remaining INT DEFAULT 14 NOT NULL,
         sick_total INT DEFAULT 10 NOT NULL,
-        sick_remaining INT DEFAULT 8 NOT NULL
-      )
+        sick_remaining INT DEFAULT 8 NOT NULL,
+        monthly_total_hours INT DEFAULT 16 NOT NULL,
+        monthly_remaining_hours INT DEFAULT 16 NOT NULL
+     )
     `;
 
     // --- New Performance Tables ---

@@ -57,7 +57,7 @@ export default function PerformanceDashboard({
   ];
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6"> 
       {/* Profile Header */}
       <PerformanceHeader profile={initialData.profile} />
 
