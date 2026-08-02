@@ -2,95 +2,125 @@
 import PayrollDashboard, {
   PayrollDashboardData,
 } from "@/app/ui/employee/payroll/payroll-dashboard";
+import {
+  fetchEmployeePayStubs,
+  fetchPayStubItems,
+  fetchEmployeePaymentMethods,
+} from "@/app/lib/admin/payroll/data";
+// import { getSessionUserId } from "@/app/lib/auth"; // Replace with your actual auth method
 
-// Mock Data updated to align with the strictly earnings model
-const mockPayrollData: PayrollDashboardData = {
-  summary: {
-    annual_net: 71040, // Net yearly take-home
-    monthly_base: 5920,
-    pay_frequency: "Monthly",
-    next_pay_date: "Aug 31, 2026",
-    currency: "USD",
-    ytd_net: 41440,
-  },
-  payStubs: [
-    {
-      id: "stub-001",
-      user_id: "user-123",
-      pay_period_start: "Jul 1, 2026",
-      pay_period_end: "Jul 31, 2026",
-      pay_date: "Jul 31, 2026",
-      net_pay: 5920,
-      status: "paid",
-      items: [
-        {
-          id: "i1",
-          type: "earning",
-          category: "Base Pay",
-          amount: 5420,
-        },
-        {
-          id: "i2",
-          type: "earning",
-          category: "Performance Bonus",
-          description: "Q2 Bonus",
-          amount: 500,
-        },
-      ],
-    },
-    {
-      id: "stub-002",
-      user_id: "user-123",
-      pay_period_start: "Jun 1, 2026",
-      pay_period_end: "Jun 30, 2026",
-      pay_date: "Jun 30, 2026",
-      net_pay: 5920,
-      status: "paid",
-      items: [
-        {
-          id: "i6",
-          type: "earning",
-          category: "Base Pay",
-          amount: 5920,
-        },
-      ],
-    },
-  ],
-  paymentMethods: [
-    {
-      id: "pm-1",
-      bank_name: "JPMorgan Chase",
-      account_holder: "Yad Hassan",
-      account_number_masked: "•••• 8821",
-      routing_or_iban: "021000021",
-      is_primary: true,
-      status: "verified",
-    },
-  ],
-  documents: [
-    {
-      id: "doc-1",
-      title: "2025 Annual Income Statement",
-      year: "2025",
-      type: "Annual Statement",
-      issued_date: "Jan 15, 2026",
-      file_size: "1.2 MB",
-    },
-    {
-      id: "doc-2",
-      title: "Employment & Salary Verification",
-      year: "2026",
-      type: "Employment Verification",
-      issued_date: "Feb 01, 2026",
-      file_size: "450 KB",
-    },
-  ],
-};
+export default async function Page() {
+  // 1. Get the current logged-in user
+  // const userId = await getSessionUserId();
 
-export default function Page() {
+  // ⚠️ REPLACE THIS with a real UUID from your database 'users' table
+  // (e.g., "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11")
+  const userId = "123e4567-e89b-12d3-a456-426614174000";
+
+  // 2. Fetch raw database records
+  const rawStubs = await fetchEmployeePayStubs(userId);
+  const rawMethods = await fetchEmployeePaymentMethods(userId);
+
+  // 3. Fetch line items for every pay stub concurrently
+  const stubsWithItems = await Promise.all(
+    rawStubs.map(async (stub) => {
+      const items = await fetchPayStubItems(stub.id);
+
+      return {
+        id: stub.id,
+        user_id: stub.user_id,
+        // Format dates to match your UI expectation: "Jul 31, 2026"
+        pay_period_start: new Date(stub.pay_period_start).toLocaleDateString(
+          "en-US",
+          { month: "short", day: "numeric", year: "numeric" },
+        ),
+        pay_period_end: new Date(stub.pay_period_end).toLocaleDateString(
+          "en-US",
+          { month: "short", day: "numeric", year: "numeric" },
+        ),
+        pay_date: new Date(stub.pay_date).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+        net_pay: Number(stub.net_pay),
+        status: stub.status,
+        items: items.map((item) => ({
+          id: item.id,
+          type: item.type,
+          category: item.category,
+          description: item.description || undefined,
+          amount: Number(item.amount),
+        })),
+      };
+    }),
+  );
+
+  // 4. Map payment methods to your interface
+  const paymentMethods = rawMethods.map((pm) => ({
+    id: pm.id,
+    bank_name: pm.bank_name,
+    account_holder: pm.account_holder,
+    account_number_masked: pm.account_number_masked,
+    routing_or_iban: pm.routing_or_iban || "N/A",
+    is_primary: pm.is_primary,
+    status: pm.status || "verified",
+  }));
+
+  // 5. Calculate the dynamic summary metrics
+  const currentYear = new Date().getFullYear();
+
+  // Sum up all 'paid' net pay for the current year
+  const ytd_net = stubsWithItems
+    .filter(
+      (s) => s.status === "paid" && s.pay_date.includes(currentYear.toString()),
+    )
+    .reduce((sum, stub) => sum + stub.net_pay, 0);
+
+  // Get the most recent payout for the monthly base calculation
+  const latestStub = stubsWithItems[0];
+  const monthly_base = latestStub ? latestStub.net_pay : 0;
+
+  // Calculate next pay date (e.g., 5th of next month)
+  const today = new Date();
+  const nextPayDate = new Date(
+    today.getFullYear(),
+    today.getMonth() + 1,
+    5,
+  ).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  // 6. Construct the final data object matching PayrollDashboardData
+  const livePayrollData: PayrollDashboardData = {
+    summary: {
+      annual_net: monthly_base * 12,
+      monthly_base: monthly_base,
+      pay_frequency: "Monthly",
+      next_pay_date: nextPayDate,
+      currency: "USD",
+      ytd_net: ytd_net,
+    },
+    payStubs: stubsWithItems,
+    paymentMethods: paymentMethods,
+    documents: [
+      // Hardcoded for now until a documents table is created
+      {
+        id: "doc-1",
+        title: "2025 Annual Income Statement",
+        year: "2025",
+        type: "Annual Statement",
+        issued_date: "Jan 15, 2026",
+        file_size: "1.2 MB",
+      },
+    ],
+  };
+
   return (
     <main className="min-h-screen bg-slate-50 py-8">
-      <PayrollDashboard initialData={mockPayrollData} />
+      <PayrollDashboard initialData={livePayrollData} />
     </main>
   );
 }
