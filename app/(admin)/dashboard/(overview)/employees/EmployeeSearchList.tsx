@@ -1,9 +1,10 @@
 // @/app/(admin)/dashboard/(overview)/employees/EmployeeSearchList.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link"; 
+import Link from "next/link";
 import { Employee } from "@/app/lib/employeeList/definitions";
 
 interface EmployeeSearchListClientProps {
@@ -14,6 +15,16 @@ export function EmployeeSearchListClient({
   initialEmployees,
 }: EmployeeSearchListClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter(); // 👈
+
+  // Auto-refresh server data every 30 seconds to sync real-time presence
+  useEffect(() => {
+    const interval = setInterval(() => {
+      router.refresh();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [router]);
 
   // Instantaneous case-insensitive client-side filter (Name, Email, or Department)
   const filteredEmployees = initialEmployees.filter((employee) => {
@@ -24,8 +35,8 @@ export function EmployeeSearchListClient({
       employee.department?.toLowerCase().includes(query)
     );
   });
- 
-  // Case-insensitive status match to handle 'Active' vs 'active' from PostgreSQL
+
+  // Case-insensitive status match to handle 'Active' vs 'active' from PostgreSQL[cite: 1]
   const activeCount = initialEmployees.filter(
     (e) => e.status?.toLowerCase() === "active",
   ).length;
@@ -150,7 +161,7 @@ export function EmployeeSearchListClient({
                   </div>
                 </div>
 
-                {/* 👈 2. Action Area: Last Seen Text + Admin Edit Link */}
+                {/* Action Area: Last Seen Text + Admin Edit Link */}
                 <div className="flex items-center gap-3 shrink-0 pl-2">
                   <span
                     className={`text-xs font-semibold hidden sm:inline ${

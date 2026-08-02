@@ -357,7 +357,8 @@ CREATE TABLE self_assessments (
         employee_id, name, preferred_name, department, branch, 
         date_of_birth, age, gender, nationality, marital_status, 
         blood_group, email, personal_email, personal_phone, current_address, 
-        password_hash, role, status, image_url, shift_start, shift_end, shift_type
+        password_hash, role, status, image_url, shift_start, shift_end, shift_type,
+        last_seen_at
       )
       VALUES 
         (
@@ -366,7 +367,8 @@ CREATE TABLE self_assessments (
           'admin@company.com', 'admin.personal@gmail.com', '+964 770 111 2233',
           'Main Street, District 101, Sulaymaniyah', ${adminPassword}, 'admin', 'Active',
           'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-          '09:00:00', '17:00:00', 'Standard (Mon - Fri)'
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)',
+          CURRENT_TIMESTAMP
         ),
         (
           'EMP-1002', 'Yad Developer', 'Yad', 'Software Engineering', 'HQ - Sulaymaniyah',
@@ -374,23 +376,26 @@ CREATE TABLE self_assessments (
           'yad@company.com', 'yad.dev@gmail.com', '+964 770 222 3344',
           'Salim Street, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
           'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
-          '09:00:00', '17:00:00', 'Standard (Mon - Fri)'
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)',
+          CURRENT_TIMESTAMP
         ),
         (
           'EMP-1003', 'Lana Amin', 'Lana', 'UI/UX Design', 'HQ - Sulaymaniyah',
           '1997-09-12', 28, 'Female', 'Iraqi', 'Single', 'B+',
           'lana@company.com', 'lana.amin@gmail.com', '+964 770 333 4455',
-          'Barty Street, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
+          'Barty Street, Sulaymaniyah', ${employeePassword}, 'employee', 'Offline', -- 👈 Set to Offline
           'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-          '09:00:00', '17:00:00', 'Standard (Mon - Fri)'
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)',
+          CURRENT_TIMESTAMP - INTERVAL '2 hours'
         ),
         (
           'EMP-1004', 'Diyar Karwan', 'Diyar', 'Backend Infrastructure', 'HQ - Sulaymaniyah',
           '1995-11-04', 30, 'Male', 'Iraqi', 'Married', 'O-',
           'diyar@company.com', 'diyar.karwan@gmail.com', '+964 770 444 5566',
-          'Sarchinar Way, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
+          'Sarchinar Way, Sulaymaniyah', ${employeePassword}, 'employee', 'Offline', -- 👈 Set to Offline
           'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-          '09:00:00', '17:00:00', 'Standard (Mon - Fri)'
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)',
+          CURRENT_TIMESTAMP - INTERVAL '1 day'
         ),
         (
           'EMP-1005', 'Sara Omar', 'Sara', 'Quality Assurance', 'HQ - Sulaymaniyah',
@@ -398,7 +403,8 @@ CREATE TABLE self_assessments (
           'sara@company.com', 'sara.omar@gmail.com', '+964 770 555 6677',
           'Rapakarin Quarter, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
           'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80',
-          '09:00:00', '17:00:00', 'Standard (Mon - Fri)'
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)',
+          CURRENT_TIMESTAMP - INTERVAL '5 minutes'
         )
       RETURNING id, role, name;
     `;
