@@ -1,12 +1,10 @@
-// app/employee/profile/page.tsx
+// app/(employee)/my-profile/(overview)/page.tsx
 import { auth } from "@/auth";
 import { getProfileData } from "@/app/lib/employeeDashboard/employee/data";
 import { redirect } from "next/navigation";
 import ProfileHeader from "@/app/ui/employee/profile/profileHeader";
-import OfficialInfoCard from "@/app/ui/employee/profile/officialInfoCard";
-import ProfileForm from "@/app/ui/employee/profile/profileForm";
+import ProfileTabs from "@/app/ui/employee/profile/tabs/profileTabs"; // 👈 New Client Component for Tabs
 import {
-  OfficialInfoCardSkeleton,
   ProfileFormSkeleton,
   ProfileHeaderSkeleton,
 } from "@/app/ui/employee/skeleton";
@@ -31,18 +29,15 @@ export default async function EmployeeProfilePage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 p-2 sm:p-4 text-left select-none animate-fadeIn">
+      {/* Header section remains intact */}
       <Suspense fallback={<ProfileHeaderSkeleton />}>
         <ProfileHeader profile={profile} />
       </Suspense>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Suspense fallback={<OfficialInfoCardSkeleton />}>
-          <OfficialInfoCard profile={profile} />
-        </Suspense>
-        <Suspense fallback={<ProfileFormSkeleton />}>
-          <ProfileForm profile={profile} userEmail={session.user.email} />
-        </Suspense>
-      </div>
+      {/* Interactive Tabs containing Job Info, Official Info, & Personal Edit */}
+      <Suspense fallback={<ProfileFormSkeleton />}>
+        <ProfileTabs profile={profile} userEmail={session.user.email} />
+      </Suspense>
     </div>
   );
 }

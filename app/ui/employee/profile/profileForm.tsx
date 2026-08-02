@@ -1,3 +1,5 @@
+// @/app/ui/employee/profile/profileForm.tsx
+
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
@@ -14,7 +16,7 @@ import {
   Check,
   Loader2,
 } from "lucide-react";
-import { FullEmployeeProfile } from "@/app/lib/employeeDashboard/employee/definitions";
+import { FullEmployeeProfile } from "@/app/lib/employee/definitions"; // 👈 Fixed import path
 
 interface ProfileFormProps {
   profile: FullEmployeeProfile;

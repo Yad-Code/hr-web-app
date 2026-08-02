@@ -1,12 +1,61 @@
-// @/app/lib/employeeDashboard/employee/definitions.ts
+// @/app/lib/employee/definitions.ts
 
 // ==========================================
 // 1. ENUMS & ENUM-LIKE TYPES
 // ==========================================
 
 export type UserRole = "ADMIN" | "MANAGER" | "EMPLOYEE";
-
 export type WorkType = "FULL_TIME" | "PART_TIME" | "CONTRACTOR" | "INTERN";
+
+export interface EmploymentHistoryItem {
+  title: string;
+  period: string;
+}
+
+export interface FullEmployeeProfile {
+  id: string; //
+  userId: string; //
+  employee_id: string; //
+  name: string; //
+  preferred_name?: string | null; //
+  department?: string | null; //
+  branch?: string | null; //
+  date_of_birth?: string | Date | null; //
+  age?: number | null; //
+  gender?: string | null; //
+  nationality?: string | null; //
+  marital_status?: string | null; //
+  blood_group?: string | null; //
+  email: string; //
+  personal_email?: string | null; //
+  personal_phone?: string | null; //
+  current_address?: string | null; //
+  role?: string | null; //
+  status?: string | null;
+  base_salary?: number | null;
+  image_url?: string | null;
+  shift_start?: string | null;
+  shift_end?: string | null;
+  shift_type?: string | null;
+
+  // Optional extended job fields for JobInformationTab
+  jobFamily?: string | null;
+  employmentType?: string | null;
+  managerName?: string | null;
+  joinDate?: string | null;
+  privateOrg?: string | null;
+  publicOrg?: string | null;
+  insurance?: string | null;
+  subscription?: string | null;
+  history?: EmploymentHistoryItem[];
+}
+
+export interface ProfileTabsProps {
+  profile: FullEmployeeProfile;
+  userEmail: string;
+}
+
+export type ProfileTabType = "job" | "official" | "edit";
 
 export type AccountStatus =
   | "PENDING_APPROVAL"
@@ -100,32 +149,6 @@ export type Timesheet = {
 // ==========================================
 // 3. UI & COMPONENT-LEVEL TYPES
 // ==========================================
-
-/**
- * Joined profile payload expected by components like ProfileHeader,
- * OfficialInfoCard, and ProfileForm.
- */
-export type FullEmployeeProfile = {
-  id: string;
-  userId: string;
-  employee_id?: string;
-  name: string; // Combined legal name or display name
-  preferred_name?: string;
-  role: UserRole;
-  status: AccountStatus;
-  department?: string;
-  branch?: string;
-  date_of_birth?: string | Date;
-  age?: number;
-  gender?: string;
-  nationality?: string;
-  marital_status?: MaritalStatus;
-  blood_group?: BloodGroup;
-  personal_email?: string;
-  email: string; // Login email
-  personal_phone?: string;
-  current_address?: string;
-};
 
 // Form state typing for React Server Actions (e.g., useActionState)
 export type ActionState = {
