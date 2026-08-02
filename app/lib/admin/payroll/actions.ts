@@ -1,4 +1,4 @@
-// @/app/lib/payroll/actions.ts
+// @/app/lib/admin/payroll/actions.ts
 "use server";
 
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";

@@ -7,15 +7,14 @@ import {
   fetchPayStubItems,
   fetchEmployeePaymentMethods,
 } from "@/app/lib/admin/payroll/data";
-// import { getSessionUserId } from "@/app/lib/auth"; // Replace with your actual auth method
+import { addPaymentMethod } from "@/app/lib/employee/payroll/data"; // Import your action[cite: 7]
 
 export default async function Page() {
   // 1. Get the current logged-in user
-  // const userId = await getSessionUserId();
+  const userId = "123e4567-e89b-12d3-a456-426614174000"; // Replace with real UUID when auth is ready[cite: 8]
 
-  // ⚠️ REPLACE THIS with a real UUID from your database 'users' table
-  // (e.g., "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11")
-  const userId = "123e4567-e89b-12d3-a456-426614174000";
+  // Bind the userId so the form action receives it automatically
+  const handleAddAccount = addPaymentMethod.bind(null, userId);
 
   // 2. Fetch raw database records
   const rawStubs = await fetchEmployeePayStubs(userId);
@@ -29,7 +28,6 @@ export default async function Page() {
       return {
         id: stub.id,
         user_id: stub.user_id,
-        // Format dates to match your UI expectation: "Jul 31, 2026"
         pay_period_start: new Date(stub.pay_period_start).toLocaleDateString(
           "en-US",
           { month: "short", day: "numeric", year: "numeric" },
@@ -69,19 +67,15 @@ export default async function Page() {
 
   // 5. Calculate the dynamic summary metrics
   const currentYear = new Date().getFullYear();
-
-  // Sum up all 'paid' net pay for the current year
   const ytd_net = stubsWithItems
     .filter(
       (s) => s.status === "paid" && s.pay_date.includes(currentYear.toString()),
     )
     .reduce((sum, stub) => sum + stub.net_pay, 0);
 
-  // Get the most recent payout for the monthly base calculation
   const latestStub = stubsWithItems[0];
   const monthly_base = latestStub ? latestStub.net_pay : 0;
 
-  // Calculate next pay date (e.g., 5th of next month)
   const today = new Date();
   const nextPayDate = new Date(
     today.getFullYear(),
@@ -93,7 +87,6 @@ export default async function Page() {
     year: "numeric",
   });
 
-  // 6. Construct the final data object matching PayrollDashboardData
   const livePayrollData: PayrollDashboardData = {
     summary: {
       annual_net: monthly_base * 12,
@@ -106,7 +99,6 @@ export default async function Page() {
     payStubs: stubsWithItems,
     paymentMethods: paymentMethods,
     documents: [
-      // Hardcoded for now until a documents table is created
       {
         id: "doc-1",
         title: "2025 Annual Income Statement",
@@ -120,7 +112,11 @@ export default async function Page() {
 
   return (
     <main className="min-h-screen bg-slate-50 py-8">
-      <PayrollDashboard initialData={livePayrollData} />
+      {/* Pass the bound action down to the dashboard component */}
+      <PayrollDashboard
+        initialData={livePayrollData}
+        onAddAccount={handleAddAccount}
+      />
     </main>
   );
 }

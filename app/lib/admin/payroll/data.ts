@@ -1,4 +1,4 @@
-// @/app/lib/payroll/data.ts
+// @/app/lib/admin/payroll/data.ts
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 
 export type AdminPayrollRecord = {

@@ -23,8 +23,10 @@ export interface PayrollDashboardData {
 
 export default function PayrollDashboard({
   initialData,
+  onAddAccount,
 }: {
   initialData: PayrollDashboardData;
+  onAddAccount: (formData: FormData) => Promise<void>;
 }) {
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -87,7 +89,10 @@ export default function PayrollDashboard({
           <PayslipsTab payStubs={initialData.payStubs} />
         )}
         {activeTab === "payment-methods" && (
-          <PaymentMethodsTab methods={initialData.paymentMethods} />
+          <PaymentMethodsTab
+            methods={initialData.paymentMethods}
+            onAddAccount={onAddAccount}
+          />
         )}
         {activeTab === "company-docs" && (
           <CompanyDocsTab documents={initialData.documents} />
