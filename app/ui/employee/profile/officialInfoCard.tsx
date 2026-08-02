@@ -22,7 +22,7 @@ export default function OfficialInfoCard({
 
       <div className="space-y-4">
         <div className="flex items-start gap-3">
-          <Briefcase className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+          <Briefcase className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
           <div className="flex-1">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Employee ID
@@ -34,7 +34,7 @@ export default function OfficialInfoCard({
         </div>
 
         <div className="flex items-start gap-3">
-          <User className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+          <User className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
           <div className="flex-1">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Full Legal Name
@@ -46,7 +46,7 @@ export default function OfficialInfoCard({
         </div>
 
         <div className="flex items-start gap-3">
-          <Briefcase className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+          <Briefcase className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
           <div className="flex-1">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Department & Branch
@@ -59,7 +59,7 @@ export default function OfficialInfoCard({
         </div>
 
         <div className="flex items-start gap-3">
-          <Calendar className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+          <Calendar className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
           <div className="flex-1">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Date of Birth
@@ -74,7 +74,7 @@ export default function OfficialInfoCard({
         </div>
 
         <div className="flex items-start gap-3">
-          <User className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+          <User className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
           <div className="flex-1">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Gender
@@ -86,7 +86,7 @@ export default function OfficialInfoCard({
         </div>
 
         <div className="flex items-start gap-3">
-          <Globe className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+          <Globe className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
           <div className="flex-1">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Nationality

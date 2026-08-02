@@ -14,7 +14,7 @@ import {
   MapPin,
   Users,
 } from "lucide-react";
-import { FullEmployeeProfile } from "@/app/lib/employee/definitions";  
+import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
 
 interface JobInformationTabProps {
   profile: FullEmployeeProfile; // 👈 Use the interface here
@@ -55,7 +55,7 @@ export default function JobInformationTab({ profile }: JobInformationTabProps) {
           <InfoCard
             icon={Briefcase}
             label="Current Position"
-            value={profile.role || "Software Engineer"}
+            value={profile.jobTitle || profile.role || "Software Engineer"}  
             highlight
           />
           <InfoCard
@@ -171,7 +171,7 @@ export default function JobInformationTab({ profile }: JobInformationTabProps) {
           {history.map((item, index) => (
             <div key={index} className="relative group">
               {/* Timeline Dot */}
-              <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-indigo-600 ring-4 ring-indigo-50" />
+              <div className="absolute -left-5.25 top-1 w-2.5 h-2.5 rounded-full bg-indigo-600 ring-4 ring-indigo-50" />
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
                   {item.title}

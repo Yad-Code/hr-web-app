@@ -13,24 +13,25 @@ export interface EmploymentHistoryItem {
 }
 
 export interface FullEmployeeProfile {
-  id: string; //
-  userId: string; //
-  employee_id: string; //
+  id: string;
+  userId: string;
+  employee_id: string;
   name: string; //
-  preferred_name?: string | null; //
-  department?: string | null; //
-  branch?: string | null; //
-  date_of_birth?: string | Date | null; //
-  age?: number | null; //
-  gender?: string | null; //
-  nationality?: string | null; //
-  marital_status?: string | null; //
-  blood_group?: string | null; //
+  preferred_name?: string | null;
+  department?: string | null;
+  branch?: string | null;
+  date_of_birth?: string | Date | null;
+  age?: number | null;
+  gender?: string | null;
+  nationality?: string | null;
+  marital_status?: string | null;
+  blood_group?: string | null;
   email: string; //
-  personal_email?: string | null; //
-  personal_phone?: string | null; //
-  current_address?: string | null; //
-  role?: string | null; //
+  personal_email?: string | null;
+  personal_phone?: string | null;
+  current_address?: string | null;
+  role?: string | null;
+  jobTitle?: string | null;
   status?: string | null;
   base_salary?: number | null;
   image_url?: string | null;

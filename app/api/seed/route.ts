@@ -52,6 +52,7 @@ export async function GET() {
         employee_id VARCHAR(50) UNIQUE,
         name VARCHAR(100) NOT NULL,
         preferred_name VARCHAR(100),
+        job_title VARCHAR(100),
         department VARCHAR(100), 
         branch VARCHAR(100),
         date_of_birth DATE,
@@ -356,7 +357,7 @@ CREATE TABLE self_assessments (
     // 4. Seed Users
     const seededUsers = await db`
       INSERT INTO users (
-        employee_id, name, preferred_name, department, branch, 
+        employee_id, name, preferred_name, job_title, department, branch, 
         date_of_birth, age, gender, nationality, marital_status, 
         blood_group, email, personal_email, personal_phone, current_address, 
         password_hash, role, status, base_salary, image_url, shift_start, shift_end, shift_type,
@@ -364,7 +365,7 @@ CREATE TABLE self_assessments (
        )
       VALUES 
         (
-          'EMP-1001', 'Admin Manager', 'Admin', 'Human Resources', 'HQ - Sulaymaniyah',
+          'EMP-1001', 'Admin Manager', 'Admin','HR Director', 'Human Resources', 'HQ - Sulaymaniyah',
           '1988-03-15', 38, 'Female', 'Iraqi', 'Married', 'O+',
           'admin@company.com', 'admin.personal@gmail.com', '+964 770 111 2233',
           'Main Street, District 101, Sulaymaniyah', ${adminPassword}, 'admin', 'Active',
@@ -374,7 +375,7 @@ CREATE TABLE self_assessments (
           CURRENT_TIMESTAMP
         ),
         (
-          'EMP-1002', 'Yad Developer', 'Yad', 'Software Engineering', 'HQ - Sulaymaniyah',
+          'EMP-1002', 'Yad Developer', 'Yad','Software Engineer', 'Software Engineering', 'HQ - Sulaymaniyah',
           '2002-05-20', 24, 'Male', 'Iraqi', 'Single', 'A+',
           'yad@company.com', 'yad.dev@gmail.com', '+964 770 222 3344',
           'Salim Street, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
@@ -384,7 +385,7 @@ CREATE TABLE self_assessments (
           CURRENT_TIMESTAMP
         ),
         (
-          'EMP-1003', 'Lana Amin', 'Lana', 'UI/UX Design', 'HQ - Sulaymaniyah',
+          'EMP-1003', 'Lana Amin', 'Lana','Software Engineer', 'UI/UX Design', 'HQ - Sulaymaniyah',
           '1997-09-12', 28, 'Female', 'Iraqi', 'Single', 'B+',
           'lana@company.com', 'lana.amin@gmail.com', '+964 770 333 4455',
           'Barty Street, Sulaymaniyah', ${employeePassword}, 'employee', 'Offline',
@@ -394,7 +395,7 @@ CREATE TABLE self_assessments (
           CURRENT_TIMESTAMP - INTERVAL '2 hours'
         ),
         (
-          'EMP-1004', 'Diyar Karwan', 'Diyar', 'Backend Infrastructure', 'HQ - Sulaymaniyah',
+          'EMP-1004', 'Diyar Karwan', 'Diyar', 'Software Engineer', 'Backend Infrastructure', 'HQ - Sulaymaniyah',
           '1995-11-04', 30, 'Male', 'Iraqi', 'Married', 'O-',
           'diyar@company.com', 'diyar.karwan@gmail.com', '+964 770 444 5566',
           'Sarchinar Way, Sulaymaniyah', ${employeePassword}, 'employee', 'Offline',
@@ -404,7 +405,7 @@ CREATE TABLE self_assessments (
           CURRENT_TIMESTAMP - INTERVAL '1 day'
         ),
         (
-          'EMP-1005', 'Sara Omar', 'Sara', 'Quality Assurance', 'HQ - Sulaymaniyah',
+          'EMP-1005', 'Sara Omar', 'Sara', 'Software Engineer', 'Quality Assurance', 'HQ - Sulaymaniyah',
           '1999-01-28', 27, 'Female', 'Iraqi', 'Single', 'AB+',
           'sara@company.com', 'sara.omar@gmail.com', '+964 770 555 6677',
           'Rapakarin Quarter, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',

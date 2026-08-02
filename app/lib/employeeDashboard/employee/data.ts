@@ -1,4 +1,4 @@
-// app/lib/data.ts
+// app/lib/employeeDashboard/employee/data.ts
 import { sql } from "@/app/lib/employeeDashboard/employee/db"; // Using our configured singleton instance
 import { formatDistanceToNow } from "date-fns";
 import { auth } from "@/auth";
@@ -24,7 +24,7 @@ export interface AttendanceRecord {
   work_location?: string;
 }
 
-// 1. Profile data fetcher
+// 1. Profile data fetcher 
 export async function getProfileData(email: string) {
   try {
     const users = await sql`
@@ -43,6 +43,7 @@ export async function getProfileData(email: string) {
       employee_id: user.employee_id || user.id.slice(0, 8),
       name: user.name,
       preferred_name: user.preferred_name || user.name,
+      jobTitle: user.job_title || null,
       department: user.department || "General",
       branch: user.branch || "Main Branch",
       date_of_birth: user.date_of_birth || null,
