@@ -74,18 +74,37 @@ export async function fetchEmployeePaymentMethods(userId: string) {
   return methods;
 }
 
-export async function verifyPaymentMethod(methodId: string) {
+export async function verifyPaymentMethod(
+  paymentMethodId: string,
+  payStubId: string,
+) {
   try {
     await db`
       UPDATE payment_methods 
       SET status = 'verified' 
-      WHERE id = ${methodId}
+      WHERE id = ${paymentMethodId}
     `;
-    
-    // Revalidate the admin or employee payroll page
-    revalidatePath("/payroll");
+
+    revalidatePath(`/dashboard/payroll/${payStubId}`);
   } catch (error) {
     console.error("Failed to verify payment method:", error);
-    throw new Error("Verification failed.");
+    throw new Error("Database update failed.");
   }
+}
+
+export async function deletePayStub(payStubId: string) {
+  try {
+    await db`
+      DELETE FROM pay_stubs 
+      WHERE id = ${payStubId}
+    `;
+    
+    revalidatePath("/dashboard/payroll");
+  } catch (error) {
+    console.error("Failed to delete pay stub:", error);
+    throw new Error("Database deletion failed.");
+  }
+
+  // Redirect back to the payroll dashboard after deletion
+  revalidatePath("/dashboard/payroll");
 }

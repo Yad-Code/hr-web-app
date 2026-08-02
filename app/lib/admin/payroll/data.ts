@@ -45,7 +45,10 @@ export async function fetchAllPayStubs(): Promise<AdminPayrollRecord[]> {
 export async function fetchPayStubDetails(id: string) {
   const [record] = await db`
     SELECT p.*, u.name as employee_name, u.email, u.department,
-           pm.bank_name, pm.account_number_masked
+           pm.id as payment_method_id,
+           pm.bank_name, 
+           pm.account_number_masked,
+           pm.status as payment_status
     FROM pay_stubs p
     JOIN users u ON p.user_id = u.id
     LEFT JOIN payment_methods pm ON u.id = pm.user_id AND pm.is_primary = true
