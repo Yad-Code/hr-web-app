@@ -7,6 +7,28 @@
 export type UserRole = "ADMIN" | "MANAGER" | "EMPLOYEE";
 export type WorkType = "FULL_TIME" | "PART_TIME" | "CONTRACTOR" | "INTERN";
 
+// Education levels for the education history tab
+export interface EducationItem {
+  id: string;
+  level: string;
+  subject: string;
+  institution: string;
+  location: string | null;
+  score: string | null;
+  start_year: number | null;
+  end_year: number | null;
+  document_url: string | null;
+}
+
+export interface EducationTabProps {
+  educationHistory: EducationItem[];
+}
+
+export interface ProfileTabsProps extends EducationTabProps {
+  profile: FullEmployeeProfile;
+  userEmail: string;
+}
+
 export interface EmploymentHistoryItem {
   title: string;
   period: string;

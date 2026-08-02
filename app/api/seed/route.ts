@@ -41,6 +41,7 @@ export async function GET() {
     await db`DROP TABLE IF EXISTS leave_requests`;
     await db`DROP TABLE IF EXISTS daily_attendance`;
     await db`DROP TABLE IF EXISTS shift_rules`;
+    await db`DROP TABLE IF EXISTS education_history`;
 
     // 2. Create Types & Tables
     await db`CREATE TYPE user_role AS ENUM ('admin', 'employee')`;
@@ -339,16 +340,32 @@ CREATE TABLE self_assessments (
     `;
 
     await db`
-  CREATE TABLE job_postings (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    title VARCHAR(255) NOT NULL,
-    department VARCHAR(100) NOT NULL,
-    type VARCHAR(50) DEFAULT 'Full-time',
-    location VARCHAR(100) DEFAULT 'Remote',
-    status VARCHAR(50) DEFAULT 'Open',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-  )
+      CREATE TABLE job_postings (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        title VARCHAR(255) NOT NULL,
+        department VARCHAR(100) NOT NULL,
+        type VARCHAR(50) DEFAULT 'Full-time',
+        location VARCHAR(100) DEFAULT 'Remote',
+        status VARCHAR(50) DEFAULT 'Open',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
 `;
+
+    await db`
+      CREATE TABLE education_history (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        level VARCHAR(100) NOT NULL,
+        subject VARCHAR(200) NOT NULL,
+        institution VARCHAR(255) NOT NULL,
+        location VARCHAR(200),
+        score VARCHAR(50),
+        start_year INT,
+        end_year INT,
+        document_url TEXT, -- For the "Add Document" feature
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
 
     // 3. Hash Passwords
     const adminPassword = await bcrypt.hash("AdminPass123", 10);
@@ -879,11 +896,58 @@ VALUES
 `;
 
       await db`
-  INSERT INTO job_postings (title, department, type, location, status)
-  VALUES
-    ('Senior Frontend Engineer', 'Software Engineering', 'Full-time', 'Remote', 'Open'),
-    ('Product Designer', 'UI/UX Design', 'Full-time', 'HQ - Sulaymaniyah', 'Open')
+        INSERT INTO job_postings (title, department, type, location, status)
+        VALUES
+          ('Senior Frontend Engineer', 'Software Engineering', 'Full-time', 'Remote', 'Open'),
+          ('Product Designer', 'UI/UX Design', 'Full-time', 'HQ - Sulaymaniyah', 'Open')
 `;
+
+      // ----------------------------------------------------
+      // EDUCATION HISTORY
+      // ----------------------------------------------------
+      await db`
+        INSERT INTO education_history (
+          user_id, 
+          level, 
+          subject, 
+          institution, 
+          location, 
+          score, 
+          start_year, 
+          end_year
+        ) VALUES 
+        (
+          ${emp.id}, 
+          'Master''s', 
+          'Construction Technology Management', 
+          'Poznan University of Science & Technology', 
+          'Poznan, Poland', 
+          '3.8 GPA', 
+          2024, 
+          2026
+        ),
+        (
+          ${emp.id}, 
+          'Bachelor', 
+          'Computer Engineering', 
+          'Komar University of Science & Technology', 
+          'Sulaymaniyah', 
+          '3.5 GPA', 
+          2020, 
+          2024
+        ),
+        (
+          ${emp.id}, 
+          'High School Diploma', 
+          'Scientific Track', 
+          'Sulaymaniyah High School', 
+          'Sulaymaniyah', 
+          '96%', 
+          2017, 
+          2020
+        )
+      `;
+
       //----------------------------------
     }
 

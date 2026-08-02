@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import {
   GraduationCap,
   Save,
@@ -11,36 +11,16 @@ import {
   BookOpen,
   Building,
 } from "lucide-react";
+import { EducationTabProps } from "@/app/lib/employee/definitions";
 
-export default function EducationTab() {
-  // Mock data - You would replace this with actual data fetched from your DB
-  const [educationHistory, setEducationHistory] = useState([
-    {
-      id: 1,
-      level: "Master's",
-      subject: "Construction Technology Management",
-      institution: "Poznan University of Science & Technology",
-      location: "Poznan, Poland",
-      score: "3.8 GPA",
-    },
-    {
-      id: 2,
-      level: "Bachelor",
-      subject: "Civil Engineering",
-      institution: "Komar University of Science & Technology",
-      location: "Sulaymaniyah",
-      score: "3.5 GPA",
-    },
-    {
-      id: 3,
-      level: "High School Diploma",
-      subject: "Scientific Track",
-      institution: "Sulaymaniyah High School",
-      location: "Sulaymaniyah",
-      score: "96%", // 👈 Populated as a realistic mock entry
-    },
-  ]);
+interface InputFieldProps {
+  label: string;
+  type?: string;
+  placeholder?: string;
+  icon?: React.ElementType;
+}
 
+export default function EducationTab({ educationHistory }: EducationTabProps) {
   return (
     <div className="space-y-6 text-left animate-fadeIn">
       {/* SECTION 1: EDUCATION DETAILS FORM */}
@@ -87,14 +67,14 @@ export default function EducationTab() {
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
             <button
               type="button"
-              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
             >
               <RotateCcw className="w-4 h-4" />
               Reset
             </button>
             <button
               type="submit"
-              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors cursor-pointer"
             >
               <Save className="w-4 h-4" />
               Save
@@ -141,13 +121,13 @@ export default function EducationTab() {
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-2">
                       <button
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"
                         title="Add Document"
                       >
                         <FilePlus className="w-4 h-4" />
                       </button>
                       <button
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
                         title="Delete Entry"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -175,7 +155,12 @@ export default function EducationTab() {
 }
 
 // Reusable Input Field Component
-function InputField({ label, type = "text", placeholder, icon: Icon }: any) {
+function InputField({
+  label,
+  type = "text",
+  placeholder,
+  icon: Icon,
+}: InputFieldProps) {
   return (
     <div className="space-y-1.5">
       <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">

@@ -5,14 +5,22 @@ import React, { useState } from "react";
 import JobInformationTab from "./jobInformationTab";
 import OfficialInfoCard from "../officialInfoCard";
 import ProfileForm from "../profileForm";
-import { Briefcase, Shield, UserPen } from "lucide-react";
+import EducationTab from "./educationTab"; // 👈 Import your new education tab
+import { Briefcase, Shield, UserPen, GraduationCap } from "lucide-react";
 import {
   ProfileTabsProps,
   ProfileTabType,
 } from "@/app/lib/employee/definitions";
 
-export default function ProfileTabs({ profile, userEmail }: ProfileTabsProps) {
-  const [activeTab, setActiveTab] = useState<ProfileTabType>("job");
+export default function ProfileTabs({
+  profile,
+  userEmail,
+  educationHistory,
+}: ProfileTabsProps) {
+  // Update type definition if necessary to include "education"
+  const [activeTab, setActiveTab] = useState<ProfileTabType | "education">(
+    "job",
+  );
 
   return (
     <div className="space-y-6">
@@ -44,6 +52,20 @@ export default function ProfileTabs({ profile, userEmail }: ProfileTabsProps) {
           Official Information
         </button>
 
+        {/* 👈 New Education Tab Button */}
+        <button
+          type="button"
+          onClick={() => setActiveTab("education")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+            activeTab === "education"
+              ? "bg-indigo-50 text-indigo-600 shadow-xs"
+              : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+          }`}
+        >
+          <GraduationCap className="w-4 h-4" />
+          Education History
+        </button>
+
         <button
           type="button"
           onClick={() => setActiveTab("edit")}
@@ -62,10 +84,14 @@ export default function ProfileTabs({ profile, userEmail }: ProfileTabsProps) {
       <div>
         {activeTab === "job" && <JobInformationTab profile={profile} />}
         {activeTab === "official" && <OfficialInfoCard profile={profile} />}
+        {activeTab === "education" && (
+          <EducationTab educationHistory={educationHistory} />
+        )}{" "}
+        {/* 👈 Render Education Tab */}
         {activeTab === "edit" && (
           <ProfileForm profile={profile} userEmail={userEmail} />
         )}
       </div>
-    </div>  
+    </div>
   );
 }
