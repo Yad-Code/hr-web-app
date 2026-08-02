@@ -328,11 +328,12 @@ CREATE TABLE self_assessments (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         bank_name VARCHAR(100) NOT NULL,
-        account_number_masked VARCHAR(20) NOT NULL, -- e.g. "****4321"
-        iban_or_routing VARCHAR(100),
-        is_primary BOOLEAN DEFAULT true,
-        status VARCHAR(20) DEFAULT 'verified' -- 'pending_verification', 'verified'
-);
+        account_holder VARCHAR(100) NOT NULL,
+        account_number_masked VARCHAR(20) NOT NULL,
+        routing_or_iban VARCHAR(100),
+        is_primary BOOLEAN DEFAULT false,
+        status VARCHAR(20) DEFAULT 'pending'
+      );
     `;
 
     await db`

@@ -73,3 +73,19 @@ export async function fetchEmployeePaymentMethods(userId: string) {
   `;
   return methods;
 }
+
+export async function verifyPaymentMethod(methodId: string) {
+  try {
+    await db`
+      UPDATE payment_methods 
+      SET status = 'verified' 
+      WHERE id = ${methodId}
+    `;
+    
+    // Revalidate the admin or employee payroll page
+    revalidatePath("/payroll");
+  } catch (error) {
+    console.error("Failed to verify payment method:", error);
+    throw new Error("Verification failed.");
+  }
+}

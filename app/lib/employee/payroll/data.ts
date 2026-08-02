@@ -23,8 +23,7 @@ export async function addPaymentMethod(userId: string, formData: FormData) {
   const accountHolder = formData.get("account_holder") as string;
   const accountNumber = formData.get("account_number") as string;
   const routingOrIban = formData.get("routing_or_iban") as string;
-
-  // Mask the account number to store securely (e.g., •••• 1234)
+ 
   const last4 = accountNumber.slice(-4);
   const maskedNumber = `•••• ${last4}`;
 
@@ -33,8 +32,8 @@ export async function addPaymentMethod(userId: string, formData: FormData) {
       INSERT INTO payment_methods (user_id, bank_name, account_holder, account_number_masked, routing_or_iban, is_primary, status)
       VALUES (${userId}, ${bankName}, ${accountHolder}, ${maskedNumber}, ${routingOrIban}, false, 'pending')
     `;
-    // FIXED: Match your actual page route /payroll instead of /my-profile/payroll
-    revalidatePath("/payroll");
+    
+    revalidatePath("/my-profile/payroll");
   } catch (error) {
     console.error("Failed to add payment method:", error);
     throw new Error("Database insertion failed.");

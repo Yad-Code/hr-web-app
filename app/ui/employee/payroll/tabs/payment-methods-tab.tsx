@@ -15,6 +15,7 @@ export default function PaymentMethodsTab({
 }: PaymentMethodsTabProps) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -28,7 +29,10 @@ export default function PaymentMethodsTab({
           </p>
         </div>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={() => {
+            setErrorMessage(null);
+            setShowAddModal(true);
+          }}
           className="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors cursor-pointer"
         >
           + Add Payment Account
@@ -93,12 +97,28 @@ export default function PaymentMethodsTab({
               Add Direct Deposit Account
             </h3>
 
+            {errorMessage && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-xs font-medium">
+                {errorMessage}
+              </div>
+            )}
+
             <form
               action={async (formData) => {
                 setLoading(true);
-                await onAddAccount(formData);
-                setLoading(false);
-                setShowAddModal(false);
+                setErrorMessage(null);
+                try {
+                  await onAddAccount(formData);
+                  setShowAddModal(false);
+                } catch (err: unknown) {
+                  setErrorMessage(
+                    err instanceof Error
+                      ? err.message
+                      : "Failed to save account.",
+                  );
+                } finally {
+                  setLoading(false);
+                }
               }}
               className="space-y-4 text-xs"
             >

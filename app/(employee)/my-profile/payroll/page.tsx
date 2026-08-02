@@ -7,11 +7,12 @@ import {
   fetchPayStubItems,
   fetchEmployeePaymentMethods,
 } from "@/app/lib/admin/payroll/data";
-import { addPaymentMethod } from "@/app/lib/employee/payroll/data"; // Import your action[cite: 7]
+import { addPaymentMethod } from "@/app/lib/employee/payroll/data";
+import { getCurrentUserId } from "@/app/lib/employeeDashboard/performance/actions/utils";
 
 export default async function Page() {
   // 1. Get the current logged-in user
-  const userId = "123e4567-e89b-12d3-a456-426614174000"; // Replace with real UUID when auth is ready[cite: 8]
+  const userId = await getCurrentUserId();
 
   // Bind the userId so the form action receives it automatically
   const handleAddAccount = addPaymentMethod.bind(null, userId);
