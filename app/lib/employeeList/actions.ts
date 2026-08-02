@@ -45,6 +45,10 @@ export async function updateEmployeeProfile(
     const nationality = formData.get("nationality")?.toString() || null;
     const status = formData.get("status")?.toString() || "active";
 
+    // Extract Base Salary (Defaulting to 3500 if missing or invalid)
+    const rawSalary = formData.get("baseSalary");
+    const baseSalary = rawSalary ? Number(rawSalary) : 3500.0;
+
     // 2. Extract Personal Information Details
     const preferredName = formData.get("preferredName")?.toString() || null;
     const maritalStatus = formData.get("maritalStatus")?.toString() || "Single";
@@ -64,6 +68,7 @@ export async function updateEmployeeProfile(
           email = ${email},
           department = ${department},
           branch = ${branch},
+          base_salary = ${baseSalary}, -- 👈 Updated by Admin
           date_of_birth = ${dateOfBirth},
           gender = ${gender},
           nationality = ${nationality},
@@ -78,6 +83,7 @@ export async function updateEmployeeProfile(
         WHERE id = ${targetUserId}::uuid
       `;
     } else {
+      // Regular employees editing their own profile will NOT overwrite base_salary
       await sql`
         UPDATE users 
         SET 
@@ -102,6 +108,7 @@ export async function updateEmployeeProfile(
 
     revalidatePath(`/dashboard/employees/${targetUserId}/edit`);
     revalidatePath(`/dashboard/employees`);
+    revalidatePath(`/dashboard/payroll`); // 👈 Revalidate payroll table cache
     revalidatePath(`/my-profile`);
 
     return { success: true, message: "Profile updated successfully!" };

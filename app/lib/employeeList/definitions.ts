@@ -4,11 +4,11 @@ export interface Employee {
   id: string;
   name: string;
   email: string;
-  role: "admin" | "employee";
-  image_url: string | null;
-  status: "active" | "offline";
-  last_seen_text: string;
   department?: string;
+  role: "admin" | "employee";
+  status: "active" | "offline";
+  image_url: string | null;
+  last_seen_text: string;
 }
 
 export interface FullEmployeeProfile {
@@ -30,4 +30,5 @@ export interface FullEmployeeProfile {
   personal_email?: string | null;
   personal_phone?: string | null;
   current_address?: string | null;
+  base_salary?: number;
 }

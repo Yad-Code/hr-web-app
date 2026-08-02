@@ -42,6 +42,7 @@ export async function getProfileById(id: string) {
       current_address: user.current_address || "",
       role: user.role || "employee",
       status: user.status || "Active",
+      base_salary: user.base_salary ? Number(user.base_salary) : 3500.0, //Added base_salary here
       image_url: user.image_url || null,
       shift_start: user.shift_start || "09:00:00",
       shift_end: user.shift_end || "17:00:00",

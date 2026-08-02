@@ -1,3 +1,4 @@
+// @/app/(admin)/dashboard/(overview)/employees/page.tsx
 import { Suspense } from "react";
 import { EmployeeSearchList } from "@/app/ui/employee/search-list";
 import { EmployeeSearchListSkeleton } from "@/app/ui/employee/skeleton";

@@ -22,6 +22,7 @@ import {
   Globe,
   Hash,
   Lock,
+  DollarSign,
 } from "lucide-react";
 
 interface ProfileFormProps {
@@ -130,6 +131,15 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
               name="branch"
               icon={Briefcase}
               defaultValue={profile.branch}
+            />
+            <InputField
+              label="Monthly Base Salary ($)"
+              id="baseSalary"
+              name="baseSalary"
+              type="number"
+              icon={DollarSign}
+              defaultValue={profile.base_salary ?? 3500}
+              required
             />
             <InputField
               label="Date of Birth"

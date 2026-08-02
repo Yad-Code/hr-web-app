@@ -137,6 +137,13 @@ export async function rollbackProcessingPayroll() {
 
 export async function updateEmployeeSalary(userId: string, newSalary: number) {
   try {
+    if (!newSalary || newSalary < 0) {
+      return {
+        success: false,
+        message: "Please provide a valid positive salary amount.",
+      };
+    }
+
     await db`
       UPDATE users 
       SET base_salary = ${newSalary} 
@@ -145,9 +152,9 @@ export async function updateEmployeeSalary(userId: string, newSalary: number) {
 
     revalidatePath("/dashboard/payroll");
     revalidatePath("/dashboard/employees");
-    return { success: true, message: "Salary updated successfully." };
+    return { success: true, message: "Base salary updated successfully." };
   } catch (error) {
     console.error("Salary Update Error:", error);
-    return { success: false, message: "Failed to update salary." };
+    return { success: false, message: "Failed to update employee salary." };
   }
 }
