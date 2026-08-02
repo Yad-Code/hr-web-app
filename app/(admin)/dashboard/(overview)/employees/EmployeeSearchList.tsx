@@ -1,8 +1,9 @@
+// @/app/(admin)/dashboard/(overview)/employees/EmployeeSearchList.tsx
 "use client";
 
 import { useState } from "react";
 import Image from "next/image";
-import Link from "next/link"; // 👈 1. Import Next.js Link
+import Link from "next/link"; 
 import { Employee } from "@/app/lib/employeeList/definitions";
 
 interface EmployeeSearchListClientProps {
@@ -23,7 +24,7 @@ export function EmployeeSearchListClient({
       employee.department?.toLowerCase().includes(query)
     );
   });
-
+ 
   // Case-insensitive status match to handle 'Active' vs 'active' from PostgreSQL
   const activeCount = initialEmployees.filter(
     (e) => e.status?.toLowerCase() === "active",

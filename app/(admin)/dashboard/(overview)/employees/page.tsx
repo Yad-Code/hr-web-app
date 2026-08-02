@@ -12,7 +12,7 @@ export default async function EmployeesStatusPage() {
       {/* Static header renders immediately before async content streams in */}
       <div className="border-b border-slate-100 pb-4">
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-          Team Presence
+          Employee Directory
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 mt-1">
           Real-time status, location, and schedule visibility across the team.
