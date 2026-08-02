@@ -1,7 +1,10 @@
 // @/app/(admin)/dashboard/(overview)/payroll/page.tsx
 import { fetchAllPayStubs } from "@/app/lib/admin/payroll/data";
 import { AdminPayrollTable } from "./AdminPayrollTable";
-import { generateMonthlyPayroll } from "@/app/lib/admin/payroll/actions";
+import {
+  generateMonthlyPayroll,
+  rollbackProcessingPayroll,
+} from "@/app/lib/admin/payroll/actions";
 
 export default async function AdminPayrollPage() {
   const payStubs = await fetchAllPayStubs();
@@ -9,6 +12,7 @@ export default async function AdminPayrollPage() {
   const totalProcessing = payStubs.filter(
     (p) => p.status === "processing",
   ).length;
+
   const totalNetPayout = payStubs
     .filter((p) => p.status === "processing")
     .reduce((sum, record) => sum + Number(record.net_pay), 0);
@@ -38,9 +42,39 @@ export default async function AdminPayrollPage() {
             </p>
           </div>
 
-          {/* Server Action Form */}
+          {/* Rollback Server Action Form - Only shows if there is processing payroll */}
+          {totalProcessing > 0 && (
+            <form
+              action={async () => {
+                "use server";
+                await rollbackProcessingPayroll();
+              }}
+            >
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl hover:bg-rose-100 transition-colors shadow-xs"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+                Clear Processing
+              </button>
+            </form>
+          )}
+
+          {/* Generate Server Action Form */}
           <form
-            action={async (formData: FormData) => {
+            action={async () => {
               "use server";
               await generateMonthlyPayroll();
             }}

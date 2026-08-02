@@ -3,10 +3,17 @@
 
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 export async function generateMonthlyPayroll() {
   try {
-    const users = await db`SELECT id FROM users WHERE status = 'Active'`;
+    // Select the employee's custom base_salary
+    const users = await db`
+      SELECT id, base_salary 
+      FROM users 
+      WHERE status = 'Active'
+    `;
+
     if (users.length === 0)
       return { success: false, message: "No active users found." };
 
@@ -22,19 +29,17 @@ export async function generateMonthlyPayroll() {
       .split("T")[0];
 
     for (const user of users) {
-      const grossPay = 3500.0;
-      const tax = 350.0;
+      const grossPay = Number(user.base_salary);
+      const tax = grossPay * 0.1; // 10% tax
       const insurance = 200.0;
       const netPay = grossPay - tax - insurance;
 
-      // Insert pay stub and RETURNING id to use for line items
       const [stub] = await db`
         INSERT INTO pay_stubs (user_id, pay_period_start, pay_period_end, pay_date, gross_pay, net_pay, status) 
         VALUES (${user.id}, ${startOfMonth}, ${endOfMonth}, ${payDate}, ${grossPay}, ${netPay}, 'processing')
         RETURNING id
       `;
 
-      // Insert line items
       await db`
         INSERT INTO pay_stub_items (pay_stub_id, type, category, description, amount) 
         VALUES 
@@ -98,13 +103,51 @@ export async function deletePayStub(payStubId: string) {
       DELETE FROM pay_stubs 
       WHERE id = ${payStubId}
     `;
-    
+
     revalidatePath("/dashboard/payroll");
   } catch (error) {
     console.error("Failed to delete pay stub:", error);
     throw new Error("Database deletion failed.");
   }
 
-  // Redirect back to the payroll dashboard after deletion
-  revalidatePath("/dashboard/payroll");
+  // 2. Actually redirect the user to the table
+  redirect("/dashboard/payroll");
+}
+
+export async function rollbackProcessingPayroll() {
+  try {
+    // Only delete pay stubs that haven't been paid yet
+    await db`
+      DELETE FROM pay_stubs 
+      WHERE status = 'processing'
+    `;
+
+    revalidatePath("/dashboard/payroll");
+    return {
+      success: true,
+      message: "Processing payroll cleared successfully.",
+    };
+  } catch (error) {
+    console.error("Rollback Error:", error);
+    return { success: false, message: "Failed to rollback payroll." };
+  }
+}
+
+// Add to @/app/lib/admin/payroll/actions.ts
+
+export async function updateEmployeeSalary(userId: string, newSalary: number) {
+  try {
+    await db`
+      UPDATE users 
+      SET base_salary = ${newSalary} 
+      WHERE id = ${userId}
+    `;
+
+    revalidatePath("/dashboard/payroll");
+    revalidatePath("/dashboard/employees");
+    return { success: true, message: "Salary updated successfully." };
+  } catch (error) {
+    console.error("Salary Update Error:", error);
+    return { success: false, message: "Failed to update salary." };
+  }
 }

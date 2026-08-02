@@ -51,8 +51,10 @@ export async function fetchPayStubDetails(id: string) {
            pm.status as payment_status
     FROM pay_stubs p
     JOIN users u ON p.user_id = u.id
-    LEFT JOIN payment_methods pm ON u.id = pm.user_id AND pm.is_primary = true
+    LEFT JOIN payment_methods pm ON u.id = pm.user_id
     WHERE p.id = ${id}
+    ORDER BY pm.is_primary DESC, pm.id DESC
+    LIMIT 1
   `;
   return record;
 }

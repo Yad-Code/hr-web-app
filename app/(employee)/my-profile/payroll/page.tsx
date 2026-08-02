@@ -1,4 +1,4 @@
-// app/payroll/page.tsx
+// app/(employee)/my-profile/payroll/page.tsx
 import PayrollDashboard, {
   PayrollDashboardData,
 } from "@/app/ui/employee/payroll/payroll-dashboard";
