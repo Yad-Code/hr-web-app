@@ -8,7 +8,14 @@ import OfficialInfoCard from "../officialInfoCard";
 import ProfileForm from "../profileForm";
 import EducationTab from "./educationTab";
 import LanguageTab from "./languageTab";
-import { Briefcase, UserPen, GraduationCap, Languages } from "lucide-react";
+import DocumentsTab from "./documentsTab"; // 👈 1. Import DocumentsTab component
+import {
+  Briefcase,
+  UserPen,
+  GraduationCap,
+  Languages,
+  FileText,
+} from "lucide-react";
 import {
   ProfileTabsProps,
   ProfileTabType,
@@ -19,19 +26,19 @@ export default function ProfileTabs({
   userEmail,
   educationHistory = [],
   languageHistory = [],
+  documents = [], 
 }: ProfileTabsProps) {
-  // 👈 1. Set "personal" as the default initial state
   const [activeTab, setActiveTab] = useState<ProfileTabType>("personal");
 
   return (
     <div className="space-y-6">
       {/* Tab Controls */}
       <div className="flex border-b border-slate-200 gap-2 bg-white p-1.5 rounded-2xl border shadow-xs overflow-x-auto">
-        {/* 👈 2. Moved "Personal Details" to the first tab button position */}
+        {/* Personal Details Tab Button */}
         <button
           type="button"
           onClick={() => setActiveTab("personal")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "personal"
               ? "bg-indigo-50 text-indigo-600 shadow-xs"
               : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
@@ -45,7 +52,7 @@ export default function ProfileTabs({
         <button
           type="button"
           onClick={() => setActiveTab("job")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "job"
               ? "bg-indigo-50 text-indigo-600 shadow-xs"
               : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
@@ -59,7 +66,7 @@ export default function ProfileTabs({
         <button
           type="button"
           onClick={() => setActiveTab("education")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "education"
               ? "bg-indigo-50 text-indigo-600 shadow-xs"
               : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
@@ -73,7 +80,7 @@ export default function ProfileTabs({
         <button
           type="button"
           onClick={() => setActiveTab("language")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "language"
               ? "bg-indigo-50 text-indigo-600 shadow-xs"
               : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
@@ -81,6 +88,20 @@ export default function ProfileTabs({
         >
           <Languages className="w-4 h-4" />
           Languages
+        </button>
+
+        {/* 👈 3. Added Documents Tab Button */}
+        <button
+          type="button"
+          onClick={() => setActiveTab("documents")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === "documents"
+              ? "bg-indigo-50 text-indigo-600 shadow-xs"
+              : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          Documents
         </button>
       </div>
 
@@ -110,6 +131,9 @@ export default function ProfileTabs({
             employeeName={profile.name}
           />
         )}
+
+        {/* 👈 4. Added Documents Tab View */}
+        {activeTab === "documents" && <DocumentsTab documents={documents} />}
       </div>
     </div>
   );

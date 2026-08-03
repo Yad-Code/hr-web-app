@@ -1,4 +1,3 @@
-// app/(employee)/my-profile/(overview)/page.tsx
 import { auth } from "@/auth";
 import { getProfileData } from "@/app/lib/employeeDashboard/employee/data";
 import { redirect } from "next/navigation";
@@ -11,7 +10,8 @@ import {
 import { Suspense } from "react";
 import {
   getEducationData,
-  getLanguageData, 
+  getLanguageData,
+  getEmployeeDocumentsData,
 } from "@/app/lib/employee/profile/data";
 
 export default async function EmployeeProfilePage() {
@@ -31,23 +31,28 @@ export default async function EmployeeProfilePage() {
     );
   }
 
-  const educationHistory = await getEducationData(profile.id);
-  const languageHistory = await getLanguageData(profile.id);  
+  // Fetch all secondary data in parallel for optimal render speed
+  const [educationHistory, languageHistory, documents] = await Promise.all([
+    getEducationData(profile.id),
+    getLanguageData(profile.id),
+    getEmployeeDocumentsData(profile.id),
+  ]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 p-2 sm:p-4 text-left select-none animate-fadeIn">
-      {/* Header section remains intact */}
+      {/* Header section */}
       <Suspense fallback={<ProfileHeaderSkeleton />}>
         <ProfileHeader profile={profile} />
       </Suspense>
 
-      {/* Pass educationHistory & languageHistory down to ProfileTabs */}
+      {/* Pass profile details & relations down to ProfileTabs */}
       <Suspense fallback={<ProfileFormSkeleton />}>
         <ProfileTabs
           profile={profile}
           userEmail={session.user.email}
           educationHistory={educationHistory}
-          languageHistory={languageHistory}  
+          languageHistory={languageHistory}
+          documents={documents}
         />
       </Suspense>
     </div>

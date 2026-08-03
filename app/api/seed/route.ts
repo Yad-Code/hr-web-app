@@ -9,6 +9,7 @@ export async function GET() {
 
     // Drop profile tables
     await db`DROP TABLE IF EXISTS employee_languages`;
+    await db`DROP TABLE IF EXISTS employee_documents`;
 
     // Drop new performance tables
     await db`DROP TABLE IF EXISTS performance_history`;
@@ -385,6 +386,19 @@ CREATE TABLE self_assessments (
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       )
     `;
+
+    // document table
+    await db`
+      CREATE TABLE employee_documents (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        document_type VARCHAR(100) NOT NULL, -- Selected category (e.g. 'Employment Contract', 'National ID', 'Degree Certificate', 'Tax Form')
+        file_name VARCHAR(255) NOT NULL,       -- Uploaded filename (e.g., 'Yad_Contract_2026.pdf')
+        file_extension VARCHAR(20) NOT NULL,   -- File format (e.g., 'pdf', 'png', 'docx')
+        file_url TEXT NOT NULL,                -- Download link / storage URL
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+`;
 
     // 3. Hash Passwords
     const adminPassword = await bcrypt.hash("AdminPass123", 10);
@@ -998,6 +1012,37 @@ VALUES
           'System Administrator'
         )
       `;
+
+      await db`
+        INSERT INTO employee_documents (
+          user_id, 
+          document_type, 
+          file_name, 
+          file_extension, 
+          file_url
+        ) VALUES 
+        (
+          ${emp.id}, 
+          'Employment Contract', 
+          'employment_contract_2026.pdf', 
+          'pdf', 
+          'https://example.com/docs/employment_contract_2026.pdf'
+        ),
+        (
+          ${emp.id}, 
+          'National ID', 
+          'national_identity_card.png', 
+          'png', 
+          'https://example.com/docs/national_identity_card.png'
+        ),
+        (
+          ${emp.id}, 
+          'Degree Certificate', 
+          'bachelors_degree_certificate.pdf', 
+          'pdf', 
+          'https://example.com/docs/bachelors_degree_certificate.pdf'
+        );
+`;
 
       //----------------------------------
     }

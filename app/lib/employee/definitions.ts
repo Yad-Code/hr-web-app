@@ -3,6 +3,7 @@
 export type UserRole = "ADMIN" | "MANAGER" | "EMPLOYEE";
 export type WorkType = "FULL_TIME" | "PART_TIME" | "CONTRACTOR" | "INTERN";
 
+// Profile tabs prop
 // language
 export interface LanguageItem {
   id: string;
@@ -41,14 +42,27 @@ export interface EducationTabProps {
   educationHistory: EducationItem[];
 }
 
-export interface ProfileTabsProps extends EducationTabProps {
+export interface ProfileTabsProps {
   profile: FullEmployeeProfile;
   userEmail: string;
+  educationHistory?: EducationItem[];
+  languageHistory?: LanguageItem[];
+  documents?: EmployeeDocument[]; // 👈 Add documents array prop
 }
 
 export interface EmploymentHistoryItem {
   title: string;
   period: string;
+}
+
+export interface EmployeeDocument {
+  id: string;
+  user_id: string;
+  title: string;
+  category: "Contract" | "Identification" | "Tax" | "Certification" | "Other";
+  file_url: string;
+  file_size?: string;
+  uploaded_at: string;
 }
 
 export interface FullEmployeeProfile {
@@ -90,17 +104,12 @@ export interface FullEmployeeProfile {
   history?: EmploymentHistoryItem[];
 }
 
-export interface ProfileTabsProps extends EducationTabProps, LanguageTabProps {
-  profile: FullEmployeeProfile;
-  userEmail: string;
-}
-
 export type ProfileTabType =
   | "job"
   | "personal"
   | "education"
   | "language"
-   
+  | "documents";
 
 export type AccountStatus =
   | "PENDING_APPROVAL"

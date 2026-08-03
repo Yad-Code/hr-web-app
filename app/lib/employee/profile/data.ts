@@ -3,6 +3,7 @@
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db"; // Adjust path to match your project
 import { EducationItem } from "@/app/lib/employee/definitions";
 import { LanguageItem } from "@/app/lib/employee/definitions";
+import { EmployeeDocument } from "@/app/lib/employee/definitions";
 
 export async function getEducationData(userId: string) {
   try {
@@ -48,10 +49,33 @@ export async function getLanguageData(userId: string): Promise<LanguageItem[]> {
       ORDER BY created_at DESC
     `;
 
-    
-    return data as unknown as LanguageItem[]; 
+    return data as unknown as LanguageItem[];
   } catch (error) {
     console.error("Failed to fetch language data:", error);
+    return [];
+  }
+}
+
+export async function getEmployeeDocumentsData(
+  userId: string
+): Promise<EmployeeDocument[]> {
+  try {
+    const documents = await db<EmployeeDocument[]>`
+      SELECT 
+        id,
+        user_id,
+        file_name AS title,
+        document_type AS category,
+        file_url,
+        created_at::text AS uploaded_at
+      FROM employee_documents
+      WHERE user_id = ${userId}
+      ORDER BY created_at DESC
+    `;
+
+    return documents;
+  } catch (error) {
+    console.error("Error fetching employee documents:", error);
     return [];
   }
 }
