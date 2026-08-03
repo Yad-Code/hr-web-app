@@ -51,7 +51,9 @@ export interface ProfileTabsProps {
 }
 
 export interface EmploymentHistoryItem {
+  id?: string;
   title: string;
+  company: string;
   period: string;
 }
 
@@ -66,37 +68,44 @@ export interface EmployeeDocument {
 }
 
 export interface FullEmployeeProfile {
+  // Core Identifiers
   id: string;
-  userId: string;
-  employee_id: string;
-  name: string; //
+  userId?: string;
+  employee_id?: string | null;
+
+  // Personal Info
+  name: string;
   preferred_name?: string | null;
-  department?: string | null;
-  branch?: string | null;
+  email: string;
+  personal_email?: string | null;
+  personal_phone?: string | null;
+  current_address?: string | null;
   date_of_birth?: string | Date | null;
   age?: number | null;
   gender?: string | null;
   nationality?: string | null;
   marital_status?: string | null;
   blood_group?: string | null;
-  email: string; //
-  personal_email?: string | null;
-  personal_phone?: string | null;
-  current_address?: string | null;
+
+  // Organization & Administrative
+  department?: string | null;
+  branch?: string | null;
   role?: string | null;
-  jobTitle?: string | null;
   status?: string | null;
   base_salary?: number | null;
   image_url?: string | null;
-  shift_start?: string | null;
-  shift_end?: string | null;
-  shift_type?: string | null;
 
-  // Optional extended job fields for JobInformationTab
+  // Job & Shift Details (used in JobInformationTab)
+  jobTitle?: string | null;
   jobFamily?: string | null;
   employmentType?: string | null;
   managerName?: string | null;
   joinDate?: string | null;
+  shift_start?: string | null;
+  shift_end?: string | null;
+  shift_type?: string | null;
+
+  // Benefits & History
   privateOrg?: string | null;
   publicOrg?: string | null;
   insurance?: string | null;

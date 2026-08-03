@@ -1,4 +1,3 @@
-// @/app/dashboard/employees/[id]/edit/page.tsx (or your file path)
 import { auth } from "@/auth";
 import { getProfileById } from "@/app/lib/employeeList/data";
 import { redirect } from "next/navigation";
@@ -6,30 +5,31 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import ProfileHeader from "@/app/ui/dashboard/id/profileHeader";
-import ProfileForm from "@/app/ui/dashboard/id/profileForm";
+import AdminProfileTabs from "@/app/ui/dashboard/id/tabs/adminProfileTabs";
 import {
   ProfileFormSkeleton,
   ProfileHeaderSkeleton,
 } from "@/app/ui/employee/skeleton";
+
+import {
+  getEducationData,
+  getLanguageData,
+  getEmployeeDocumentsData,
+} from "@/app/lib/employee/profile/data";
 
 export default async function AdminEmployeeEditPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  // 1. Redirect to /my-profile if the user is not an admin
   const session = await auth();
   if (session?.user?.role !== "admin") {
     redirect("/my-profile");
   }
 
-  // 2. Resolve dynamic [id] parameter
   const { id } = await params;
-
-  // 3. Fetch employee profile directly from database
   const profile = await getProfileById(id);
 
-  // 4. Render error card if record doesn't exist
   if (!profile) {
     return (
       <div className="max-w-4xl mx-auto my-12 p-8 bg-rose-50 border border-rose-200 rounded-3xl text-center space-y-4">
@@ -49,6 +49,13 @@ export default async function AdminEmployeeEditPage({
       </div>
     );
   }
+
+  // Fetch all related sections in parallel
+  const [educationHistory, languageHistory, documents] = await Promise.all([
+    getEducationData(profile.id),
+    getLanguageData(profile.id),
+    getEmployeeDocumentsData(profile.id),
+  ]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 p-2 sm:p-4 text-left select-none animate-fadeIn">
@@ -70,9 +77,14 @@ export default async function AdminEmployeeEditPage({
         <ProfileHeader profile={profile} />
       </Suspense>
 
-      {/* Unified Profile Edit Form (Manages its own 2-column layout internally) */}
+      {/* Admin Tabbed Workspace */}
       <Suspense fallback={<ProfileFormSkeleton />}>
-        <ProfileForm profile={profile} />
+        <AdminProfileTabs
+          profile={profile}
+          educationHistory={educationHistory}
+          languageHistory={languageHistory}
+          documents={documents}
+        />
       </Suspense>
     </div>
   );

@@ -26,7 +26,7 @@ export default function ProfileTabs({
   userEmail,
   educationHistory = [],
   languageHistory = [],
-  documents = [], 
+  documents = [],
 }: ProfileTabsProps) {
   const [activeTab, setActiveTab] = useState<ProfileTabType>("personal");
 
@@ -127,7 +127,7 @@ export default function ProfileTabs({
           <LanguageTab
             languageHistory={languageHistory}
             userId={profile.id}
-            employeeId={profile.employee_id}
+            employeeId={profile.employee_id ?? undefined}
             employeeName={profile.name}
           />
         )}
