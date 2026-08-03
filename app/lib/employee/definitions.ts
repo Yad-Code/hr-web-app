@@ -97,10 +97,10 @@ export interface ProfileTabsProps extends EducationTabProps, LanguageTabProps {
 
 export type ProfileTabType =
   | "job"
-  | "official"
+  | "personal"
   | "education"
   | "language"
-  | "edit";
+   
 
 export type AccountStatus =
   | "PENDING_APPROVAL"
