@@ -9,7 +9,10 @@ import {
   ProfileHeaderSkeleton,
 } from "@/app/ui/employee/skeleton";
 import { Suspense } from "react";
-import { getEducationData } from "@/app/lib/employee/profile/data";
+import {
+  getEducationData,
+  getLanguageData, 
+} from "@/app/lib/employee/profile/data";
 
 export default async function EmployeeProfilePage() {
   const session = await auth();
@@ -29,6 +32,7 @@ export default async function EmployeeProfilePage() {
   }
 
   const educationHistory = await getEducationData(profile.id);
+  const languageHistory = await getLanguageData(profile.id);  
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 p-2 sm:p-4 text-left select-none animate-fadeIn">
@@ -37,12 +41,13 @@ export default async function EmployeeProfilePage() {
         <ProfileHeader profile={profile} />
       </Suspense>
 
-      {/* Pass educationHistory down to ProfileTabs */}
+      {/* Pass educationHistory & languageHistory down to ProfileTabs */}
       <Suspense fallback={<ProfileFormSkeleton />}>
         <ProfileTabs
           profile={profile}
           userEmail={session.user.email}
           educationHistory={educationHistory}
+          languageHistory={languageHistory}  
         />
       </Suspense>
     </div>

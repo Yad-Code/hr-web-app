@@ -2,44 +2,62 @@
 
 import React, { useState, useTransition, useRef } from "react";
 import {
-  GraduationCap,
+  Languages,
   Save,
   RotateCcw,
   Trash2,
   FilePlus,
-  MapPin,
-  BookOpen,
-  Building,
   Loader2,
   AlertTriangle,
   X,
   FileText,
   ExternalLink,
   Link as LinkIcon,
-  Eye, 
-  Calendar, 
-  Award, 
+  Eye,
+  User,
+  IdCard,
+  Volume2,
+  BookOpen,
+  PenTool,
+  MessageSquare,
 } from "lucide-react";
-import { EducationTabProps } from "@/app/lib/employee/definitions";
-import {
-  addEducationAction,
-  deleteEducationAction,
-  updateEducationDocumentAction,
-} from "@/app/lib/employee/profile/actions";
 
-interface InputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label: string;
-  icon?: React.ElementType;
+export interface LanguageEntry {
+  id: string;
+  user_id: string;
+  language: string;
+  listening: string;
+  reading: string;
+  writing: string;
+  speaking: string;
+  created_by: string;
+  document_url?: string | null;
+  created_at?: string;
 }
 
-interface ExtendedEducationTabProps extends EducationTabProps {
+interface LanguageTabProps {
+  languageHistory: LanguageEntry[];
   userId: string;
+  employeeId?: string;
+  employeeName?: string;
 }
 
-export default function EducationTab({
-  educationHistory,
+const CEFR_LEVELS = [
+  "A1 - Beginner",
+  "A2 - Elementary",
+  "B1 - Intermediate",
+  "B2 - Upper Intermediate",
+  "C1 - Advanced",
+  "C2 - Mastery",
+  "Native / Fluent",
+];
+
+export default function LanguageTab({
+  languageHistory = [],
   userId,
-}: ExtendedEducationTabProps) {
+  employeeId = "EMP-1029",
+  employeeName = "Current User",
+}: LanguageTabProps) {
   const [isPending, startTransition] = useTransition();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -47,32 +65,28 @@ export default function EducationTab({
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [docModalItem, setDocModalItem] = useState<{
     id: string;
-    level: string;
+    language: string;
     currentUrl?: string | null;
   } | null>(null);
   const [documentUrlInput, setDocumentUrlInput] = useState("");
-
-  // 👈 State for the View Full Details Modal
-  const [selectedItem, setSelectedItem] = useState<
-    ExtendedEducationTabProps["educationHistory"][number] | null
-  >(null);
+  const [selectedItem, setSelectedItem] = useState<LanguageEntry | null>(null);
 
   const formRef = useRef<HTMLFormElement>(null);
 
   const initialFormState = {
-    level: "",
-    subject: "",
-    institution: "",
-    location: "",
-    score: "",
-    start_year: "",
-    end_year: "",
+    language: "",
+    listening: "",
+    reading: "",
+    writing: "",
+    speaking: "",
     document_url: "",
   };
 
   const [formData, setFormData] = useState(initialFormState);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -87,15 +101,16 @@ export default function EducationTab({
 
     startTransition(async () => {
       try {
-        await addEducationAction(userId, data);
+        const { addLanguageAction } =
+          await import("@/app/lib/employee/profile/actions");
+        await addLanguageAction(userId, employeeName, data);
         handleReset();
       } catch (err) {
-        console.error("Failed to add education entry:", err);
+        console.error("Failed to add language entry:", err);
       }
     });
   };
 
-  // Confirm and proceed with deletion
   const confirmDelete = () => {
     if (!itemToDelete) return;
 
@@ -105,26 +120,26 @@ export default function EducationTab({
 
     startTransition(async () => {
       try {
-        await deleteEducationAction(id);
+        const { deleteLanguageAction } =
+          await import("@/app/lib/employee/profile/actions");
+        await deleteLanguageAction(id);
       } catch (err) {
-        console.error("Failed to delete education entry:", err);
+        console.error("Failed to delete language entry:", err);
       } finally {
         setDeletingId(null);
       }
     });
   };
 
-  // Open Document Modal prefilled with current URL if present
   const openDocumentModal = (
     id: string,
-    level: string,
+    language: string,
     currentUrl?: string | null,
   ) => {
-    setDocModalItem({ id, level, currentUrl });
+    setDocModalItem({ id, language, currentUrl });
     setDocumentUrlInput(currentUrl || "");
   };
 
-  // Save Document URL from modal
   const handleSaveDocument = (e: React.FormEvent) => {
     e.preventDefault();
     if (!docModalItem) return;
@@ -135,7 +150,9 @@ export default function EducationTab({
     setDocModalItem(null);
     startTransition(async () => {
       try {
-        await updateEducationDocumentAction(targetId, urlToSave);
+        const { updateLanguageDocumentAction } =
+          await import("@/app/lib/employee/profile/actions");
+        await updateLanguageDocumentAction(targetId, urlToSave);
       } catch (err) {
         console.error("Failed to update document URL:", err);
       }
@@ -144,203 +161,219 @@ export default function EducationTab({
 
   return (
     <div className="space-y-6 text-left animate-fadeIn">
-      {/* SECTION 1: EDUCATION DETAILS FORM */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xs space-y-5">
-        <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-          <div className="w-7 h-7 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-            <GraduationCap className="w-4 h-4" />
+      {/* FORM CONTAINER */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xs space-y-6">
+        {/* SECTION 1: EMPLOYEE INFORMATION */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+            <div className="w-7 h-7 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+              <User className="w-4 h-4" />
+            </div>
+            <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+              Employee Information
+            </h2>
           </div>
-          <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-            Education Details
-          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <InputField
+              label="Employee ID"
+              value={employeeId}
+              disabled
+              icon={IdCard}
+            />
+            <InputField
+              label="Employee Name"
+              value={employeeName}
+              disabled
+              icon={User}
+            />
+          </div>
         </div>
 
-        <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            <InputField
-              label="Education Level"
-              name="level"
-              value={formData.level}
-              onChange={handleChange}
-              placeholder="e.g., Bachelor, Master's"
-              icon={GraduationCap}
-              required
-            />
-            <InputField
-              label="Academic Subject"
-              name="subject"
-              value={formData.subject}
-              onChange={handleChange}
-              placeholder="e.g., Computer Engineering"
-              icon={BookOpen}
-              required
-            />
-            <InputField
-              label="Educational Institution"
-              name="institution"
-              value={formData.institution}
-              onChange={handleChange}
-              placeholder="University Name"
-              icon={Building}
-              required
-            />
-            <InputField
-              label="Location"
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              placeholder="City, Country"
-              icon={MapPin}
-            />
-            <InputField
-              label="Score / GPA"
-              name="score"
-              value={formData.score}
-              onChange={handleChange}
-              placeholder="e.g., 3.8 or 96%"
-            />
-            <div className="grid grid-cols-2 gap-3">
+        {/* SECTION 2: LANGUAGE DETAILS FORM */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+            <div className="w-7 h-7 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+              <Languages className="w-4 h-4" />
+            </div>
+            <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+              Language Details
+            </h2>
+          </div>
+
+          <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               <InputField
-                label="Start Year"
-                name="start_year"
-                type="number"
-                value={formData.start_year}
+                label="Language"
+                name="language"
+                value={formData.language}
                 onChange={handleChange}
-                placeholder="YYYY"
+                placeholder="e.g., English, Arabic, Persian"
+                icon={Languages}
+                required
               />
-              <InputField
-                label="End Year"
-                name="end_year"
-                type="number"
-                value={formData.end_year}
+
+              <SelectField
+                label="Listening Proficiency"
+                name="listening"
+                value={formData.listening}
                 onChange={handleChange}
-                placeholder="YYYY"
+                options={CEFR_LEVELS}
+                icon={Volume2}
+                required
+              />
+
+              <SelectField
+                label="Reading Proficiency"
+                name="reading"
+                value={formData.reading}
+                onChange={handleChange}
+                options={CEFR_LEVELS}
+                icon={BookOpen}
+                required
+              />
+
+              <SelectField
+                label="Writing Proficiency"
+                name="writing"
+                value={formData.writing}
+                onChange={handleChange}
+                options={CEFR_LEVELS}
+                icon={PenTool}
+                required
+              />
+
+              <SelectField
+                label="Speaking Proficiency"
+                name="speaking"
+                value={formData.speaking}
+                onChange={handleChange}
+                options={CEFR_LEVELS}
+                icon={MessageSquare}
+                required
+              />
+
+              <InputField
+                label="Document / Certificate Link"
+                name="document_url"
+                value={formData.document_url}
+                onChange={handleChange}
+                placeholder="https://example.com/certificate.pdf"
+                icon={LinkIcon}
               />
             </div>
-          </div>
 
-          <InputField
-            label="Document URL / Certificate Link"
-            name="document_url"
-            value={formData.document_url}
-            onChange={handleChange}
-            placeholder="https://example.com/certificate.pdf"
-            icon={LinkIcon}
-          />
-
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={handleReset}
-              disabled={isPending}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 rounded-lg transition-colors cursor-pointer"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Reset
-            </button>
-            <button
-              type="submit"
-              disabled={isPending}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-lg transition-colors cursor-pointer"
-            >
-              {isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-              Save
-            </button>
-          </div>
-        </form>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={handleReset}
+                disabled={isPending}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 rounded-lg transition-colors cursor-pointer"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Reset
+              </button>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-lg transition-colors cursor-pointer"
+              >
+                {isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
 
-      {/* SECTION 2: EDUCATION HISTORY TABLE */}
+      {/* SECTION 3: LANGUAGE TABLE */}
       <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xs space-y-5 overflow-hidden">
         <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider pb-3 border-b border-slate-100">
-          Education History
+          Language Competencies
         </h2>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left whitespace-nowrap">
             <thead className="text-xs text-slate-500 uppercase bg-slate-50 rounded-lg">
               <tr>
-                <th className="px-4 py-3 font-semibold rounded-tl-lg">
-                  Education Level
-                </th>
-                <th className="px-4 py-3 font-semibold">Academic Subject</th>
-                <th className="px-4 py-3 font-semibold">Institution</th>
-                <th className="px-4 py-3 font-semibold">Location</th>
-                <th className="px-4 py-3 font-semibold text-center rounded-tr-lg">
+                <th className="px-4 py-3 font-semibold rounded-tl-lg text-center">
                   Actions
+                </th>
+                <th className="px-4 py-3 font-semibold">Language</th>
+                <th className="px-4 py-3 font-semibold">Speaking</th>
+                <th className="px-4 py-3 font-semibold">Reading</th>
+                <th className="px-4 py-3 font-semibold">Writing</th>
+                <th className="px-4 py-3 font-semibold rounded-tr-lg">
+                  Created By
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {educationHistory.map((edu) => (
+              {languageHistory.map((lang) => (
                 <tr
-                  key={edu.id}
+                  key={lang.id}
                   className="hover:bg-slate-50/50 transition-colors"
                 >
-                  <td className="px-4 py-3 font-medium text-slate-900">
-                    {edu.level}
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">{edu.subject}</td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {edu.institution}
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">{edu.location}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-2">
-                      {/* 👈 View Details Button */}
+                      {/* View Details Button */}
                       <button
                         type="button"
-                        onClick={() => setSelectedItem(edu)}
+                        onClick={() => setSelectedItem(lang)}
                         className="p-1.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-md transition-colors cursor-pointer"
                         title="View Full Details"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
 
-                      {/* View Document Link (If exists) */}
-                      {edu.document_url && (
+                      {/* View External Certificate */}
+                      {lang.document_url && (
                         <a
-                          href={edu.document_url}
+                          href={lang.document_url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors cursor-pointer"
-                          title="View Document"
+                          title="View Certificate"
                         >
                           <ExternalLink className="w-4 h-4" />
                         </a>
                       )}
 
-                      {/* Attach/Edit Document Button */}
+                      {/* Attach/Edit Document */}
                       <button
                         type="button"
                         onClick={() =>
-                          openDocumentModal(edu.id, edu.level, edu.document_url)
+                          openDocumentModal(
+                            lang.id,
+                            lang.language,
+                            lang.document_url,
+                          )
                         }
                         className={`p-1.5 rounded-md transition-colors cursor-pointer ${
-                          edu.document_url
+                          lang.document_url
                             ? "text-indigo-600 hover:bg-indigo-50"
                             : "text-blue-600 hover:bg-blue-50"
                         }`}
                         title={
-                          edu.document_url ? "Update Document" : "Add Document"
+                          lang.document_url ? "Update Document" : "Add Document"
                         }
                       >
                         <FilePlus className="w-4 h-4" />
                       </button>
 
-                      {/* Delete Entry Button */}
+                      {/* Delete Record */}
                       <button
                         type="button"
-                        onClick={() => setItemToDelete(edu.id)}
-                        disabled={deletingId === edu.id}
+                        onClick={() => setItemToDelete(lang.id)}
+                        disabled={deletingId === lang.id}
                         className="p-1.5 text-red-600 hover:bg-red-50 disabled:opacity-50 rounded-md transition-colors cursor-pointer"
-                        title="Delete Entry"
+                        title="Remove Language"
                       >
-                        {deletingId === edu.id ? (
+                        {deletingId === lang.id ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                           <Trash2 className="w-4 h-4" />
@@ -348,15 +381,30 @@ export default function EducationTab({
                       </button>
                     </div>
                   </td>
+                  <td className="px-4 py-3 font-medium text-slate-900">
+                    {lang.language}
+                  </td>
+                  <td className="px-4 py-3">
+                    <ProficiencyBadge level={lang.speaking} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <ProficiencyBadge level={lang.reading} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <ProficiencyBadge level={lang.writing} />
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">
+                    {lang.created_by}
+                  </td>
                 </tr>
               ))}
-              {educationHistory.length === 0 && (
+              {languageHistory.length === 0 && (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-4 py-8 text-center text-slate-500"
                   >
-                    No education history found.
+                    No language records found.
                   </td>
                 </tr>
               )}
@@ -365,7 +413,7 @@ export default function EducationTab({
         </div>
       </div>
 
-      {/* 👈 VIEW FULL DETAILS MODAL */}
+      {/* VIEW FULL DETAILS MODAL */}
       {selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full border border-slate-200 overflow-hidden">
@@ -373,14 +421,14 @@ export default function EducationTab({
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                    <GraduationCap className="w-5 h-5" />
+                    <Languages className="w-5 h-5" />
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-slate-900">
-                      {selectedItem.level}
+                      {selectedItem.language}
                     </h3>
                     <p className="text-xs text-slate-500 font-medium">
-                      {selectedItem.subject}
+                      Created by: {selectedItem.created_by}
                     </p>
                   </div>
                 </div>
@@ -393,50 +441,46 @@ export default function EducationTab({
                 </button>
               </div>
 
-              {/* Detail Items Grid */}
+              {/* Grid of Competencies */}
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="space-y-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <Building className="w-3.5 h-3.5 text-slate-400" />
-                    Institution
+                    <Volume2 className="w-3.5 h-3.5 text-slate-400" />
+                    Listening
                   </span>
-                  <p className="font-medium text-slate-800">
-                    {selectedItem.institution}
-                  </p>
+                  <div>
+                    <ProficiencyBadge level={selectedItem.listening} />
+                  </div>
                 </div>
 
                 <div className="space-y-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                    Location
+                    <BookOpen className="w-3.5 h-3.5 text-slate-400" />
+                    Reading
                   </span>
-                  <p className="font-medium text-slate-800">
-                    {selectedItem.location || "N/A"}
-                  </p>
+                  <div>
+                    <ProficiencyBadge level={selectedItem.reading} />
+                  </div>
                 </div>
 
                 <div className="space-y-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <Award className="w-3.5 h-3.5 text-slate-400" />
-                    Score / GPA
+                    <PenTool className="w-3.5 h-3.5 text-slate-400" />
+                    Writing
                   </span>
-                  <p className="font-medium text-slate-800">
-                    {selectedItem.score || "N/A"}
-                  </p>
+                  <div>
+                    <ProficiencyBadge level={selectedItem.writing} />
+                  </div>
                 </div>
 
                 <div className="space-y-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                    Duration
+                    <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
+                    Speaking
                   </span>
-                  <p className="font-medium text-slate-800">
-                    {selectedItem.start_year || selectedItem.end_year
-                      ? `${selectedItem.start_year || "—"} - ${
-                          selectedItem.end_year || "Present"
-                        }`
-                      : "N/A"}
-                  </p>
+                  <div>
+                    <ProficiencyBadge level={selectedItem.speaking} />
+                  </div>
                 </div>
               </div>
 
@@ -461,7 +505,7 @@ export default function EducationTab({
                 </div>
               ) : (
                 <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-3 text-center text-xs text-slate-400">
-                  No document attached
+                  No certificate attached
                 </div>
               )}
             </div>
@@ -479,7 +523,7 @@ export default function EducationTab({
         </div>
       )}
 
-      {/* FORMAL DOCUMENT ATTACH / EDIT MODAL */}
+      {/* DOCUMENT MODAL */}
       {docModalItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full border border-slate-200 overflow-hidden">
@@ -500,12 +544,12 @@ export default function EducationTab({
 
                 <div>
                   <h3 className="text-base font-bold text-slate-900">
-                    Attach Education Document
+                    Attach Language Certificate
                   </h3>
                   <p className="text-sm text-slate-500 mt-1">
-                    Provide a link to the diploma, degree, or certificate for{" "}
+                    Provide a link to the certificate or document for{" "}
                     <span className="font-semibold text-slate-700">
-                      {docModalItem.level}
+                      {docModalItem.language}
                     </span>
                     .
                   </p>
@@ -514,7 +558,7 @@ export default function EducationTab({
                 <InputField
                   label="Document URL"
                   type="url"
-                  placeholder="https://example.com/document.pdf"
+                  placeholder="https://example.com/certificate.pdf"
                   value={documentUrlInput}
                   onChange={(e) => setDocumentUrlInput(e.target.value)}
                   icon={LinkIcon}
@@ -542,7 +586,7 @@ export default function EducationTab({
         </div>
       )}
 
-      {/* FORMAL CONFIRMATION DELETE MODAL */}
+      {/* DELETE CONFIRMATION MODAL */}
       {itemToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full border border-slate-200 overflow-hidden">
@@ -562,11 +606,11 @@ export default function EducationTab({
 
               <div>
                 <h3 className="text-base font-bold text-slate-900">
-                  Delete Education Record
+                  Delete Language Record
                 </h3>
                 <p className="text-sm text-slate-500 mt-1 leading-relaxed">
-                  Are you sure you want to remove this entry from your education
-                  history? This action cannot be undone.
+                  Are you sure you want to remove this language entry? This
+                  action cannot be undone.
                 </p>
               </div>
             </div>
@@ -594,6 +638,18 @@ export default function EducationTab({
   );
 }
 
+// Reusable Proficiency Badge Component
+function ProficiencyBadge({ level }: { level: string }) {
+  // Extract level code (e.g. "B1" from "B1 - Intermediate")
+  const code = level ? level.split(" ")[0] : "N/A";
+
+  return (
+    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+      {code}
+    </span>
+  );
+}
+
 // Reusable Input Field Component
 function InputField({
   label,
@@ -601,7 +657,10 @@ function InputField({
   placeholder,
   icon: Icon,
   ...props
-}: InputFieldProps) {
+}: React.InputHTMLAttributes<HTMLInputElement> & {
+  label: string;
+  icon?: React.ElementType;
+}) {
   return (
     <div className="space-y-1.5">
       <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
@@ -615,12 +674,52 @@ function InputField({
         )}
         <input
           type={type}
-          className={`w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-all ${
+          className={`w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-all disabled:opacity-60 disabled:bg-slate-100/80 ${
             Icon ? "pl-9" : ""
           }`}
           placeholder={placeholder}
           {...props}
         />
+      </div>
+    </div>
+  );
+}
+
+// Reusable Select Field Component
+function SelectField({
+  label,
+  options,
+  icon: Icon,
+  ...props
+}: React.SelectHTMLAttributes<HTMLSelectElement> & {
+  label: string;
+  options: string[];
+  icon?: React.ElementType;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+        {label}
+      </label>
+      <div className="relative">
+        {Icon && (
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Icon className="h-4 w-4 text-slate-400" />
+          </div>
+        )}
+        <select
+          className={`w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-all cursor-pointer ${
+            Icon ? "pl-9" : ""
+          }`}
+          {...props}
+        >
+          <option value="">Select Level...</option>
+          {options.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
       </div>
     </div>
   );

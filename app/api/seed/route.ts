@@ -4,8 +4,11 @@ import bcrypt from "bcrypt";
 
 export async function GET() {
   try {
-    // 1. Extensions & Clean Slate
+    // Extensions & Clean Slate
     await db`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
+
+    // Drop profile tables
+    await db`DROP TABLE IF EXISTS employee_languages`;
 
     // Drop new performance tables
     await db`DROP TABLE IF EXISTS performance_history`;
@@ -363,6 +366,22 @@ CREATE TABLE self_assessments (
         start_year INT,
         end_year INT,
         document_url TEXT, -- For the "Add Document" feature
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    // language table
+    await db`
+      CREATE TABLE employee_languages (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        language VARCHAR(100) NOT NULL,
+        listening VARCHAR(50) NOT NULL,
+        reading VARCHAR(50) NOT NULL,
+        writing VARCHAR(50) NOT NULL,
+        speaking VARCHAR(50) NOT NULL,
+        created_by VARCHAR(255) NOT NULL DEFAULT 'System Administrator',
+        document_url TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       )
     `;
@@ -935,6 +954,48 @@ VALUES
           '96%', 
           2017, 
           2020
+        )
+      `;
+
+      // ----------------------------------------------------
+      // LANGUAGE COMPETENCIES SEEDING
+      // ----------------------------------------------------
+      await db`
+        INSERT INTO employee_languages (
+          user_id, 
+          language, 
+          listening, 
+          reading, 
+          writing, 
+          speaking, 
+          created_by
+        ) VALUES 
+        (
+          ${emp.id}, 
+          'Arabic', 
+          'B1', 
+          'B2', 
+          'A2', 
+          'B1', 
+          'Yad Hussein Fatah'
+        ),
+        (
+          ${emp.id}, 
+          'Persian', 
+          'B2', 
+          'B2', 
+          'A2', 
+          'C1', 
+          'Yad Hussein Fatah'
+        ),
+        (
+          ${emp.id}, 
+          'English', 
+          'C1', 
+          'C1', 
+          'C1', 
+          'C1', 
+          'System Administrator'
         )
       `;
 

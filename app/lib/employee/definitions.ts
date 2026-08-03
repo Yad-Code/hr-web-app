@@ -1,11 +1,28 @@
 // @/app/lib/employee/definitions.ts
 
-// ==========================================
-// 1. ENUMS & ENUM-LIKE TYPES
-// ==========================================
-
 export type UserRole = "ADMIN" | "MANAGER" | "EMPLOYEE";
 export type WorkType = "FULL_TIME" | "PART_TIME" | "CONTRACTOR" | "INTERN";
+
+// language
+export interface LanguageItem {
+  id: string;
+  user_id: string;
+  language: string;
+  listening: string;
+  reading: string;
+  writing: string;
+  speaking: string;
+  created_by: string;
+  document_url?: string | null;
+  created_at?: string;
+}
+
+export interface LanguageTabProps {
+  languageHistory: LanguageItem[];
+  userId?: string;
+  employeeId?: string;
+  employeeName?: string;
+}
 
 // Education levels for the education history tab
 export interface EducationItem {
@@ -73,12 +90,17 @@ export interface FullEmployeeProfile {
   history?: EmploymentHistoryItem[];
 }
 
-export interface ProfileTabsProps {
+export interface ProfileTabsProps extends EducationTabProps, LanguageTabProps {
   profile: FullEmployeeProfile;
   userEmail: string;
 }
 
-export type ProfileTabType = "job" | "official" | "edit";
+export type ProfileTabType =
+  | "job"
+  | "official"
+  | "education"
+  | "language"
+  | "edit";
 
 export type AccountStatus =
   | "PENDING_APPROVAL"

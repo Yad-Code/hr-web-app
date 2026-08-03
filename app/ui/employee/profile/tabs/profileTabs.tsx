@@ -1,12 +1,18 @@
-// app/ui/employee/profile/tabs/profileTabs.tsx
 "use client";
 
 import React, { useState } from "react";
 import JobInformationTab from "./jobInformationTab";
 import OfficialInfoCard from "../officialInfoCard";
 import ProfileForm from "../profileForm";
-import EducationTab from "./educationTab"; // 👈 Import your new education tab
-import { Briefcase, Shield, UserPen, GraduationCap } from "lucide-react";
+import EducationTab from "./educationTab";
+import LanguageTab from "./languageTab"; // 👈 1. Import Language Tab
+import {
+  Briefcase,
+  Shield,
+  UserPen,
+  GraduationCap,
+  Languages, // 👈 2. Import Languages Icon
+} from "lucide-react";
 import {
   ProfileTabsProps,
   ProfileTabType,
@@ -16,11 +22,10 @@ export default function ProfileTabs({
   profile,
   userEmail,
   educationHistory,
+  languageHistory = [], // 👈 3. Accept languageHistory prop
 }: ProfileTabsProps) {
-  // Update type definition if necessary to include "education"
-  const [activeTab, setActiveTab] = useState<ProfileTabType | "education">(
-    "job",
-  );
+  // 👈 4. Include "language" in the activeTab state type
+  const [activeTab, setActiveTab] = useState<ProfileTabType>("job");
 
   return (
     <div className="space-y-6">
@@ -52,7 +57,7 @@ export default function ProfileTabs({
           Official Information
         </button>
 
-        {/* 👈 New Education Tab Button */}
+        {/* Education Tab Button */}
         <button
           type="button"
           onClick={() => setActiveTab("education")}
@@ -64,6 +69,20 @@ export default function ProfileTabs({
         >
           <GraduationCap className="w-4 h-4" />
           Education History
+        </button>
+
+        {/* 👈 5. New Language Tab Button */}
+        <button
+          type="button"
+          onClick={() => setActiveTab("language")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+            activeTab === "language"
+              ? "bg-indigo-50 text-indigo-600 shadow-xs"
+              : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+          }`}
+        >
+          <Languages className="w-4 h-4" />
+          Languages
         </button>
 
         <button
@@ -89,8 +108,16 @@ export default function ProfileTabs({
             educationHistory={educationHistory}
             userId={profile.id}
           />
-        )}{" "}
-        {/* 👈 Render Education Tab */}
+        )}
+        {/* 👈 6. Render Language Tab */}
+        {activeTab === "language" && (
+          <LanguageTab
+            languageHistory={languageHistory}
+            userId={profile.id}
+            employeeId={profile.employee_id}
+            employeeName={profile.name}
+          />
+        )}
         {activeTab === "edit" && (
           <ProfileForm profile={profile} userEmail={userEmail} />
         )}

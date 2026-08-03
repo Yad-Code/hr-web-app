@@ -63,3 +63,61 @@ export async function deleteEducationAction(id: string) {
 
   revalidatePath("/dashboard/employee");
 }
+
+// for adding languages
+
+export async function addLanguageAction(
+  userId: string,
+  createdBy: string,
+  formData: FormData,
+) {
+  if (!userId) {
+    throw new Error("User ID is required to add a language record.");
+  }
+
+  const language = (formData.get("language") as string)?.trim();
+  const listening = (formData.get("listening") as string)?.trim();
+  const reading = (formData.get("reading") as string)?.trim();
+  const writing = (formData.get("writing") as string)?.trim();
+  const speaking = (formData.get("speaking") as string)?.trim();
+  const document_url = (formData.get("document_url") as string)?.trim() || null;
+  const author = createdBy?.trim() || "System Administrator";
+
+  if (!language || !listening || !reading || !writing || !speaking) {
+    throw new Error(
+      "Missing required fields. Please select levels for all competencies.",
+    );
+  }
+
+  await db`
+    INSERT INTO employee_languages (
+      user_id, language, listening, reading, writing, speaking, created_by, document_url
+    ) VALUES (
+      ${userId}, ${language}, ${listening}, ${reading}, ${writing}, ${speaking}, ${author}, ${document_url}
+    )
+  `;
+
+  revalidatePath("/my-profile");
+}
+
+export async function updateLanguageDocumentAction(
+  id: string,
+  documentUrl: string | null,
+) {
+  await db`
+    UPDATE employee_languages
+    SET document_url = ${documentUrl}
+    WHERE id = ${id}
+  `;
+
+  revalidatePath("/my-profile");
+}
+
+export async function deleteLanguageAction(id: string) {
+  await db`
+    DELETE FROM employee_languages
+    WHERE id = ${id}
+  `;
+
+  revalidatePath("/my-profile");
+}

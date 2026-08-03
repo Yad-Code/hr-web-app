@@ -54,7 +54,7 @@ export default function JobInformationTab({ profile }: JobInformationTabProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           <InfoCard
             icon={Briefcase}
-            label="Current Position"
+            label="Job Title"
             value={profile.jobTitle || profile.role || "Software Engineer"}  
             highlight
           />
@@ -80,7 +80,7 @@ export default function JobInformationTab({ profile }: JobInformationTabProps) {
           />
           <InfoCard
             icon={UserCheck}
-            label="Manager"
+            label="Job Title Master"
             value={profile.managerName || "Sarah Jenkins"}
           />
           <InfoCard
