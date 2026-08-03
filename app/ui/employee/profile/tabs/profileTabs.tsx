@@ -85,7 +85,10 @@ export default function ProfileTabs({
         {activeTab === "job" && <JobInformationTab profile={profile} />}
         {activeTab === "official" && <OfficialInfoCard profile={profile} />}
         {activeTab === "education" && (
-          <EducationTab educationHistory={educationHistory} />
+          <EducationTab
+            educationHistory={educationHistory}
+            userId={profile.id}
+          />
         )}{" "}
         {/* 👈 Render Education Tab */}
         {activeTab === "edit" && (

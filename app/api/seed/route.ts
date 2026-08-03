@@ -918,19 +918,9 @@ VALUES
         ) VALUES 
         (
           ${emp.id}, 
-          'Master''s', 
-          'Construction Technology Management', 
-          'Poznan University of Science & Technology', 
-          'Poznan, Poland', 
-          '3.8 GPA', 
-          2024, 
-          2026
-        ),
-        (
-          ${emp.id}, 
           'Bachelor', 
           'Computer Engineering', 
-          'Komar University of Science & Technology', 
+          'Sulaimanyah University', 
           'Sulaymaniyah', 
           '3.5 GPA', 
           2020, 
@@ -940,7 +930,7 @@ VALUES
           ${emp.id}, 
           'High School Diploma', 
           'Scientific Track', 
-          'Sulaymaniyah High School', 
+          'UOS High School', 
           'Sulaymaniyah', 
           '96%', 
           2017, 
