@@ -1,0 +1,14 @@
+import { ShieldCheck } from "lucide-react";
+
+export function AdminHeader() {
+  return (
+    <div className="flex items-center justify-between bg-slate-900 text-white p-4 rounded-2xl shadow-xs">
+      <div className="flex items-center gap-2.5">
+        <ShieldCheck className="w-5 h-5 text-emerald-400" />
+        <h2 className="text-sm font-bold tracking-wide">
+          Admin Job Information Management
+        </h2>
+      </div>
+    </div>
+  );
+}
