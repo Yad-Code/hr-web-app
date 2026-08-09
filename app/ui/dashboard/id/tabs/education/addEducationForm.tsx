@@ -9,7 +9,37 @@ import {
   Save,
   Loader2,
 } from "lucide-react";
-import { InputField } from "./formFields";
+import { InputField, SelectField } from "./formFields";
+
+const EDUCATION_SUBJECTS_MAP: Record<string, string[]> = {
+  "High School": ["High School Diploma", "General Secondary Education"],
+  "Bachelor's Degree": [
+    "Computer Engineering",
+    "Software Engineering",
+    "Information Technology",
+    "Electrical Engineering",
+    "Business Administration",
+    "Finance",
+  ],
+  "Master's Degree": [
+    "Master of Computer Science",
+    "Master of Business Administration (MBA)",
+    "Data Science & Analytics",
+    "Cyber Security",
+    "Software Architecture",
+  ],
+  "Ph.D. / Doctorate": [
+    "Ph.D. in Computer Science",
+    "Ph.D. in Software Engineering",
+    "Ph.D. in Electrical Engineering",
+  ],
+  "Diploma / Certificate": [
+    "Full-Stack Web Development Bootcamp",
+    "Network Engineering Diploma",
+    "UI/UX Design Certificate",
+    "Project Management Professional (PMP)",
+  ],
+};
 
 export function AddEducationForm({
   onSubmit,
@@ -32,7 +62,18 @@ export function AddEducationForm({
 
   const [formData, setFormData] = useState(initialFormState);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLevelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const level = e.target.value;
+    setFormData((prev) => ({
+      ...prev,
+      level,
+      subject: "", // Reset subject when level changes
+    }));
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
@@ -43,6 +84,10 @@ export function AddEducationForm({
     onSubmit(formData);
     handleReset();
   };
+
+  const availableSubjects = formData.level
+    ? EDUCATION_SUBJECTS_MAP[formData.level] || []
+    : [];
 
   return (
     <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xs space-y-5">
@@ -57,22 +102,29 @@ export function AddEducationForm({
 
       <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          <InputField
+          <SelectField
             label="Education Level"
             name="level"
             value={formData.level}
-            onChange={handleChange}
-            placeholder="e.g., Bachelor, Master's"
+            onChange={handleLevelChange}
             icon={GraduationCap}
+            options={[
+              "High School",
+              "Bachelor's Degree",
+              "Master's Degree",
+              "Ph.D. / Doctorate",
+              "Diploma / Certificate",
+            ]}
             required
           />
-          <InputField
+          <SelectField
             label="Academic Subject"
             name="subject"
             value={formData.subject}
             onChange={handleChange}
-            placeholder="e.g., Computer Engineering"
             icon={BookOpen}
+            options={availableSubjects}
+            disabled={!formData.level}
             required
           />
           <InputField

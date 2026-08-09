@@ -13,12 +13,7 @@ import {
   calculateWorkHours,
 } from "@/app/lib/employeeDashboard/employee/data";
 import { sql } from "@/app/lib/employeeDashboard/employee/db";
-
-// ==========================================
-// SCHEMAS & VALIDATION
-// ==========================================
-
-// Profile picture:
+ 
 export async function uploadProfilePicture(formData: FormData) {
   const session = await auth();
   if (!session?.user?.email) {
@@ -76,8 +71,7 @@ export async function uploadProfilePicture(formData: FormData) {
     return { success: false, error: "Failed to upload image" };
   }
 }
-
-// Validation schema for employee-editable profile fields
+ 
 const ProfileUpdateSchema = z.object({
   preferredName: z
     .string()
@@ -99,14 +93,7 @@ const ProfileUpdateSchema = z.object({
   currentAddress: z.string().trim().optional(),
 });
 
-// ==========================================
-// PROFILE ACTIONS
-// ==========================================
-
-/**
- * Server Action to update self-service employee profile fields in PostgreSQL.
- * Ensures strict boundary enforcement—official attributes are omitted entirely.
- */
+ 
 export async function updateEmployeeProfile(
   prevState: ActionState,
   formData: FormData,
@@ -183,10 +170,7 @@ export async function updateEmployeeProfile(
     };
   }
 }
-// ==========================================
-// ATTENDANCE & CHECK-IN ACTIONS
-// ==========================================
-
+ 
 function getLocalDateString(): string {
   const now = new Date();
   const yyyy = now.getFullYear();
@@ -245,10 +229,7 @@ export async function toggleCheckInStatus(
     return { success: false, error: `Server error: ${message}` };
   }
 }
-
-// ==========================================
-// WFH REQUEST ACTION
-// ==========================================
+ 
 export async function submitWFHRequest(formData: FormData) {
   const session = await auth();
 

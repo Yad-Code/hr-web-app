@@ -2,11 +2,16 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { EmployeeDocument } from "@/app/lib/employee/definitions";
 import { AdminHeader } from "./document/adminHeader";
 import { UploadDocumentForm } from "./document/uploadDocumentForm";
 import { DocumentArchive } from "./document/documentArchive";
 import { DeleteConfirmationModal } from "./document/deleteConfirmationModal";
+import {
+  addDocumentAction,
+  deleteDocumentAction,
+} from "@/app/lib/employeeList/actions";
 
 interface AdminDocumentsTabProps {
   documents?: EmployeeDocument[];
@@ -17,6 +22,7 @@ export default function AdminDocumentsTab({
   documents = [],
   userId,
 }: AdminDocumentsTabProps) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
@@ -28,9 +34,8 @@ export default function AdminDocumentsTab({
   }) => {
     startTransition(async () => {
       try {
-        // await addDocumentAction(userId, newDoc);
-        console.log("Saving document for user:", userId, newDoc);
-        await new Promise((resolve) => setTimeout(resolve, 800));
+        await addDocumentAction(userId, newDoc);
+        router.refresh();
       } catch (err) {
         console.error("Failed to add document:", err);
       }
@@ -45,9 +50,8 @@ export default function AdminDocumentsTab({
 
     startTransition(async () => {
       try {
-        // await deleteDocumentAction(id);
-        console.log("Deleting document id:", id);
-        await new Promise((resolve) => setTimeout(resolve, 800));
+        await deleteDocumentAction(id, userId);
+        router.refresh();
       } catch (err) {
         console.error("Failed to delete document:", err);
       } finally {

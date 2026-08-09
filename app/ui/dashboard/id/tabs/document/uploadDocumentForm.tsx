@@ -10,6 +10,37 @@ import {
 } from "lucide-react";
 import { InputField, SelectField } from "./formFields";
 
+const CATEGORY_TITLES_MAP: Record<string, string[]> = {
+  Identification: [
+    "National ID Card",
+    "Passport Copy",
+    "Driving License",
+    "Residence Permit",
+  ],
+  "Contract / Legal": [
+    "Employment Contract",
+    "Non-Disclosure Agreement (NDA)",
+    "Job Offer Letter",
+    "Contract Amendment",
+  ],
+  "Payroll / Tax": [
+    "Tax Declaration Form",
+    "Direct Deposit Authorization",
+    "Bank Details Confirmation",
+  ],
+  "Medical / Insurance": [
+    "Health Insurance Card",
+    "Medical Fitness Certificate",
+    "Vaccination Record",
+  ],
+  Certificates: [
+    "University Degree",
+    "Professional Certification",
+    "Training Completion Certificate",
+  ],
+  Other: ["General Document", "Custom Reference Letter"],
+};
+
 export function UploadDocumentForm({
   onSubmit,
   isPending,
@@ -25,6 +56,15 @@ export function UploadDocumentForm({
   const initialFormState = { title: "", category: "", file_url: "" };
   const [formData, setFormData] = useState(initialFormState);
 
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const category = e.target.value;
+    setFormData((prev) => ({
+      ...prev,
+      category,
+      title: "", // Reset title selection when category changes
+    }));
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
@@ -39,6 +79,10 @@ export function UploadDocumentForm({
     handleReset();
   };
 
+  const availableTitles = formData.category
+    ? CATEGORY_TITLES_MAP[formData.category] || []
+    : [];
+
   return (
     <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xs space-y-5">
       <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
@@ -52,20 +96,11 @@ export function UploadDocumentForm({
 
       <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          <InputField
-            label="Document Title"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            placeholder="e.g., Passport Copy, Signed Contract"
-            icon={FileText}
-            required
-          />
           <SelectField
             label="Document Category"
             name="category"
             value={formData.category}
-            onChange={handleChange}
+            onChange={handleCategoryChange}
             icon={Tag}
             options={[
               "Identification",
@@ -75,6 +110,16 @@ export function UploadDocumentForm({
               "Certificates",
               "Other",
             ]}
+            required
+          />
+          <SelectField
+            label="Document Title"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            icon={FileText}
+            options={availableTitles}
+            disabled={!formData.category}
             required
           />
           <InputField

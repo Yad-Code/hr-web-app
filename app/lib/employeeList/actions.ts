@@ -215,3 +215,71 @@ export async function updateEmployeeDetails(
     };
   }
 }
+
+export async function addDocumentAction(
+  userId: string,
+  newDoc: { title: string; category: string; file_url: string },
+) {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      throw new Error("Unauthorized");
+    }
+
+    const currentRole = await getCurrentUserRole();
+    if (currentRole !== "admin") {
+      throw new Error("Forbidden: Only admins can upload documents.");
+    }
+
+    // Safely extract the file extension from the URL or fallback to 'pdf'
+    const cleanUrl = newDoc.file_url.split("?")[0];
+    const fileExtension = cleanUrl.split(".").pop() || "pdf";
+
+    await sql`
+      INSERT INTO employee_documents (
+        user_id, 
+        document_type, 
+        file_name, 
+        file_extension, 
+        file_url
+      )
+      VALUES (
+        ${userId}::uuid, 
+        ${newDoc.category}, 
+        ${newDoc.title}, 
+        ${fileExtension}, 
+        ${newDoc.file_url}
+      )
+    `;
+
+    revalidatePath(`/dashboard/employees/${userId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to add document:", error);
+    throw error;
+  }
+}
+
+export async function deleteDocumentAction(documentId: string, userId: string) {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      throw new Error("Unauthorized");
+    }
+
+    const currentRole = await getCurrentUserRole();
+    if (currentRole !== "admin") {
+      throw new Error("Forbidden: Only admins can delete documents.");
+    }
+
+    await sql`
+      DELETE FROM employee_documents WHERE id = ${documentId}::uuid
+    `;
+
+    revalidatePath(`/dashboard/employees/${userId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete document:", error);
+    throw error;
+  }
+}
