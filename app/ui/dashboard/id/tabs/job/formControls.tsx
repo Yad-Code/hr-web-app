@@ -40,12 +40,14 @@ export interface SelectFieldProps extends React.SelectHTMLAttributes<HTMLSelectE
   label: string;
   options: string[];
   icon?: React.ElementType;
+  placeholder?: string;
 }
 
 export function SelectField({
   label,
   options,
   icon: Icon,
+  placeholder = "Select Option...",
   ...props
 }: SelectFieldProps) {
   return (
@@ -60,12 +62,12 @@ export function SelectField({
           </div>
         )}
         <select
-          className={`w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-slate-900 focus:border-slate-900 block p-2.5 outline-none transition-all cursor-pointer ${
+          className={`w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-slate-900 focus:border-slate-900 block p-2.5 outline-none transition-all cursor-pointer disabled:opacity-60 disabled:bg-slate-100/80 ${
             Icon ? "pl-9" : ""
           }`}
           {...props}
         >
-          <option value="">Select Option...</option>
+          <option value="">{placeholder}</option>
           {options.map((opt) => (
             <option key={opt} value={opt}>
               {opt}
