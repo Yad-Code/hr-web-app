@@ -46,6 +46,7 @@ export async function GET() {
     await db`DROP TABLE IF EXISTS daily_attendance`;
     await db`DROP TABLE IF EXISTS shift_rules`;
     await db`DROP TABLE IF EXISTS education_history`;
+    await db`DROP TABLE IF EXISTS employment_history`;
 
     // 2. Create Types & Tables
     await db`CREATE TYPE user_role AS ENUM ('admin', 'employee')`;
@@ -516,6 +517,17 @@ CREATE TABLE self_assessments (
     grace_period_minutes INT DEFAULT 15 NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
   )
+`;
+
+    await db`
+  CREATE TABLE employment_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(150) NOT NULL,
+    company VARCHAR(150) NOT NULL,
+    period VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  );
 `;
 
     await db`
@@ -1061,6 +1073,27 @@ VALUES
           'pdf', 
           'https://example.com/docs/bachelors_degree_certificate.pdf'
         );
+`;
+
+      await db`
+      INSERT INTO employment_history (
+        user_id, 
+        title, 
+        company,
+        period
+      ) VALUES 
+      (
+        ${emp.id}, 
+        'Senior Software Engineer', 
+        'Tech Solutions Inc.',
+        'Mar 2024 → Present'
+      ),
+      (
+        ${emp.id}, 
+        'Software Engineer', 
+        'Dev Agency LLC',
+        'Jan 2022 → Feb 2024'
+      )
 `;
 
       //----------------------------------

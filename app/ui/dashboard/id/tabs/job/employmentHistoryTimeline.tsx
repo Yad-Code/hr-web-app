@@ -22,19 +22,27 @@ export function EmploymentHistoryTimeline({
         </h2>
       </div>
 
-      <div className="relative pl-4 border-l-2 border-slate-100 space-y-6">
-        {history.map((item, index) => (
-          <div key={index} className="relative group">
-            <div className="absolute -left-5.25 top-1 w-2.5 h-2.5 rounded-full bg-indigo-600 ring-4 ring-indigo-50" />
-            <div>
-              <h3 className="text-sm font-bold text-slate-900">{item.title}</h3>
-              <p className="text-xs font-medium text-slate-500 mt-0.5">
-                {item.period}
-              </p>
+      {history.length > 0 ? (
+        <div className="relative pl-4 border-l-2 border-slate-100 space-y-6">
+          {history.map((item, index) => (
+            <div key={index} className="relative group">
+              <div className="absolute -left-5.25 top-1 w-2.5 h-2.5 rounded-full bg-indigo-600 ring-4 ring-indigo-50" />
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  {item.title}
+                </h3>
+                <p className="text-xs font-medium text-slate-500 mt-0.5">
+                  {item.period}
+                </p>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-slate-500 font-medium">
+          No employment history records available.
+        </p>
+      )}
     </div>
   );
 }

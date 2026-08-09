@@ -43,13 +43,7 @@ export default function AdminJobInformationTab({
 
   const [formData, setFormData] = useState(initialFormState);
 
-  const history = profile.history || [
-    {
-      title: profile.role || "Software Engineer",
-      period: "Mar 2022 → Present",
-    },
-    { title: "Junior Developer", period: "Jan 2021 → Feb 2022" },
-  ];
+  const history = profile.history || [];
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,

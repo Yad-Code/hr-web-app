@@ -25,6 +25,14 @@ export async function getProfileById(
 
     const user = users[0];
 
+    // 1. Fetch dynamic employment history records for this user
+    const historyRows = await sql`
+      SELECT title, company, period 
+      FROM employment_history 
+      WHERE user_id = ${user.id}::uuid
+      ORDER BY created_at DESC
+    `;
+
     return {
       // Core Identifiers
       id: String(user.id),
@@ -65,11 +73,18 @@ export async function getProfileById(
       shift_end: user.shift_end || "17:00:00",
       shift_type: user.shift_type || "Standard (Mon - Fri)",
 
-      // Benefits & History
+      // Benefits
       publicOrg: user.public_org || null,
       privateOrg: user.private_org || null,
       insurance: user.insurance || null,
       subscription: user.subscription || null,
+
+      // 2. Map history array into response
+      history: historyRows.map((row) => ({
+        title: row.title,
+        company: row.company || "Company",
+        period: row.period,
+      })),
     };
   } catch (error) {
     console.error("❌ [getProfileById] SQL Error:", error);
