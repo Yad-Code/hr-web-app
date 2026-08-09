@@ -1,13 +1,12 @@
 import React from "react";
 import { Building, Building2, ShieldCheck, UserCheck } from "lucide-react";
 import { InputField } from "./formControls";
+import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
 
 export function OrganizationDetailsSection({
-  formData,
-  onChange,
+  profile,
 }: {
-  formData: Record<string, string>;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  profile: FullEmployeeProfile;
 }) {
   return (
     <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xs space-y-5">
@@ -24,32 +23,28 @@ export function OrganizationDetailsSection({
         <InputField
           label="Public Organization"
           name="publicOrg"
-          value={formData.publicOrg}
-          onChange={onChange}
+          defaultValue={profile.publicOrg || ""}
           icon={Building}
           placeholder="—"
         />
         <InputField
           label="Private Organization"
           name="privateOrg"
-          value={formData.privateOrg}
-          onChange={onChange}
+          defaultValue={profile.privateOrg || ""}
           icon={Building2}
           placeholder="e.g. ABC Tech"
         />
         <InputField
           label="Insurance"
           name="insurance"
-          value={formData.insurance}
-          onChange={onChange}
+          defaultValue={profile.insurance || ""}
           icon={ShieldCheck}
           placeholder="Insurance Provider"
         />
         <InputField
           label="Subscription"
           name="subscription"
-          value={formData.subscription}
-          onChange={onChange}
+          defaultValue={profile.subscription || ""}
           icon={UserCheck}
           placeholder="e.g. Standard"
         />

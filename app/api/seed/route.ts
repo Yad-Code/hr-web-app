@@ -1083,7 +1083,7 @@ VALUES
         period
       ) VALUES 
       (
-        ${emp.id}, 
+        ${emp.id},  
         'Senior Software Engineer', 
         'Tech Solutions Inc.',
         'Mar 2024 → Present'

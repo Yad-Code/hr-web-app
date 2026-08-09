@@ -17,115 +17,6 @@ export interface UpdateJobInfoState {
   message: string;
 }
 
-export async function updateEmployeeProfile(
-  targetUserId: string,
-  prevState: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  try {
-    const session = await auth();
-    if (!session?.user) {
-      return { success: false, message: "Unauthorized. Please log in again." };
-    }
-
-    const currentRole = await getCurrentUserRole();
-    const isAdmin = currentRole === "admin";
-    const isEditingSelf = session.user.id === targetUserId;
-
-    if (!isEditingSelf && !isAdmin) {
-      return {
-        success: false,
-        message: "Forbidden: Only admins can edit other profiles.",
-      };
-    }
-
-    // 1. Extract Official Account Details (Safeguarded against undefined)
-    const employeeId = formData.get("employeeId")?.toString() || null;
-    const name = formData.get("name")?.toString() || null;
-    const email = formData.get("email")?.toString() || null;
-    const department = formData.get("department")?.toString() || null;
-    const branch = formData.get("branch")?.toString() || null;
-    const dateOfBirth = formData.get("dateOfBirth")?.toString() || null;
-    const gender = formData.get("gender")?.toString() || null;
-    const nationality = formData.get("nationality")?.toString() || null;
-    const status = formData.get("status")?.toString() || "active";
-
-    // Extract Base Salary (Defaulting to 3500 if missing or invalid)
-    const rawSalary = formData.get("baseSalary");
-    const baseSalary = rawSalary ? Number(rawSalary) : 3500.0;
-
-    // 2. Extract Personal Information Details
-    const preferredName = formData.get("preferredName")?.toString() || null;
-    const maritalStatus = formData.get("maritalStatus")?.toString() || "Single";
-    const bloodGroup = formData.get("bloodGroup")?.toString() || "Unknown";
-    const personalEmail = formData.get("personalEmail")?.toString() || null;
-    const personalPhone = formData.get("personalPhone")?.toString() || null;
-    const currentAddress = formData.get("currentAddress")?.toString() || null;
-
-    // 3. Update Database (Dynamic Role handling - UUID is untouched)
-    if (isAdmin) {
-      const role = formData.get("role")?.toString() || "employee";
-      await sql`
-        UPDATE users 
-        SET 
-          employee_id = ${employeeId},
-          name = ${name},
-          email = ${email},
-          department = ${department},
-          branch = ${branch},
-          base_salary = ${baseSalary}, - Updated by Admin
-          date_of_birth = ${dateOfBirth},
-          gender = ${gender},
-          nationality = ${nationality},
-          status = ${status},
-          role = ${role},
-          preferred_name = ${preferredName},
-          marital_status = ${maritalStatus},
-          blood_group = ${bloodGroup},
-          personal_email = ${personalEmail},
-          personal_phone = ${personalPhone},
-          current_address = ${currentAddress}
-        WHERE id = ${targetUserId}::uuid
-      `;
-    } else {
-      // Regular employees editing their own profile will NOT overwrite base_salary
-      await sql`
-        UPDATE users 
-        SET 
-          employee_id = ${employeeId},
-          name = ${name},
-          email = ${email},
-          department = ${department},
-          branch = ${branch},
-          date_of_birth = ${dateOfBirth},
-          gender = ${gender},
-          nationality = ${nationality},
-          status = ${status},
-          preferred_name = ${preferredName},
-          marital_status = ${maritalStatus},
-          blood_group = ${bloodGroup},
-          personal_email = ${personalEmail},
-          personal_phone = ${personalPhone},
-          current_address = ${currentAddress}
-        WHERE id = ${targetUserId}::uuid
-      `;
-    }
-
-    revalidatePath(`/dashboard/employees/${targetUserId}/edit`);
-    revalidatePath(`/dashboard/employees`);
-    revalidatePath(`/dashboard/payroll`); 
-    revalidatePath(`/my-profile`);
-
-    return { success: true, message: "Profile updated successfully!" };
-  } catch (error) {
-    console.error("Database update error:", error);
-    return {
-      success: false,
-      message: "Failed to update profile in database. Please try again.",
-    };
-  }
-}
-
 export async function uploadProfilePicture(formData: FormData) {
   try {
     const session = await auth();
@@ -199,62 +90,128 @@ export async function uploadProfilePicture(formData: FormData) {
   }
 }
 
-export async function updateAdminJobInformation(
+export async function updateEmployeeDetails(
   targetUserId: string,
-  formData: Record<string, string>,
-): Promise<UpdateJobInfoState> {
+  prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   try {
     const session = await auth();
     if (!session?.user) {
-      return { success: false, message: "Unauthorized. Please log in." };
+      return { success: false, message: "Unauthorized. Please log in again." };
     }
 
     const currentRole = await getCurrentUserRole();
-    if (currentRole !== "admin") {
+    const isAdmin = currentRole === "admin";
+    const isEditingSelf = session.user.id === targetUserId;
+
+    if (!isEditingSelf && !isAdmin) {
       return {
         success: false,
-        message: "Forbidden: Only admins can update job details.",
+        message: "Forbidden: You do not have permission to edit this profile.",
       };
     }
 
-    // Parse base salary safely
-    const baseSalary = formData.base_salary ? Number(formData.base_salary) : null;
+    // Extract all potential fields from formData
+    const employeeId = formData.get("employeeId")?.toString() || null;
+    const name = formData.get("name")?.toString() || null;
+    const email = formData.get("email")?.toString() || null;
+    const preferredName = formData.get("preferredName")?.toString() || null;
+    const gender = formData.get("gender")?.toString() || null;
+    const nationality = formData.get("nationality")?.toString() || null;
+    const maritalStatus = formData.get("maritalStatus")?.toString() || null;
+    const bloodGroup = formData.get("bloodGroup")?.toString() || null;
+    const personalEmail = formData.get("personalEmail")?.toString() || null;
+    const personalPhone = formData.get("personalPhone")?.toString() || null;
+    const currentAddress = formData.get("currentAddress")?.toString() || null;
+    const dateOfBirth = formData.get("dateOfBirth")?.toString() || null;
 
-    // Execute SQL Update
-    await sql`
-     UPDATE users 
-      SET 
-        job_title = ${formData.jobTitle || null}, 
-        job_family = ${formData.jobFamily || null},
-        employment_type = ${formData.employmentType || null},
-        department = ${formData.department || null},
-        branch = ${formData.branch || null},
-        manager_name = ${formData.managerName || null},
-        join_date = ${formData.joinDate || null},
-        base_salary = ${baseSalary},
-        status = ${formData.status || null},
-        public_org = ${formData.publicOrg || null},
-        private_org = ${formData.privateOrg || null},
-        insurance = ${formData.insurance || null},
-        subscription = ${formData.subscription || null}
-      WHERE id = ${targetUserId}::uuid
-    `;
+    const department = formData.get("department")?.toString() || null;
+    const branch = formData.get("branch")?.toString() || null;
+    const status = formData.get("status")?.toString() || null;
+    const role = formData.get("role")?.toString() || null;
 
-    // Revalidate relevant cached pages
+    const jobTitle = formData.get("jobTitle")?.toString() || null;
+    const jobFamily = formData.get("jobFamily")?.toString() || null;
+    const employmentType = formData.get("employmentType")?.toString() || null;
+    const managerName = formData.get("managerName")?.toString() || null;
+    const joinDate = formData.get("joinDate")?.toString() || null;
+    const publicOrg = formData.get("publicOrg")?.toString() || null;
+    const privateOrg = formData.get("privateOrg")?.toString() || null;
+    const insurance = formData.get("insurance")?.toString() || null;
+    const subscription = formData.get("subscription")?.toString() || null;
+
+    const rawSalary = formData.get("baseSalary");
+    const baseSalary = rawSalary ? Number(rawSalary) : null;
+
+    // Use COALESCE so fields omitted from the active form retain their existing DB values
+    if (isAdmin) {
+      await sql`
+        UPDATE users 
+        SET 
+          employee_id = COALESCE(${employeeId}, employee_id),
+          name = COALESCE(${name}, name),
+          email = COALESCE(${email}, email),
+          department = COALESCE(${department}, department),
+          branch = COALESCE(${branch}, branch),
+          base_salary = COALESCE(${baseSalary}, base_salary),
+          date_of_birth = COALESCE(${dateOfBirth}, date_of_birth),
+          gender = COALESCE(${gender}, gender),
+          nationality = COALESCE(${nationality}, nationality),
+          status = COALESCE(${status}, status),
+          role = COALESCE(${role}::user_role, role),
+          preferred_name = COALESCE(${preferredName}, preferred_name),
+          marital_status = COALESCE(${maritalStatus}, marital_status),
+          blood_group = COALESCE(${bloodGroup}, blood_group),
+          personal_email = COALESCE(${personalEmail}, personal_email),
+          personal_phone = COALESCE(${personalPhone}, personal_phone),
+          current_address = COALESCE(${currentAddress}, current_address),
+          job_title = COALESCE(${jobTitle}, job_title),
+          job_family = COALESCE(${jobFamily}, job_family),
+          employment_type = COALESCE(${employmentType}, employment_type),
+          manager_name = COALESCE(${managerName}, manager_name),
+          join_date = COALESCE(${joinDate}, join_date),
+          public_org = COALESCE(${publicOrg}, public_org),
+          private_org = COALESCE(${privateOrg}, private_org),
+          insurance = COALESCE(${insurance}, insurance),
+          subscription = COALESCE(${subscription}, subscription)
+        WHERE id = ${targetUserId}::uuid
+      `;
+    } else {
+      await sql`
+        UPDATE users 
+        SET 
+          employee_id = COALESCE(${employeeId}, employee_id),
+          name = COALESCE(${name}, name),
+          email = COALESCE(${email}, email),
+          department = COALESCE(${department}, department),
+          branch = COALESCE(${branch}, branch),
+          date_of_birth = COALESCE(${dateOfBirth}, date_of_birth),
+          gender = COALESCE(${gender}, gender),
+          nationality = COALESCE(${nationality}, nationality),
+          status = COALESCE(${status}, status),
+          preferred_name = COALESCE(${preferredName}, preferred_name),
+          marital_status = COALESCE(${maritalStatus}, marital_status),
+          blood_group = COALESCE(${bloodGroup}, blood_group),
+          personal_email = COALESCE(${personalEmail}, personal_email),
+          personal_phone = COALESCE(${personalPhone}, personal_phone),
+          current_address = COALESCE(${currentAddress}, current_address)
+        WHERE id = ${targetUserId}::uuid
+      `;
+    }
+
     revalidatePath(`/dashboard/employees/${targetUserId}`);
     revalidatePath(`/dashboard/employees/${targetUserId}/edit`);
+    revalidatePath(`/dashboard/employees`);
     revalidatePath(`/dashboard/payroll`);
+    revalidatePath(`/my-profile`);
 
-    return {
-      success: true,
-      message: "Job details updated successfully!",
-    };
+    return { success: true, message: "Profile updated successfully!" };
   } catch (error) {
     console.error("Database update error:", error);
     return {
       success: false,
-      message: "Failed to update job details in database.",
+      message: "Failed to update profile in database. Please try again.",
     };
   }
 }
-

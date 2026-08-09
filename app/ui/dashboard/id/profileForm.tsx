@@ -3,7 +3,7 @@
 
 import React, { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { updateEmployeeProfile } from "@/app/lib/employeeList/actions";
+import { updateEmployeeDetails } from "@/app/lib/employeeList/actions";
 import { FullEmployeeProfile } from "@/app/lib/employeeList/definitions";
 import {
   EducationItem,
@@ -14,7 +14,6 @@ import { Check, Loader2 } from "lucide-react";
 
 import OfficialInfoSection from "./officialInfoSection";
 import PersonalInfoSection from "./personalInfoSection";
-import DocumentsTab from "@/app/ui/employee/profile/tabs/documentsTab"; // Your Documents component
 
 interface ProfileFormProps {
   profile: FullEmployeeProfile;
@@ -23,14 +22,9 @@ interface ProfileFormProps {
   documents?: EmployeeDocument[];
 }
 
-export default function ProfileForm({
-  profile,
-  educationHistory = [],
-  languageHistory = [],
-  documents = [],
-}: ProfileFormProps) {
+export default function ProfileForm({ profile }: ProfileFormProps) {
   const router = useRouter();
-  const updateProfileWithId = updateEmployeeProfile.bind(null, profile.id);
+  const updateProfileWithId = updateEmployeeDetails.bind(null, profile.id);
   const [state, formAction, isPending] = useActionState(
     updateProfileWithId,
     null,
@@ -85,7 +79,6 @@ export default function ProfileForm({
             <>
               <Check className="w-4 h-4" />
               Save Main Changes
-              
             </>
           )}
         </button>

@@ -10,15 +10,12 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { InputField, SelectField } from "./formControls";
+import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
 
 export function CurrentPositionSection({
-  formData,
-  onChange,
+  profile,
 }: {
-  formData: Record<string, string>;
-  onChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => void;
+  profile: FullEmployeeProfile;
 }) {
   return (
     <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xs space-y-5">
@@ -35,48 +32,42 @@ export function CurrentPositionSection({
         <InputField
           label="Job Title"
           name="jobTitle"
-          value={formData.jobTitle}
-          onChange={onChange}
+          defaultValue={profile.jobTitle || profile.role || ""}
           icon={Briefcase}
           placeholder="e.g. Senior Developer"
         />
         <InputField
           label="Job Family"
           name="jobFamily"
-          value={formData.jobFamily}
-          onChange={onChange}
+          defaultValue={profile.jobFamily || ""}
           icon={Users}
           placeholder="e.g. Engineering"
         />
         <SelectField
           label="Employment Type"
           name="employmentType"
-          value={formData.employmentType}
-          onChange={onChange}
+          defaultValue={profile.employmentType || "Full-Time"}
           icon={UserCheck}
           options={["Full-Time", "Part-Time", "Contract", "Internship"]}
         />
         <InputField
           label="Department"
           name="department"
-          value={formData.department}
-          onChange={onChange}
+          defaultValue={profile.department || ""}
           icon={Building2}
           placeholder="e.g. Software Engineering"
         />
         <InputField
           label="Branch / Location"
           name="branch"
-          value={formData.branch}
-          onChange={onChange}
+          defaultValue={profile.branch || ""}
           icon={MapPin}
           placeholder="e.g. HQ - Sulaymaniyah"
         />
         <InputField
           label="Direct Manager"
           name="managerName"
-          value={formData.managerName}
-          onChange={onChange}
+          defaultValue={profile.managerName || ""}
           icon={UserCheck}
           placeholder="Manager's Name"
         />
@@ -84,24 +75,23 @@ export function CurrentPositionSection({
           label="Join Date"
           name="joinDate"
           type="date"
-          value={formData.joinDate}
-          onChange={onChange}
+          defaultValue={profile.joinDate || ""}
           icon={Calendar}
         />
         <InputField
           label="Basic Salary (IQD)"
-          name="base_salary"
+          name="baseSalary"
           type="number"
-          value={formData.base_salary}
-          onChange={onChange}
+          defaultValue={
+            profile.base_salary != null ? String(profile.base_salary) : ""
+          }
           icon={DollarSign}
           placeholder="1340000"
         />
         <SelectField
           label="Status"
           name="status"
-          value={formData.status}
-          onChange={onChange}
+          defaultValue={profile.status || "Active"}
           icon={ShieldCheck}
           options={["Active", "Inactive", "On Leave", "Terminated"]}
         />

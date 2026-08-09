@@ -3,18 +3,7 @@
 import React from "react";
 import { FullEmployeeProfile } from "@/app/lib/employeeList/definitions";
 import { InputField, SelectField } from "./formFields";
-import {
-  Lock,
-  Hash,
-  User,
-  Mail,
-  Briefcase,
-  DollarSign,
-  Calendar,
-  Globe,
-  Shield,
-  Activity,
-} from "lucide-react";
+import { Lock, Hash, User, Mail, Calendar, Globe, Shield } from "lucide-react";
 
 const formatDateForInput = (dateVal: string | Date | null | undefined) => {
   if (!dateVal) return "";
@@ -76,29 +65,6 @@ export default function OfficialInfoSection({
           required
         />
         <InputField
-          label="Department"
-          id="department"
-          name="department"
-          icon={Briefcase}
-          defaultValue={profile.department}
-        />
-        <InputField
-          label="Branch"
-          id="branch"
-          name="branch"
-          icon={Briefcase}
-          defaultValue={profile.branch}
-        />
-        <InputField
-          label="Monthly Base Salary ($)"
-          id="baseSalary"
-          name="baseSalary"
-          type="number"
-          icon={DollarSign}
-          defaultValue={profile.base_salary ?? 3500}
-          required
-        />
-        <InputField
           label="Date of Birth"
           id="dateOfBirth"
           name="dateOfBirth"
@@ -133,18 +99,6 @@ export default function OfficialInfoSection({
           options={[
             { label: "Employee", value: "employee" },
             { label: "Admin", value: "admin" },
-          ]}
-        />
-
-        <SelectField
-          label="Status"
-          id="status"
-          name="status"
-          icon={Activity}
-          defaultValue={profile.status?.toLowerCase() || "active"}
-          options={[
-            { label: "Active", value: "active" },
-            { label: "Inactive", value: "inactive" },
           ]}
         />
       </div>

@@ -71,6 +71,7 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
                 fill
                 className="object-cover"
                 unoptimized
+                loading="eager"
               />
             ) : (
               <span>{initial}</span>
