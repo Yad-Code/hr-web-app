@@ -8,6 +8,7 @@ import {
   RotateCcw,
   Save,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { InputField, SelectField } from "./formFields";
 
@@ -54,6 +55,7 @@ export function AddEducationForm({
     subject: "",
     institution: "",
     location: "",
+    score_type: "GPA", // Default score type
     score: "",
     start_year: "",
     end_year: "",
@@ -61,6 +63,7 @@ export function AddEducationForm({
   };
 
   const [formData, setFormData] = useState(initialFormState);
+  const [error, setError] = useState<string | null>(null);
 
   const handleLevelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const level = e.target.value;
@@ -74,13 +77,66 @@ export function AddEducationForm({
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: value };
+      // Clear score if the score type switches so previous invalid ranges don't persist
+      if (name === "score_type") {
+        updated.score = "";
+      }
+      return updated;
+    });
+    setError(null);
   };
 
-  const handleReset = () => setFormData(initialFormState);
+  const handleReset = () => {
+    setFormData(initialFormState);
+    setError(null);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
+    // Validate Start and End Years
+    if (formData.start_year && formData.end_year) {
+      const start = parseInt(formData.start_year, 10);
+      const end = parseInt(formData.end_year, 10);
+      if (start > end) {
+        setError(
+          "Validation Error: The end year cannot be earlier than the start year.",
+        );
+        return;
+      }
+    }
+
+    // Validate Score Range
+    if (formData.score !== "") {
+      const numericScore = parseFloat(formData.score);
+      if (isNaN(numericScore)) {
+        setError(
+          "Validation Error: Please enter a valid numeric value for the score.",
+        );
+        return;
+      }
+
+      if (formData.score_type === "GPA") {
+        if (numericScore < 0 || numericScore > 4.0) {
+          setError(
+            "Validation Error: GPA must be within the valid range of 0.0 to 4.0.",
+          );
+          return;
+        }
+      } else if (formData.score_type === "Percentage") {
+        if (numericScore < 0 || numericScore > 100) {
+          setError(
+            "Validation Error: Percentage must be within the valid range of 0 to 100.",
+          );
+          return;
+        }
+      }
+    }
+
     onSubmit(formData);
     handleReset();
   };
@@ -99,6 +155,13 @@ export function AddEducationForm({
           Add Education Record
         </h2>
       </div>
+
+      {error && (
+        <div className="flex items-center gap-2 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-medium animate-fadeIn">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
       <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -143,14 +206,36 @@ export function AddEducationForm({
             onChange={handleChange}
             placeholder="City, Country"
             icon={MapPin}
+            required
           />
-          <InputField
-            label="Score / GPA"
-            name="score"
-            value={formData.score}
-            onChange={handleChange}
-            placeholder="e.g., 3.8 or 96%"
-          />
+
+          {/* Score Type & Dynamic Score Input */}
+          <div className="grid grid-cols-2 gap-3">
+            <SelectField
+              label="Score Type"
+              name="score_type"
+              value={formData.score_type}
+              onChange={handleChange}
+              options={["GPA", "Percentage"]}
+            />
+            <InputField
+              label={
+                formData.score_type === "GPA"
+                  ? "GPA (0 - 4.0)"
+                  : "Percentage (%)"
+              }
+              name="score"
+              type="number"
+              step="any"
+              value={formData.score}
+              onChange={handleChange}
+              placeholder={
+                formData.score_type === "GPA" ? "e.g., 3.8" : "e.g., 95"
+              }
+              required
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <InputField
               label="Start Year"
@@ -159,6 +244,7 @@ export function AddEducationForm({
               value={formData.start_year}
               onChange={handleChange}
               placeholder="YYYY"
+              required
             />
             <InputField
               label="End Year"
@@ -167,6 +253,7 @@ export function AddEducationForm({
               value={formData.end_year}
               onChange={handleChange}
               placeholder="YYYY"
+              required
             />
           </div>
         </div>
