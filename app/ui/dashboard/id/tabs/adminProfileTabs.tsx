@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useState } from "react";
-import ProfileForm from "../profileForm"; 
 import {
   UserPen,
   Briefcase,
@@ -16,9 +15,10 @@ import {
   LanguageItem,
   EmployeeDocument,
 } from "@/app/lib/employee/definitions";
-import AdminLanguageTab from "./adminLanguageTab";
+import ProfileForm from "../profileForm"; 
 import AdminJobInformationTab from "./adminJobInformationTab";
 import AdminEducationTab from "./adminEducationTab";
+import AdminLanguageTab from "./adminLanguageTab";
 import AdminDocumentsTab from "./adminDocumentsTab";
 
 export type AdminTabType =

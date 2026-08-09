@@ -52,12 +52,16 @@ export async function GET() {
 
     // --- Original Tables ---
     await db`
-      CREATE TABLE users (
+     CREATE TABLE users (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         employee_id VARCHAR(50) UNIQUE,
         name VARCHAR(100) NOT NULL,
         preferred_name VARCHAR(100),
         job_title VARCHAR(100),
+        job_family VARCHAR(100),
+        employment_type VARCHAR(50) DEFAULT 'Full-Time',
+        manager_name VARCHAR(100),
+        join_date DATE,
         department VARCHAR(100), 
         branch VARCHAR(100),
         date_of_birth DATE,
@@ -73,7 +77,11 @@ export async function GET() {
         password_hash TEXT NOT NULL,
         role user_role DEFAULT 'employee' NOT NULL,
         status VARCHAR(20) DEFAULT 'Active',
-        base_salary DECIMAL(10,2) DEFAULT 3500.00 NOT NULL, -- Added salary field
+        base_salary DECIMAL(10,2) DEFAULT 3500.00 NOT NULL,
+        public_org VARCHAR(100),
+        private_org VARCHAR(100),
+        insurance VARCHAR(100),
+        subscription VARCHAR(100),
         image_url TEXT,
         shift_start TIME DEFAULT '09:00:00' NOT NULL,
         shift_end TIME DEFAULT '17:00:00' NOT NULL,
@@ -407,59 +415,70 @@ CREATE TABLE self_assessments (
     // 4. Seed Users
     const seededUsers = await db`
       INSERT INTO users (
-        employee_id, name, preferred_name, job_title, department, branch, 
-        date_of_birth, age, gender, nationality, marital_status, 
+        employee_id, name, preferred_name, job_title, job_family, employment_type, manager_name, join_date, 
+        department, branch, date_of_birth, age, gender, nationality, marital_status, 
         blood_group, email, personal_email, personal_phone, current_address, 
-        password_hash, role, status, base_salary, image_url, shift_start, shift_end, shift_type,
-        last_seen_at
+        password_hash, role, status, base_salary, 
+        public_org, private_org, insurance, subscription,
+        image_url, shift_start, shift_end, shift_type, last_seen_at
        )
       VALUES 
         (
-          'EMP-1001', 'Admin Manager', 'Admin','HR Director', 'Human Resources', 'HQ - Sulaymaniyah',
+          'EMP-1001', 'Admin Manager', 'Admin', 'HR Director', 'Human Resources', 'Full-Time', 'CEO', '2020-01-15',
+          'Human Resources', 'HQ - Sulaymaniyah',
           '1988-03-15', 38, 'Female', 'Iraqi', 'Married', 'O+',
           'admin@company.com', 'admin.personal@gmail.com', '+964 770 111 2233',
           'Main Street, District 101, Sulaymaniyah', ${adminPassword}, 'admin', 'Active',
           5000.00,
+          NULL, NULL, 'Premium Health', NULL,
           'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)',
           CURRENT_TIMESTAMP
         ),
         (
-          'EMP-1002', 'Yad Developer', 'Yad','Software Engineer', 'Software Engineering', 'HQ - Sulaymaniyah',
+          'EMP-1002', 'Yad Developer', 'Yad', 'Software Engineer', 'Engineering', 'Full-Time', 'Admin Manager', '2022-03-01',
+          'Software Engineering', 'HQ - Sulaymaniyah',
           '2002-05-20', 24, 'Male', 'Iraqi', 'Single', 'A+',
           'yad@company.com', 'yad.dev@gmail.com', '+964 770 222 3344',
           'Salim Street, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
           4200.00,
+          NULL, NULL, 'Standard Health', 'GitHub Copilot',
           'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)',
           CURRENT_TIMESTAMP
         ),
         (
-          'EMP-1003', 'Lana Amin', 'Lana','Software Engineer', 'UI/UX Design', 'HQ - Sulaymaniyah',
+          'EMP-1003', 'Lana Amin', 'Lana', 'Product Designer', 'Design', 'Full-Time', 'Admin Manager', '2023-06-10',
+          'UI/UX Design', 'HQ - Sulaymaniyah',
           '1997-09-12', 28, 'Female', 'Iraqi', 'Single', 'B+',
           'lana@company.com', 'lana.amin@gmail.com', '+964 770 333 4455',
           'Barty Street, Sulaymaniyah', ${employeePassword}, 'employee', 'Offline',
           3800.00,
+          NULL, NULL, 'Standard Health', 'Figma Professional',
           'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)',
           CURRENT_TIMESTAMP - INTERVAL '2 hours'
         ),
         (
-          'EMP-1004', 'Diyar Karwan', 'Diyar', 'Software Engineer', 'Backend Infrastructure', 'HQ - Sulaymaniyah',
+          'EMP-1004', 'Diyar Karwan', 'Diyar', 'Backend Engineer', 'Engineering', 'Full-Time', 'Admin Manager', '2021-11-20',
+          'Backend Infrastructure', 'HQ - Sulaymaniyah',
           '1995-11-04', 30, 'Male', 'Iraqi', 'Married', 'O-',
           'diyar@company.com', 'diyar.karwan@gmail.com', '+964 770 444 5566',
           'Sarchinar Way, Sulaymaniyah', ${employeePassword}, 'employee', 'Offline',
           4000.00,
+          NULL, NULL, 'Standard Health', 'AWS Builder',
           'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)',
           CURRENT_TIMESTAMP - INTERVAL '1 day'
         ),
         (
-          'EMP-1005', 'Sara Omar', 'Sara', 'Software Engineer', 'Quality Assurance', 'HQ - Sulaymaniyah',
+          'EMP-1005', 'Sara Omar', 'Sara', 'QA Engineer', 'Engineering', 'Full-Time', 'Admin Manager', '2024-01-05',
+          'Quality Assurance', 'HQ - Sulaymaniyah',
           '1999-01-28', 27, 'Female', 'Iraqi', 'Single', 'AB+',
           'sara@company.com', 'sara.omar@gmail.com', '+964 770 555 6677',
           'Rapakarin Quarter, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
           3500.00,
+          NULL, NULL, 'Standard Health', NULL,
           'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)',
           CURRENT_TIMESTAMP - INTERVAL '5 minutes'

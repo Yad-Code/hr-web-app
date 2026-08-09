@@ -85,12 +85,11 @@ export default function ProfileForm({
             <>
               <Check className="w-4 h-4" />
               Save Main Changes
+              
             </>
           )}
         </button>
       </div>
-
-     
     </form>
   );
 }

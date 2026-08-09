@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
-import { RotateCcw, Save, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { RotateCcw, Save, Loader2, Check, AlertCircle } from "lucide-react";
 import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
+import { updateAdminJobInformation } from "@/app/lib/employeeList/actions";
 
 import { AdminHeader } from "./job/adminHeader";
 import { CurrentPositionSection } from "./job/currentPositionSection";
@@ -16,7 +18,12 @@ interface AdminJobInformationTabProps {
 export default function AdminJobInformationTab({
   profile,
 }: AdminJobInformationTabProps) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [feedback, setFeedback] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
 
   const initialFormState: Record<string, string> = {
     jobTitle: profile.jobTitle || profile.role || "",
@@ -52,17 +59,19 @@ export default function AdminJobInformationTab({
 
   const handleReset = () => {
     setFormData(initialFormState);
+    setFeedback(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setFeedback(null);
 
     startTransition(async () => {
-      try {
-        console.log("Saving job data for:", profile.id, formData);
-        await new Promise((resolve) => setTimeout(resolve, 800));
-      } catch (err) {
-        console.error("Failed to update job information:", err);
+      const res = await updateAdminJobInformation(profile.id, formData);
+      setFeedback(res);
+
+      if (res.success) {
+        router.refresh();
       }
     });
   };
@@ -70,6 +79,24 @@ export default function AdminJobInformationTab({
   return (
     <div className="space-y-6 text-left animate-fadeIn">
       <AdminHeader />
+
+      {/* Action Notification Banner */}
+      {feedback && (
+        <div
+          className={`p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2 border ${
+            feedback.success
+              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+              : "bg-rose-50 border-rose-200 text-rose-700"
+          }`}
+        >
+          {feedback.success ? (
+            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          )}
+          {feedback.message}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <CurrentPositionSection formData={formData} onChange={handleChange} />

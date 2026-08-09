@@ -12,6 +12,11 @@ export type ActionState = {
   message: string;
 } | null;
 
+export interface UpdateJobInfoState {
+  success: boolean;
+  message: string;
+}
+
 export async function updateEmployeeProfile(
   targetUserId: string,
   prevState: ActionState,
@@ -68,7 +73,7 @@ export async function updateEmployeeProfile(
           email = ${email},
           department = ${department},
           branch = ${branch},
-          base_salary = ${baseSalary}, -- 👈 Updated by Admin
+          base_salary = ${baseSalary}, - Updated by Admin
           date_of_birth = ${dateOfBirth},
           gender = ${gender},
           nationality = ${nationality},
@@ -108,7 +113,7 @@ export async function updateEmployeeProfile(
 
     revalidatePath(`/dashboard/employees/${targetUserId}/edit`);
     revalidatePath(`/dashboard/employees`);
-    revalidatePath(`/dashboard/payroll`); // 👈 Revalidate payroll table cache
+    revalidatePath(`/dashboard/payroll`); 
     revalidatePath(`/my-profile`);
 
     return { success: true, message: "Profile updated successfully!" };
@@ -193,3 +198,63 @@ export async function uploadProfilePicture(formData: FormData) {
     return { success: false, error: "Failed to upload image" };
   }
 }
+
+export async function updateAdminJobInformation(
+  targetUserId: string,
+  formData: Record<string, string>,
+): Promise<UpdateJobInfoState> {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return { success: false, message: "Unauthorized. Please log in." };
+    }
+
+    const currentRole = await getCurrentUserRole();
+    if (currentRole !== "admin") {
+      return {
+        success: false,
+        message: "Forbidden: Only admins can update job details.",
+      };
+    }
+
+    // Parse base salary safely
+    const baseSalary = formData.base_salary ? Number(formData.base_salary) : null;
+
+    // Execute SQL Update
+    await sql`
+     UPDATE users 
+      SET 
+        job_title = ${formData.jobTitle || null}, 
+        job_family = ${formData.jobFamily || null},
+        employment_type = ${formData.employmentType || null},
+        department = ${formData.department || null},
+        branch = ${formData.branch || null},
+        manager_name = ${formData.managerName || null},
+        join_date = ${formData.joinDate || null},
+        base_salary = ${baseSalary},
+        status = ${formData.status || null},
+        public_org = ${formData.publicOrg || null},
+        private_org = ${formData.privateOrg || null},
+        insurance = ${formData.insurance || null},
+        subscription = ${formData.subscription || null}
+      WHERE id = ${targetUserId}::uuid
+    `;
+
+    // Revalidate relevant cached pages
+    revalidatePath(`/dashboard/employees/${targetUserId}`);
+    revalidatePath(`/dashboard/employees/${targetUserId}/edit`);
+    revalidatePath(`/dashboard/payroll`);
+
+    return {
+      success: true,
+      message: "Job details updated successfully!",
+    };
+  } catch (error) {
+    console.error("Database update error:", error);
+    return {
+      success: false,
+      message: "Failed to update job details in database.",
+    };
+  }
+}
+

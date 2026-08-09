@@ -46,7 +46,7 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
   return (
     <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
       {/* Admin-Styled Banner Background */}
-      <div className="h-28 sm:h-36 w-full bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 relative">
+      <div className="h-28 sm:h-36 w-full bg-linear-to-r from-slate-900 via-slate-800 to-blue-950 relative">
         <div
           className="absolute inset-0 opacity-10 pointer-events-none"
           style={{
@@ -63,7 +63,7 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
       <div className="px-6 pb-6 pt-0 relative">
         {/* Avatar Container with Upload Overlay */}
         <div className="absolute -top-12 left-6 group">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-2xl flex items-center justify-center border-4 border-white shadow-md overflow-hidden relative">
+          <div className="w-24 h-24 rounded-full bg-linear-to-tr from-blue-600 to-indigo-600 text-white font-bold text-2xl flex items-center justify-center border-4 border-white shadow-md overflow-hidden relative">
             {profile.image_url ? (
               <Image
                 src={profile.image_url}
