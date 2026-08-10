@@ -1,7 +1,17 @@
-import { TrendingUp } from "lucide-react";
+// @/app/(admin)/dashboard/(overview)/performance/_components/recent-reviews-list.tsx
+import { TrendingUp, ArrowRight } from "lucide-react";
 import { ReviewRow } from "../types";
+import Link from "next/link";
 
 export function RecentReviewsList({ reviews }: { reviews: ReviewRow[] }) {
+  // Helper to color-code the ratings
+  const getRatingColor = (rating: string | number) => {
+    const num = Number(rating);
+    if (num >= 4.0) return "text-emerald-600";
+    if (num >= 3.0) return "text-amber-600";
+    return "text-rose-600";
+  };
+
   return (
     <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
       <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
@@ -9,6 +19,12 @@ export function RecentReviewsList({ reviews }: { reviews: ReviewRow[] }) {
           <TrendingUp className="w-4 h-4 text-[#009473]" />
           Recent Employee Reviews
         </h2>
+        <Link
+          href="/dashboard/performance/reviews"
+          className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-colors"
+        >
+          View All <ArrowRight className="w-3 h-3" />
+        </Link>
       </div>
 
       <div className="divide-y divide-slate-100">
@@ -32,14 +48,20 @@ export function RecentReviewsList({ reviews }: { reviews: ReviewRow[] }) {
                     {review.employee_name}
                   </p>
                   <p className="text-[11px] text-slate-400">
-                    {review.department} • {review.period}
+                    {review.department} • {review.period} •{" "}
+                    {new Date(review.date).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-4">
                 <div className="text-right">
-                  <span className="text-xs font-bold text-slate-900">
+                  <span
+                    className={`text-xs font-bold ${getRatingColor(review.rating)}`}
+                  >
                     ★ {Number(review.rating).toFixed(1)}
                   </span>
                   <p className="text-[10px] text-slate-400">
@@ -47,7 +69,7 @@ export function RecentReviewsList({ reviews }: { reviews: ReviewRow[] }) {
                   </p>
                 </div>
 
-                <span className="px-2 py-1 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                <span className="px-2 py-1 rounded-md text-[10px] font-bold bg-slate-50 text-slate-700 border border-slate-200">
                   {review.status}
                 </span>
               </div>

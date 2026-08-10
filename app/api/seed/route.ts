@@ -5,7 +5,7 @@ import bcrypt from "bcrypt";
 export async function GET() {
   try {
     // Extensions & Clean Slate
-    await db`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
+    await db`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`; 
 
     // Drop profile tables
     await db`DROP TABLE IF EXISTS employee_languages`;
@@ -22,10 +22,10 @@ export async function GET() {
     await db`DROP TABLE IF EXISTS user_feedback`;
     await db`DROP TABLE IF EXISTS user_skills`;
     await db`DROP TABLE IF EXISTS skills`;
-    await db`DROP TABLE IF EXISTS performance_reviews`;
     await db`DROP TABLE IF EXISTS user_goals`;
     await db`DROP TABLE IF EXISTS user_kpis`;
     await db`DROP TABLE IF EXISTS user_performance`;
+    await db`DROP TABLE IF EXISTS performance_reviews`;
 
     // Drop existing tables
     await db`DROP TABLE IF EXISTS wfh_requests`;

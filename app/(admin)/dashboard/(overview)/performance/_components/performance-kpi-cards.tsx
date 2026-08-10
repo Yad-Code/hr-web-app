@@ -18,7 +18,7 @@ export function PerformanceKpiCards({ stats }: { stats: PerformanceKpiData }) {
               {stats.avgRating} / 5.0
             </span>
             <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">
-              Q3 2026
+              {stats.currentQuarter}
             </span>
           </div>
         </div>

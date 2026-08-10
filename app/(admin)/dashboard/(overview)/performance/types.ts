@@ -35,4 +35,5 @@ export interface PerformanceKpiData {
   pendingReviews: string;
   activeGoals: string;
   submittedAssessments: string;
+  currentQuarter: string; //
 }
