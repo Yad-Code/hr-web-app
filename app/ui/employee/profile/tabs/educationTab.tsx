@@ -12,13 +12,14 @@ import {
   Building,
   Loader2,
   AlertTriangle,
+  AlertCircle,
   X,
   FileText,
   ExternalLink,
   Link as LinkIcon,
-  Eye, 
-  Calendar, 
-  Award, 
+  Eye,
+  Calendar,
+  Award,
 } from "lucide-react";
 import { EducationTabProps } from "@/app/lib/employee/definitions";
 import {
@@ -32,9 +33,46 @@ interface InputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   icon?: React.ElementType;
 }
 
+interface SelectFieldProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+  label: string;
+  options: string[];
+  icon?: React.ElementType;
+  placeholder?: string;
+}
+
 interface ExtendedEducationTabProps extends EducationTabProps {
   userId: string;
 }
+
+const EDUCATION_SUBJECTS_MAP: Record<string, string[]> = {
+  "High School": ["High School Diploma", "General Secondary Education"],
+  "Bachelor's Degree": [
+    "Computer Engineering",
+    "Software Engineering",
+    "Information Technology",
+    "Electrical Engineering",
+    "Business Administration",
+    "Finance",
+  ],
+  "Master's Degree": [
+    "Master of Computer Science",
+    "Master of Business Administration (MBA)",
+    "Data Science & Analytics",
+    "Cyber Security",
+    "Software Architecture",
+  ],
+  "Ph.D. / Doctorate": [
+    "Ph.D. in Computer Science",
+    "Ph.D. in Software Engineering",
+    "Ph.D. in Electrical Engineering",
+  ],
+  "Diploma / Certificate": [
+    "Full-Stack Web Development Bootcamp",
+    "Network Engineering Diploma",
+    "UI/UX Design Certificate",
+    "Project Management Professional (PMP)",
+  ],
+};
 
 export default function EducationTab({
   educationHistory,
@@ -42,6 +80,7 @@ export default function EducationTab({
 }: ExtendedEducationTabProps) {
   const [isPending, startTransition] = useTransition();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Modal States
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
@@ -52,7 +91,7 @@ export default function EducationTab({
   } | null>(null);
   const [documentUrlInput, setDocumentUrlInput] = useState("");
 
-  // 👈 State for the View Full Details Modal
+  // State for the View Full Details Modal
   const [selectedItem, setSelectedItem] = useState<
     ExtendedEducationTabProps["educationHistory"][number] | null
   >(null);
@@ -64,6 +103,7 @@ export default function EducationTab({
     subject: "",
     institution: "",
     location: "",
+    score_type: "GPA",
     score: "",
     start_year: "",
     end_year: "",
@@ -72,16 +112,81 @@ export default function EducationTab({
 
   const [formData, setFormData] = useState(initialFormState);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleLevelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const level = e.target.value;
+    setFormData((prev) => ({
+      ...prev,
+      level,
+      subject: "", // Reset subject when level changes
+    }));
+    setError(null);
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: value };
+      if (name === "score_type") {
+        updated.score = "";
+      }
+      return updated;
+    });
+    setError(null);
   };
 
   const handleReset = () => {
     setFormData(initialFormState);
+    setError(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
+    // Validate Start and End Years
+    if (!formData.start_year || !formData.end_year) {
+      setError("Validation Error: Both Start Year and End Year are required.");
+      return;
+    }
+
+    const start = parseInt(formData.start_year, 10);
+    const end = parseInt(formData.end_year, 10);
+    if (start > end) {
+      setError(
+        "Validation Error: The end year cannot be earlier than the start year.",
+      );
+      return;
+    }
+
+    // Validate Score Range
+    if (formData.score !== "") {
+      const numericScore = parseFloat(formData.score);
+      if (isNaN(numericScore)) {
+        setError(
+          "Validation Error: Please enter a valid numeric value for the score.",
+        );
+        return;
+      }
+
+      if (formData.score_type === "GPA") {
+        if (numericScore < 0 || numericScore > 4.0) {
+          setError(
+            "Validation Error: GPA must be within the valid range of 0.0 to 4.0.",
+          );
+          return;
+        }
+      } else if (formData.score_type === "Percentage") {
+        if (numericScore < 0 || numericScore > 100) {
+          setError(
+            "Validation Error: Percentage must be within the valid range of 0 to 100.",
+          );
+          return;
+        }
+      }
+    }
+
     const data = new FormData();
     Object.entries(formData).forEach(([key, value]) => data.append(key, value));
 
@@ -142,6 +247,10 @@ export default function EducationTab({
     });
   };
 
+  const availableSubjects = formData.level
+    ? EDUCATION_SUBJECTS_MAP[formData.level] || []
+    : [];
+
   return (
     <div className="space-y-6 text-left animate-fadeIn">
       {/* SECTION 1: EDUCATION DETAILS FORM */}
@@ -155,24 +264,43 @@ export default function EducationTab({
           </h2>
         </div>
 
+        {error && (
+          <div className="flex items-center gap-2 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-medium animate-fadeIn">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            <InputField
+            <SelectField
               label="Education Level"
               name="level"
               value={formData.level}
-              onChange={handleChange}
-              placeholder="e.g., Bachelor, Master's"
+              onChange={handleLevelChange}
               icon={GraduationCap}
+              options={[
+                "High School",
+                "Bachelor's Degree",
+                "Master's Degree",
+                "Ph.D. / Doctorate",
+                "Diploma / Certificate",
+              ]}
               required
             />
-            <InputField
+            <SelectField
               label="Academic Subject"
               name="subject"
               value={formData.subject}
               onChange={handleChange}
-              placeholder="e.g., Computer Engineering"
               icon={BookOpen}
+              options={availableSubjects}
+              disabled={!formData.level}
+              placeholder={
+                formData.level
+                  ? "Select Subject..."
+                  : "Select Education Level first"
+              }
               required
             />
             <InputField
@@ -192,13 +320,33 @@ export default function EducationTab({
               placeholder="City, Country"
               icon={MapPin}
             />
-            <InputField
-              label="Score / GPA"
-              name="score"
-              value={formData.score}
-              onChange={handleChange}
-              placeholder="e.g., 3.8 or 96%"
-            />
+
+            {/* Score Type & Dynamic Score Input */}
+            <div className="grid grid-cols-2 gap-3">
+              <SelectField
+                label="Score Type"
+                name="score_type"
+                value={formData.score_type}
+                onChange={handleChange}
+                options={["GPA", "Percentage"]}
+              />
+              <InputField
+                label={
+                  formData.score_type === "GPA"
+                    ? "GPA (0 - 4.0)"
+                    : "Percentage (%)"
+                }
+                name="score"
+                type="number"
+                step="any"
+                value={formData.score}
+                onChange={handleChange}
+                placeholder={
+                  formData.score_type === "GPA" ? "e.g., 3.8" : "e.g., 95"
+                }
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <InputField
                 label="Start Year"
@@ -207,6 +355,7 @@ export default function EducationTab({
                 value={formData.start_year}
                 onChange={handleChange}
                 placeholder="YYYY"
+                required
               />
               <InputField
                 label="End Year"
@@ -215,6 +364,7 @@ export default function EducationTab({
                 value={formData.end_year}
                 onChange={handleChange}
                 placeholder="YYYY"
+                required
               />
             </div>
           </div>
@@ -291,7 +441,6 @@ export default function EducationTab({
                   <td className="px-4 py-3 text-slate-600">{edu.location}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-2">
-                      {/* 👈 View Details Button */}
                       <button
                         type="button"
                         onClick={() => setSelectedItem(edu)}
@@ -301,7 +450,6 @@ export default function EducationTab({
                         <Eye className="w-4 h-4" />
                       </button>
 
-                      {/* View Document Link (If exists) */}
                       {edu.document_url && (
                         <a
                           href={edu.document_url}
@@ -314,7 +462,6 @@ export default function EducationTab({
                         </a>
                       )}
 
-                      {/* Attach/Edit Document Button */}
                       <button
                         type="button"
                         onClick={() =>
@@ -332,7 +479,6 @@ export default function EducationTab({
                         <FilePlus className="w-4 h-4" />
                       </button>
 
-                      {/* Delete Entry Button */}
                       <button
                         type="button"
                         onClick={() => setItemToDelete(edu.id)}
@@ -365,7 +511,7 @@ export default function EducationTab({
         </div>
       </div>
 
-      {/* 👈 VIEW FULL DETAILS MODAL */}
+      {/* VIEW FULL DETAILS MODAL */}
       {selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full border border-slate-200 overflow-hidden">
@@ -393,7 +539,6 @@ export default function EducationTab({
                 </button>
               </div>
 
-              {/* Detail Items Grid */}
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="space-y-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
@@ -440,7 +585,6 @@ export default function EducationTab({
                 </div>
               </div>
 
-              {/* Document Link Card */}
               {selectedItem.document_url ? (
                 <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-3 flex items-center justify-between">
                   <div className="flex items-center gap-2 overflow-hidden">
@@ -479,7 +623,7 @@ export default function EducationTab({
         </div>
       )}
 
-      {/* FORMAL DOCUMENT ATTACH / EDIT MODAL */}
+      {/* DOCUMENT ATTACH / EDIT MODAL */}
       {docModalItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full border border-slate-200 overflow-hidden">
@@ -542,7 +686,7 @@ export default function EducationTab({
         </div>
       )}
 
-      {/* FORMAL CONFIRMATION DELETE MODAL */}
+      {/* CONFIRMATION DELETE MODAL */}
       {itemToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full border border-slate-200 overflow-hidden">
@@ -615,12 +759,49 @@ function InputField({
         )}
         <input
           type={type}
-          className={`w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-all ${
+          className={`w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-all disabled:opacity-60 disabled:bg-slate-100/80 ${
             Icon ? "pl-9" : ""
           }`}
           placeholder={placeholder}
           {...props}
         />
+      </div>
+    </div>
+  );
+}
+
+// Reusable Select Field Component
+function SelectField({
+  label,
+  options,
+  icon: Icon,
+  placeholder = "Select Option...",
+  ...props
+}: SelectFieldProps) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+        {label}
+      </label>
+      <div className="relative">
+        {Icon && (
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Icon className="h-4 w-4 text-slate-400" />
+          </div>
+        )}
+        <select
+          className={`w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-all cursor-pointer disabled:opacity-60 disabled:bg-slate-100/80 ${
+            Icon ? "pl-9" : ""
+          }`}
+          {...props}
+        >
+          <option value="">{placeholder}</option>
+          {options.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
       </div>
     </div>
   );
