@@ -7,9 +7,14 @@ import { redirect } from "next/navigation";
 
 export async function generateMonthlyPayroll() {
   try {
-    // Select the employee's custom base_salary
     const users = await db`
-      SELECT id, base_salary 
+      SELECT 
+        id, 
+        base_salary,
+        public_org,    
+        private_org,   
+        insurance,     
+        subscription   
       FROM users 
       WHERE status = 'Active'
     `;
@@ -28,31 +33,96 @@ export async function generateMonthlyPayroll() {
       .toISOString()
       .split("T")[0];
 
-    for (const user of users) {
-      const grossPay = Number(user.base_salary);
-      const tax = grossPay * 0.1; // 10% tax
-      const insurance = 200.0;
-      const netPay = grossPay - tax - insurance;
+    // 1. Idempotency Check (Moved OUTSIDE the loop)
+    const existingStubs = await db`
+      SELECT id FROM pay_stubs 
+      WHERE pay_period_start = ${startOfMonth} 
+      LIMIT 1
+    `;
 
-      const [stub] = await db`
-        INSERT INTO pay_stubs (user_id, pay_period_start, pay_period_end, pay_date, gross_pay, net_pay, status) 
-        VALUES (${user.id}, ${startOfMonth}, ${endOfMonth}, ${payDate}, ${grossPay}, ${netPay}, 'processing')
-        RETURNING id
-      `;
-
-      await db`
-        INSERT INTO pay_stub_items (pay_stub_id, type, category, description, amount) 
-        VALUES 
-          (${stub.id}, 'earning', 'base_salary', 'Monthly Base Salary', ${grossPay}),
-          (${stub.id}, 'deduction', 'tax', 'Income Tax (10%)', ${tax}),
-          (${stub.id}, 'deduction', 'insurance', 'Health Insurance Premium', ${insurance})
-      `;
+    if (existingStubs.length > 0) {
+      return {
+        success: false,
+        message: "Payroll for this month has already been generated.",
+      };
     }
+
+    // 2. Wrap all insertions in a transaction block
+    // Note: If your specific db wrapper doesn't use `.begin`, you would execute
+    // await db`BEGIN` before the loop, and await db`COMMIT` after it.
+    await db.begin(async (tx) => {
+      for (const user of users) {
+        const grossPay = Number(user.base_salary);
+
+        // Dynamic Tax Calculation
+        let taxRate = 0.1;
+        let taxDescription = "Standard Income Tax (10%)";
+ 
+        if (user.public_org && user.private_org) {
+          taxRate = 0.15; 
+          taxDescription = "Dual-Sector Income Tax (15%)";
+        } 
+        else if (user.public_org) {
+          taxRate = 0.12;
+          taxDescription = "Public Sector Income Tax (12%)";
+        } 
+        else if (user.private_org) {
+          taxRate = 0.08;
+          taxDescription = "Private Sector Income Tax (8%)";
+        }
+
+        const tax = grossPay * taxRate;
+
+        // Dynamic Insurance Deduction
+        let insuranceDeduction = 0;
+        let insuranceDescription = "No Insurance Enrolled";
+
+        if (user.insurance) {
+          switch (user.insurance.toLowerCase()) {
+            case "premium":
+              insuranceDeduction = 350.0;
+              insuranceDescription = "Premium Health Insurance";
+              break;
+            case "standard":
+              insuranceDeduction = 150.0;
+              insuranceDescription = "Standard Health Insurance";
+              break;
+            default:
+              insuranceDeduction = 200.0;
+              insuranceDescription = `${user.insurance} Health Premium`;
+          }
+        }
+
+        const netPay = grossPay - tax - insuranceDeduction;
+
+        // Note we are using `tx` here instead of `db` to keep it in the transaction
+        const [stub] = await tx`
+          INSERT INTO pay_stubs (user_id, pay_period_start, pay_period_end, pay_date, gross_pay, net_pay, status) 
+          VALUES (${user.id}, ${startOfMonth}, ${endOfMonth}, ${payDate}, ${grossPay}, ${netPay}, 'processing')
+          RETURNING id
+        `;
+
+        await tx`
+          INSERT INTO pay_stub_items (pay_stub_id, type, category, description, amount) 
+          VALUES 
+            (${stub.id}, 'earning', 'base_salary', 'Monthly Base Salary', ${grossPay}),
+            (${stub.id}, 'deduction', 'tax', ${taxDescription}, ${tax})
+        `;
+
+        if (insuranceDeduction > 0) {
+          await tx`
+            INSERT INTO pay_stub_items (pay_stub_id, type, category, description, amount) 
+            VALUES (${stub.id}, 'deduction', 'insurance', ${insuranceDescription}, ${insuranceDeduction})
+          `;
+        }
+      }
+    });
 
     revalidatePath("/dashboard/payroll");
     return { success: true, message: "Payroll generated successfully." };
   } catch (error) {
     console.error("Payroll Generation Error:", error);
+    // If an error happens inside the db.begin block, the database automatically rolls back everything!
     return { success: false, message: "Failed to generate payroll." };
   }
 }
@@ -114,12 +184,13 @@ export async function deletePayStub(payStubId: string) {
   redirect("/dashboard/payroll");
 }
 
-export async function rollbackProcessingPayroll() {
+export async function rollbackProcessingPayroll(payPeriodStart: Date) {
   try {
     // Only delete pay stubs that haven't been paid yet
     await db`
       DELETE FROM pay_stubs 
       WHERE status = 'processing'
+      AND pay_period_start = ${payPeriodStart};
     `;
 
     revalidatePath("/dashboard/payroll");
