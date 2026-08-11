@@ -14,6 +14,7 @@ export const revalidate = 0;
 // --- DATA FETCHING WRAPPER COMPONENTS ---
 
 async function KpiSection() {
+  
   const [[avgResult], [reviewsCount], [goalsCount], [selfCount]] =
     await Promise.all([
       db`SELECT COALESCE(ROUND(AVG(rating), 1), 0.0) as avg_rating FROM performance_reviews`,
