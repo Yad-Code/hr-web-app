@@ -184,10 +184,19 @@ export async function deletePayStub(payStubId: string) {
 
 export async function rollbackProcessingPayroll() {
   try {
-    await db`
-      DELETE FROM pay_stubs 
-      WHERE status = 'processing' 
-    `;
+    await db.begin(async (tx) => { 
+      await tx`
+        DELETE FROM pay_stub_items 
+        WHERE pay_stub_id IN (
+          SELECT id FROM pay_stubs WHERE status = 'processing'
+        );
+      `;
+ 
+      await tx`
+        DELETE FROM pay_stubs 
+        WHERE status = 'processing';
+      `;
+    });
 
     revalidatePath("/dashboard/payroll");
     return {
