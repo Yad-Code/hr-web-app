@@ -1,22 +1,15 @@
 // @/app/ui/dashboard/id/profileHeader.tsx
 "use client";
 
+import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
+
 import { useTransition, useRef } from "react";
 import Image from "next/image";
 import { uploadProfilePicture } from "@/app/lib/employeeList/actions";
 import { Camera, Loader2, ShieldAlert } from "lucide-react";
 
 interface ProfileHeaderProps {
-  profile: {
-    id: string;
-    name: string;
-    email: string;
-    role?: string;
-    status?: string;
-    image_url?: string | null;
-    department?: string;
-    preferred_name?: string;
-  };
+  profile: FullEmployeeProfile;
 }
 
 export default function ProfileHeader({ profile }: ProfileHeaderProps) {

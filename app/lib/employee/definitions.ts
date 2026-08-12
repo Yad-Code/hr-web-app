@@ -83,7 +83,7 @@ export interface FullEmployeeProfile {
   date_of_birth?: string | Date | null;
   age?: number | null;
   gender?: string | null;
-  nationality?: string | null;
+  nationality?: string | null; 
   marital_status?: string | null;
   blood_group?: string | null;
 
