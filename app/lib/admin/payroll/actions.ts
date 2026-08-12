@@ -183,15 +183,17 @@ export async function deletePayStub(payStubId: string) {
 }
 
 export async function rollbackProcessingPayroll() {
-  try {
-    await db.begin(async (tx) => { 
+  try { 
+    await db.begin(async (tx) => {
+      // 1. Delete associated line items first to prevent foreign key errors
       await tx`
         DELETE FROM pay_stub_items 
         WHERE pay_stub_id IN (
           SELECT id FROM pay_stubs WHERE status = 'processing'
         );
       `;
- 
+
+      // 2. Now safely delete the processing pay stubs
       await tx`
         DELETE FROM pay_stubs 
         WHERE status = 'processing';
