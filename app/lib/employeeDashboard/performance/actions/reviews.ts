@@ -20,7 +20,7 @@ export async function updateEmployeeComments(
 
     revalidatePath("/my-profile/performance");
     return { success: true };
-  } catch (error) {
+  } catch (error) { 
     console.error("Failed to update employee comments:", error);
     return { success: false, error: "Failed to save comments." };
   }

@@ -10,6 +10,7 @@ import {
   UserCheck,
   Briefcase,
   FileText,
+  CheckCircle,
 } from "lucide-react";
 
 interface ReviewDetailRow {
@@ -25,6 +26,8 @@ interface ReviewDetailRow {
   employee_comments: string | null;
   goals_for_next_cycle: string | null;
   status: string;
+  acknowledged: boolean;
+  acknowledged_at: string | Date | null;
   employee_name: string;
   department: string;
   job_title: string;
@@ -153,6 +156,29 @@ export default async function ReviewDetailsPage({
                   <UserCheck className="w-3.5 h-3.5" /> Reviewed By
                 </span>
                 <p className="font-medium text-slate-800">{review.reviewer}</p>
+              </div>
+              <div className="pt-2 border-t border-slate-50">
+                <span className="text-xs font-semibold text-slate-500 mb-2 flex items-center gap-1.5">
+                  <CheckCircle className="w-3.5 h-3.5" /> Employee Sign-Off
+                </span>
+
+                {review.acknowledged ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold border bg-emerald-50 text-emerald-700 border-emerald-200/80 w-full justify-center">
+                    ✓ Signed on{" "}
+                    {new Date(review.acknowledged_at!).toLocaleDateString(
+                      "en-US",
+                      {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      },
+                    )}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold border bg-amber-50 text-amber-700 border-amber-200/80 w-full justify-center">
+                    Pending Signature
+                  </span>
+                )}
               </div>
             </div>
           </div>

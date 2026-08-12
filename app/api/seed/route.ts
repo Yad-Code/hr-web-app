@@ -203,6 +203,8 @@ export async function GET() {
       manager_comments TEXT,
       employee_comments TEXT,
       goals_for_next_cycle TEXT,
+      acknowledged BOOLEAN DEFAULT false,
+      acknowledged_at TIMESTAMP DEFAULT NULL;
       status VARCHAR(30) DEFAULT 'Completed'
     );
     `;

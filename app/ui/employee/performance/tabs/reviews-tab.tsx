@@ -12,7 +12,7 @@ import { formatDate } from "@/app/lib/utils";
 export default function ReviewsTab({
   reviews,
 }: {
-  reviews: PerformanceReview[];
+  reviews: PerformanceReview[]; 
 }) {
   const [isPending, startTransition] = useTransition();
   const [activeMessage, setActiveMessage] = useState<{
