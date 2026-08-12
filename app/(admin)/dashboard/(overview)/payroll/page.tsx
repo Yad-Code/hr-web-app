@@ -6,7 +6,7 @@ import {
   rollbackProcessingPayroll,
 } from "@/app/lib/admin/payroll/actions";
 
-export default async function AdminPayrollPage() { 
+export default async function AdminPayrollPage() {
   const payStubs = await fetchAllPayStubs();
 
   const totalProcessing = payStubs.filter(
@@ -47,7 +47,10 @@ export default async function AdminPayrollPage() {
             <form
               action={async () => {
                 "use server";
-                await rollbackProcessingPayroll();
+                const result = await generateMonthlyPayroll();
+                if (!result.success) {
+                  console.log("🚨 PAYROLL GENERATION FAILED:", result.message);
+                }
               }}
             >
               <button

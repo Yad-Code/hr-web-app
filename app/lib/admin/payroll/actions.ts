@@ -23,15 +23,15 @@ export async function generateMonthlyPayroll() {
       return { success: false, message: "No active users found." };
 
     const today = new Date();
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-      .toISOString()
-      .split("T")[0];
-    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0)
-      .toISOString()
-      .split("T")[0];
-    const payDate = new Date(today.getFullYear(), today.getMonth() + 1, 5)
-      .toISOString()
-      .split("T")[0];
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+
+    const startOfMonth = `${year}-${month}-01`;
+
+    const lastDay = new Date(year, today.getMonth() + 1, 0).getDate();
+
+    const endOfMonth = `${year}-${month}-${lastDay}`;
+    const payDate = `${year}-${String(today.getMonth() + 2).padStart(2, "0")}-05`; // Come back here and change the payment day according to the user
 
     // 1. Idempotency Check (Moved OUTSIDE the loop)
     const existingStubs = await db`
@@ -57,16 +57,14 @@ export async function generateMonthlyPayroll() {
         // Dynamic Tax Calculation
         let taxRate = 0.1;
         let taxDescription = "Standard Income Tax (10%)";
- 
+
         if (user.public_org && user.private_org) {
-          taxRate = 0.15; 
+          taxRate = 0.15;
           taxDescription = "Dual-Sector Income Tax (15%)";
-        } 
-        else if (user.public_org) {
+        } else if (user.public_org) {
           taxRate = 0.12;
           taxDescription = "Public Sector Income Tax (12%)";
-        } 
-        else if (user.private_org) {
+        } else if (user.private_org) {
           taxRate = 0.08;
           taxDescription = "Private Sector Income Tax (8%)";
         }
@@ -185,7 +183,7 @@ export async function deletePayStub(payStubId: string) {
 }
 
 export async function rollbackProcessingPayroll() {
-  try { 
+  try {
     await db`
       DELETE FROM pay_stubs 
       WHERE status = 'processing' 
