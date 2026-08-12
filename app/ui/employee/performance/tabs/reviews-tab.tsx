@@ -12,7 +12,7 @@ import { formatDate } from "@/app/lib/utils";
 export default function ReviewsTab({
   reviews,
 }: {
-  reviews: PerformanceReview[]; 
+  reviews: PerformanceReview[];
 }) {
   const [isPending, startTransition] = useTransition();
   const [activeMessage, setActiveMessage] = useState<{
@@ -209,7 +209,7 @@ export default function ReviewsTab({
                       disabled={isPending}
                       className="text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 px-3 py-1.5 rounded-lg transition-colors"
                     >
-                      {isPending ? "Processing..." : "Acknowledge & Sign Off"}
+                      {isPending ? "Processing..." : "Acknowledge"}
                     </button>
                   )}
                 </div>
@@ -220,7 +220,7 @@ export default function ReviewsTab({
                     disabled={isPending}
                     className="px-4 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
                   >
-                    {isPending ? "Saving..." : "Save Reflections"}
+                    {isPending ? "Saving..." : "Save comment"}
                   </button>
                 )}
               </div>
