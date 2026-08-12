@@ -6,7 +6,7 @@ import {
   rollbackProcessingPayroll,
 } from "@/app/lib/admin/payroll/actions";
 
-export default async function AdminPayrollPage() {
+export default async function AdminPayrollPage() { 
   const payStubs = await fetchAllPayStubs();
 
   const totalProcessing = payStubs.filter(

@@ -184,13 +184,11 @@ export async function deletePayStub(payStubId: string) {
   redirect("/dashboard/payroll");
 }
 
-export async function rollbackProcessingPayroll(payPeriodStart: Date) {
-  try {
-    // Only delete pay stubs that haven't been paid yet
+export async function rollbackProcessingPayroll() {
+  try { 
     await db`
       DELETE FROM pay_stubs 
-      WHERE status = 'processing'
-      AND pay_period_start = ${payPeriodStart};
+      WHERE status = 'processing' 
     `;
 
     revalidatePath("/dashboard/payroll");
