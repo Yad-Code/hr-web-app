@@ -60,7 +60,7 @@ export async function createNewGoal(formData: FormData): Promise<void> {
   revalidatePath("/dashboard/performance");
   redirect("/dashboard/performance");
 }
- 
+
 const ReviewSchema = z.object({
   userId: z.string().min(1, "Please select an employee."),
   period: z.string().min(1, "Review period is required."),
@@ -89,13 +89,24 @@ export async function createNewReview(formData: FormData): Promise<void> {
   });
 
   if (!validatedFields.success) {
-    console.error("Validation Error:", validatedFields.error.flatten().fieldErrors);
+    console.error(
+      "Validation Error:",
+      validatedFields.error.flatten().fieldErrors,
+    );
     return;
   }
 
   const {
-    userId, period, date, reviewer, rating, 
-    strengths, improvements, managerComments, employeeComments, goalsForNextCycle
+    userId,
+    period,
+    date,
+    reviewer,
+    rating,
+    strengths,
+    improvements,
+    managerComments,
+    employeeComments,
+    goalsForNextCycle,
   } = validatedFields.data;
 
   try {
@@ -119,3 +130,59 @@ export async function createNewReview(formData: FormData): Promise<void> {
   redirect("/dashboard/performance/reviews");
 }
 
+export async function updateMeetingStatus(meetingId: string, status: string) {
+  try {
+    await db`
+      UPDATE one_on_one_meetings 
+      SET status = ${status} 
+      WHERE id = ${meetingId}
+    `;
+
+    revalidatePath(`/dashboard/performance/meetings/${meetingId}`);
+    revalidatePath(`/dashboard/performance/meetings`);
+    revalidatePath(`/dashboard/performance`);
+    return { success: true, message: `Meeting marked as ${status}.` };
+  } catch (error) {
+    console.error("Failed to update meeting status:", error);
+    return { success: false, message: "Failed to update status." };
+  }
+}
+
+export async function scheduleOneOnOneMeeting(
+  formData: FormData,
+): Promise<void> {
+  const employee_id = formData.get("employee_id") as string;
+  const meeting_date = formData.get("meeting_date") as string;
+  const topic = formData.get("topic") as string;
+  const notes = formData.get("notes") as string;
+
+  if (!employee_id || !meeting_date) {
+    return;
+  }
+
+  try {
+    await db`
+      INSERT INTO one_on_one_meetings (
+        employee_id,
+        meeting_date,
+        topic,
+        notes,
+        status
+      ) VALUES (
+        ${employee_id},
+        ${meeting_date},
+        ${topic || "1-on-1 Sync"},
+        ${notes || null},
+        'Scheduled'
+      )
+    `;
+
+    revalidatePath("/dashboard/performance/meetings");
+    revalidatePath("/dashboard/performance");
+  } catch (error) {
+    console.error("Failed to schedule meeting:", error);
+    return;
+  }
+
+  redirect("/dashboard/performance/meetings");
+}
