@@ -147,17 +147,15 @@ export async function updateMeetingStatus(meetingId: string, status: string) {
     return { success: false, message: "Failed to update status." };
   }
 }
-// @/app/lib/admin/performance/actions.ts
-export async function scheduleOneOnOneMeeting(
-  formData: FormData,
-): Promise<void> {
+
+export async function scheduleOneOnOneMeeting(formData: FormData): Promise<void> {
   const employee_id = formData.get("employee_id") as string;
-  const manager_id = formData.get("manager_id") as string; // <-- Add this
+  const manager_id = formData.get("manager_id") as string;
   const meeting_date = formData.get("meeting_date") as string;
   const topic = formData.get("topic") as string;
   const notes = formData.get("notes") as string;
+  const action_items = formData.get("action_items") as string; // <-- Extract action items
 
-  // Make sure both employee and manager are selected
   if (!employee_id || !manager_id || !meeting_date) {
     return;
   }
@@ -166,17 +164,19 @@ export async function scheduleOneOnOneMeeting(
     await db`
       INSERT INTO one_on_one_meetings (
         employee_id,
-        manager_id,       
+        manager_id,
         meeting_date,
         topic,
         notes,
+        action_items,    
         status
       ) VALUES (
         ${employee_id},
-        ${manager_id},   
+        ${manager_id},
         ${meeting_date},
         ${topic || "1-on-1 Sync"},
         ${notes || null},
+        ${action_items || null}, 
         'Scheduled'
       )
     `;

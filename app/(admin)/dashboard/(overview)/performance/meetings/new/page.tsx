@@ -6,6 +6,7 @@ import {
   User,
   Calendar,
   FileText,
+  ListChecks,
 } from "lucide-react";
 import { getEmployeesList } from "@/app/lib/admin/performance/data";
 import { scheduleOneOnOneMeeting } from "@/app/lib/admin/performance/actions";
@@ -110,6 +111,18 @@ export default async function ScheduleMeetingPage() {
               name="notes"
               rows={4}
               placeholder="Add key talking points, feedback, or goals to cover..."
+              className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all shadow-xs resize-none"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <ListChecks className="w-3.5 h-3.5 text-slate-400" /> Action Items
+              & Follow-ups
+            </label>
+            <textarea
+              name="action_items"
+              rows={3}
+              placeholder="List any pending tasks, required updates, or immediate follow-ups..."
               className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all shadow-xs resize-none"
             />
           </div>
