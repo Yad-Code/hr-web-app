@@ -1,20 +1,21 @@
 // @/app/(admin)/dashboard/(overview)/performance/page.tsx
 import { Suspense } from "react";
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
+
 import { PerformanceKpiCards } from "./_components/performance-kpi-cards";
 import { RecentReviewsList } from "./_components/recent-reviews-list";
 import { GoalTrackerList } from "./_components/goal-tracker-list";
 import { UpcomingSyncsList } from "./_components/upcoming-syncs-list";
-import { ReviewRow, GoalRow, MeetingRow, PerformanceKpiData } from "./types";
+import { ReviewRow, GoalRow, PerformanceKpiData } from "./types";
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { getAdminUpcomingSyncs } from "@/app/lib/admin/performance/data";
 
 export const revalidate = 0;
 
 // --- DATA FETCHING WRAPPER COMPONENTS ---
 
 async function KpiSection() {
-  
   const [[avgResult], [reviewsCount], [goalsCount], [selfCount]] =
     await Promise.all([
       db`SELECT COALESCE(ROUND(AVG(rating), 1), 0.0) as avg_rating FROM performance_reviews`,
@@ -63,14 +64,9 @@ async function GoalsSection() {
 }
 
 async function MeetingsSection() {
-  const upcomingMeetings = (await db`
-    SELECT m.id, m.meeting_date, m.topic, m.status, u.name as employee_name, u.department
-    FROM one_on_one_meetings m
-    JOIN users u ON m.employee_id = u.id
-    ORDER BY m.meeting_date ASC LIMIT 4
-  `) as unknown as MeetingRow[];
+  const upcomingSyncs = await getAdminUpcomingSyncs();
 
-  return <UpcomingSyncsList meetings={upcomingMeetings} />;
+  return <UpcomingSyncsList meetings={upcomingSyncs} />;
 }
 
 // --- SKELETON LOADERS ---

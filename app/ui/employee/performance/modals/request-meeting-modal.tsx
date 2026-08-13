@@ -14,7 +14,7 @@ export default function RequestMeetingModal({
   isOpen,
   onClose,
   onSubmit,
-}: RequestMeetingModalProps) { // <-- Updated from EditCareerModalProps to RequestMeetingModalProps
+}: RequestMeetingModalProps) {  
   const [topic, setTopic] = useState("");
   const [meetingDate, setMeetingDate] = useState("");
   const [notes, setNotes] = useState("");

@@ -539,6 +539,17 @@ CREATE TABLE self_assessments (
     ('Engineering Flex', '10:00:00', '18:00:00', 30)
 `;
 
+    await db`
+    CREATE TABLE IF NOT EXISTS performance_meetings (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    meeting_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    topic VARCHAR(255),
+    status VARCHAR(50) DEFAULT 'Scheduled',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+    `;
+
     // 5. Seed Leave Balances, Schedules, Requests, Attendance & Performance
 
     // adding admin ID

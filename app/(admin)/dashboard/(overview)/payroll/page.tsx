@@ -49,7 +49,7 @@ export default async function AdminPayrollPage() {
                 "use server";
                 const result = await rollbackProcessingPayroll();
                 if (!result.success) {
-                  console.log("🚨 ROLLBACK FAILED:", result.message);
+                  console.log("ROLLBACK FAILED:", result.message);
                 }
               }}
             >
@@ -81,7 +81,7 @@ export default async function AdminPayrollPage() {
               "use server";
               const result = await generateMonthlyPayroll();
               if (!result.success) {
-                console.log("🚨 PAYROLL GENERATION FAILED:", result.message);
+                console.log("PAYROLL GENERATION FAILED:", result.message);
               }
             }}
           >
