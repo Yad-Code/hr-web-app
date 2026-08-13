@@ -37,6 +37,24 @@ export default async function ScheduleMeetingPage() {
       {/* Form Card */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
         <form action={scheduleOneOnOneMeeting} className="space-y-5">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-slate-400" /> Select Manager /
+              Host
+            </label>
+            <select
+              name="manager_id"
+              required
+              className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all shadow-xs"
+            >
+              <option value="">-- Choose a manager --</option>
+              {employees.map((emp) => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.name} ({emp.department})
+                </option>
+              ))}
+            </select>
+          </div>
           {/* Employee Dropdown */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
