@@ -1,5 +1,6 @@
 import { sql } from "@/app/lib/employeeDashboard/employee/db";
 import { MeetingRow } from "@/app/(admin)/dashboard/(overview)/performance/types";
+import { SelfAssessment } from "@/app/lib/employeeDashboard/performance/definitions";
 
 export interface AdminMeetingDetail {
   id: string;
@@ -116,4 +117,22 @@ export async function getEmployeesList(): Promise<EmployeeOption[]> {
     console.error("Failed to fetch employees list:", error);
     return [];
   }
-}   
+}
+
+export async function getEmployeeSelfAssessment(
+  employeeId: string,
+  cycle: string,
+): Promise<SelfAssessment | null> {
+  try {
+    const data = await sql<SelfAssessment[]>`
+      SELECT * FROM self_assessments
+      WHERE user_id = ${employeeId} AND cycle = ${cycle}
+      LIMIT 1
+    `;
+
+    return data.length > 0 ? data[0] : null;
+  } catch (error) {
+    console.error("Failed to fetch employee self-assessment:", error);
+    return null;
+  }
+}

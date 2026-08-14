@@ -1,4 +1,4 @@
-// @/app/ui/dashboard/id/adminProfileTabs.tsx
+// @/app/ui/dashboard/id/tabs/adminProfileTabs.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -8,6 +8,8 @@ import {
   GraduationCap,
   Languages,
   FileText,
+  TrendingUp,
+  Wrench,
 } from "lucide-react";
 import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
 import {
@@ -15,24 +17,35 @@ import {
   LanguageItem,
   EmployeeDocument,
 } from "@/app/lib/employee/definitions";
-import ProfileForm from "../profileForm"; 
+import {
+  SelfAssessment,
+  Skill,
+} from "@/app/lib/employeeDashboard/performance/definitions";
+
+import ProfileForm from "../profileForm";
 import AdminJobInformationTab from "./adminJobInformationTab";
 import AdminEducationTab from "./adminEducationTab";
 import AdminLanguageTab from "./adminLanguageTab";
 import AdminDocumentsTab from "./adminDocumentsTab";
+import AdminPerformanceTab from "./adminPerformanceTab";
+import AdminSkillsTab from "./adminSkillsTab";
 
 export type AdminTabType =
   | "profile"
   | "job"
   | "education"
   | "language"
-  | "documents";
+  | "documents"
+  | "performance"
+  | "skills";
 
 interface AdminProfileTabsProps {
   profile: FullEmployeeProfile;
   educationHistory?: EducationItem[];
   languageHistory?: LanguageItem[];
   documents?: EmployeeDocument[];
+  assessment?: SelfAssessment | null;
+  skills?: Skill[];
 }
 
 export default function AdminProfileTabs({
@@ -40,6 +53,8 @@ export default function AdminProfileTabs({
   educationHistory = [],
   languageHistory = [],
   documents = [],
+  assessment = null,
+  skills = [],
 }: AdminProfileTabsProps) {
   const [activeTab, setActiveTab] = useState<AdminTabType>("profile");
 
@@ -49,11 +64,12 @@ export default function AdminProfileTabs({
     { id: "education", label: "Education History", icon: GraduationCap },
     { id: "language", label: "Languages", icon: Languages },
     { id: "documents", label: "Documents", icon: FileText },
+    { id: "performance", label: "Performance", icon: TrendingUp },
+    { id: "skills", label: "Skills", icon: Wrench },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Admin Tab Navigation */}
       <div className="flex border-b border-slate-200 gap-2 bg-white p-1.5 rounded-2xl border shadow-xs overflow-x-auto">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -76,15 +92,11 @@ export default function AdminProfileTabs({
         })}
       </div>
 
-      {/* Dynamic Tab Content */}
       <div>
-        {/* 1. Admin Edit Profile Form (Official + Personal info) */}
         {activeTab === "profile" && <ProfileForm profile={profile} />}
 
-        {/* 2. Job Information */}
         {activeTab === "job" && <AdminJobInformationTab profile={profile} />}
 
-        {/* 3. Education History */}
         {activeTab === "education" && (
           <AdminEducationTab
             educationHistory={educationHistory}
@@ -92,7 +104,6 @@ export default function AdminProfileTabs({
           />
         )}
 
-        {/* 4. Languages */}
         {activeTab === "language" && (
           <AdminLanguageTab
             languageHistory={languageHistory}
@@ -102,12 +113,19 @@ export default function AdminProfileTabs({
           />
         )}
 
-        {/* 5. Documents */}
         {activeTab === "documents" && (
-          <AdminDocumentsTab
-            documents={documents}
-            userId={profile.id}
+          <AdminDocumentsTab documents={documents} userId={profile.id} />
+        )}
+
+        {activeTab === "performance" && (
+          <AdminPerformanceTab
+            assessment={assessment}
+            employeeName={profile.name}
           />
+        )}
+
+        {activeTab === "skills" && (
+          <AdminSkillsTab skills={skills} employeeName={profile.name} />
         )}
       </div>
     </div>

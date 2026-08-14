@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { getProfileById } from "@/app/lib/employeeList/data";
 import { redirect } from "next/navigation";
-import Link from "next/link"; 
+import Link from "next/link";
 import { Suspense } from "react";
 
 import ProfileHeader from "@/app/ui/dashboard/id/profileHeader";
@@ -9,13 +9,15 @@ import AdminProfileTabs from "@/app/ui/dashboard/id/tabs/adminProfileTabs";
 import {
   ProfileFormSkeleton,
   ProfileHeaderSkeleton,
-} from "@/app/ui/employee/skeleton"; 
+} from "@/app/ui/employee/skeleton";
 
 import {
   getEducationData,
   getLanguageData,
   getEmployeeDocumentsData,
 } from "@/app/lib/employee/profile/data";
+import { getEmployeeSelfAssessment } from "@/app/lib/admin/performance/data";
+import { getEmployeeSkills } from "@/app/lib/admin/profile/skills/data";
 
 export default async function AdminEmployeeEditPage({
   params,
@@ -50,12 +52,18 @@ export default async function AdminEmployeeEditPage({
     );
   }
 
-  // Fetch all related sections in parallel
-  const [educationHistory, languageHistory, documents] = await Promise.all([
-    getEducationData(profile.id),
-    getLanguageData(profile.id),
-    getEmployeeDocumentsData(profile.id),
-  ]);
+  // 2. Determine the current review cycle (you might make this dynamic later)
+  const currentCycle = "Q3 2026";
+
+  // 3. Add the assessment fetch to your parallel Promise.all array
+  const [educationHistory, languageHistory, documents, assessment, skills] =
+    await Promise.all([
+      getEducationData(profile.id),
+      getLanguageData(profile.id),
+      getEmployeeDocumentsData(profile.id),
+      getEmployeeSelfAssessment(profile.id, currentCycle),
+      getEmployeeSkills(profile.id),
+    ]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 p-2 sm:p-4 text-left select-none animate-fadeIn">
@@ -72,18 +80,18 @@ export default async function AdminEmployeeEditPage({
         </span>
       </div>
 
-      {/* Header Profile Section */}
       <Suspense fallback={<ProfileHeaderSkeleton />}>
         <ProfileHeader profile={profile} />
       </Suspense>
 
-      {/* Admin Tabbed Workspace */}
       <Suspense fallback={<ProfileFormSkeleton />}>
         <AdminProfileTabs
           profile={profile}
           educationHistory={educationHistory}
           languageHistory={languageHistory}
           documents={documents}
+          assessment={assessment}
+          skills={skills}
         />
       </Suspense>
     </div>

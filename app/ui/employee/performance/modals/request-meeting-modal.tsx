@@ -14,7 +14,7 @@ export default function RequestMeetingModal({
   isOpen,
   onClose,
   onSubmit,
-}: RequestMeetingModalProps) {  
+}: RequestMeetingModalProps) {
   const [topic, setTopic] = useState("");
   const [meetingDate, setMeetingDate] = useState("");
   const [notes, setNotes] = useState("");
@@ -42,13 +42,22 @@ export default function RequestMeetingModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
         <div className="flex justify-between items-center border-b pb-3">
-          <h3 className="font-bold text-slate-800 text-lg">Request 1:1 Manager Sync</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-sm">✕</button>
+          <h3 className="font-bold text-slate-800 text-lg">
+            Request 1:1 Manager Sync
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 text-sm"
+          >
+            ✕
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Meeting Topic</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Meeting Topic
+            </label>
             <input
               type="text"
               required
@@ -60,9 +69,12 @@ export default function RequestMeetingModal({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Proposed Date</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Proposed Date & Time
+            </label>
+            {/* Changed from "date" to "datetime-local" */}
             <input
-              type="date"
+              type="datetime-local"
               required
               value={meetingDate}
               onChange={(e) => setMeetingDate(e.target.value)}
@@ -71,7 +83,9 @@ export default function RequestMeetingModal({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Agenda / Prep Notes</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Agenda / Prep Notes
+            </label>
             <textarea
               rows={3}
               placeholder="What would you like to discuss during this session?"

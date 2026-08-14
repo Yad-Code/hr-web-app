@@ -238,7 +238,7 @@ export async function GET() {
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       employee_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       manager_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      meeting_date DATE NOT NULL,
+      meeting_date TIMESTAMP WITH TIME ZONE NOT NULL,
       topic VARCHAR(255),
       notes TEXT,
       action_items TEXT,
