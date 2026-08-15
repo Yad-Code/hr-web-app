@@ -14,25 +14,11 @@ const LEVEL_LABELS: Record<number, string> = {
 
 interface AdminSkillsTabProps {
   skills: Skill[];
-  employeeName: string;
 }
 
-export default function AdminSkillsTab({
-  skills,
-  employeeName,
-}: AdminSkillsTabProps) {
+export default function AdminSkillsTab({ skills }: AdminSkillsTabProps) {
   return (
     <div className="space-y-6 text-left animate-fadeIn">
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-        <h3 className="font-bold text-slate-900">
-          {employeeName}&apos;s Skills & Competencies
-        </h3>
-        <p className="text-xs text-slate-500">
-          Viewing proficiency ratings and competencies recorded for this
-          employee.
-        </p>
-      </div>
-
       {skills.length === 0 ? (
         <div className="text-center py-12 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
           <p className="text-sm text-slate-500 font-medium">

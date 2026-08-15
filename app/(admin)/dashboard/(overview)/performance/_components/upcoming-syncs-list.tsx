@@ -4,7 +4,6 @@ import { MeetingRow } from "../types";
 import Link from "next/link";
 
 export function UpcomingSyncsList({ meetings }: { meetings: MeetingRow[] }) {
-  // Helper for dynamic badge styling across various statuses
   const getStatusBadge = (status: string) => {
     switch (status?.toLowerCase()) {
       case "confirmed":
@@ -22,9 +21,9 @@ export function UpcomingSyncsList({ meetings }: { meetings: MeetingRow[] }) {
   };
 
   return (
-    <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden flex flex-col h-full">
+    <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden flex flex-col h-[400px]">
       {/* Header */}
-      <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+      <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
         <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
           <Calendar className="w-4 h-4 text-purple-600" />
           1-on-1 Sync Schedule
@@ -41,7 +40,6 @@ export function UpcomingSyncsList({ meetings }: { meetings: MeetingRow[] }) {
       <div className="p-4 space-y-2.5 flex-1 overflow-y-auto">
         {meetings && meetings.length > 0 ? (
           meetings.map((meeting) => {
-            // Safe date formatting
             const dateObj = new Date(meeting.meeting_date);
             const formattedDate = !isNaN(dateObj.getTime())
               ? dateObj.toLocaleDateString("en-US", {

@@ -37,3 +37,21 @@ export interface PerformanceKpiData {
   submittedAssessments: string;
   currentQuarter: string; //
 }
+
+export interface FeedbackRow {
+  id: string;
+  type: "Positive" | "Constructive" | "Other";
+  text: string;
+  sender: string;
+  role: string;
+  date: Date;
+  recipient_name: string;
+  recipient_image?: string | null;
+}
+
+export interface FeedbackRequestRow {
+  id: string;
+  title: string;
+  description: string;
+  created_at: Date | string;
+}
