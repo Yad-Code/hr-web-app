@@ -14,6 +14,7 @@ import {
   PerformanceNotification,
   PerformanceHistory,
   SelfAssessment,
+  Colleague,
 } from "@/app/lib/employeeDashboard/performance/definitions";
 
 import PerformanceHeader from "./performance-header";
@@ -37,6 +38,7 @@ export interface DashboardData {
   notifications: PerformanceNotification[];
   history: PerformanceHistory[];
   selfAssessment: SelfAssessment | null;
+  colleagues: Colleague[];
 }
 
 export default function PerformanceDashboard({
@@ -57,7 +59,7 @@ export default function PerformanceDashboard({
   ];
 
   return (
-    <div className="flex flex-col gap-6"> 
+    <div className="flex flex-col gap-6">
       {/* Profile Header */}
       <PerformanceHeader profile={initialData.profile} />
 
@@ -93,7 +95,10 @@ export default function PerformanceDashboard({
           <ReviewsTab reviews={initialData.reviews} />
         )}
         {activeTab === "feedback" && (
-          <FeedbackTab feedbackList={initialData.feedback} />
+          <FeedbackTab
+            feedbackList={initialData.feedback}
+            colleagues={initialData.colleagues}
+          />
         )}
         {activeTab === "skills" && <SkillsTab skills={initialData.skills} />}
         {activeTab === "self-assessment" && (

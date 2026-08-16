@@ -5,7 +5,7 @@ import bcrypt from "bcrypt";
 export async function GET() {
   try {
     // Extensions & Clean Slate
-    await db`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`; 
+    await db`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
 
     // Drop profile tables
     await db`DROP TABLE IF EXISTS employee_languages`;
@@ -204,7 +204,7 @@ export async function GET() {
       employee_comments TEXT,
       goals_for_next_cycle TEXT,
       acknowledged BOOLEAN DEFAULT false,
-      acknowledged_at TIMESTAMP DEFAULT NULL;
+      acknowledged_at TIMESTAMP DEFAULT NULL,
       status VARCHAR(30) DEFAULT 'Completed'
     );
     `;
@@ -410,12 +410,10 @@ CREATE TABLE self_assessments (
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
 `;
-
-    // 3. Hash Passwords
+ 
     const adminPassword = await bcrypt.hash("AdminPass123", 10);
     const employeePassword = await bcrypt.hash("EmployeePass123", 10);
-
-    // 4. Seed Users
+ 
     const seededUsers = await db`
       INSERT INTO users (
         employee_id, name, preferred_name, job_title, job_family, employment_type, manager_name, join_date, 
@@ -425,68 +423,80 @@ CREATE TABLE self_assessments (
         public_org, private_org, insurance, subscription,
         image_url, shift_start, shift_end, shift_type, last_seen_at
        )
-      VALUES 
+      VALUES  
         (
           'EMP-1001', 'Admin Manager', 'Admin', 'HR Director', 'Human Resources', 'Full-Time', 'CEO', '2020-01-15',
           'Human Resources', 'HQ - Sulaymaniyah',
           '1988-03-15', 38, 'Female', 'Iraqi', 'Married', 'O+',
           'admin@company.com', 'admin.personal@gmail.com', '+964 770 111 2233',
           'Main Street, District 101, Sulaymaniyah', ${adminPassword}, 'admin', 'Active',
-          5000.00,
-          NULL, NULL, 'Premium Health', NULL,
+          5000.00, NULL, NULL, 'Premium Health', NULL,
           'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-          '09:00:00', '17:00:00', 'Standard (Mon - Fri)',
-          CURRENT_TIMESTAMP
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)', CURRENT_TIMESTAMP
         ),
         (
-          'EMP-1002', 'Yad Developer', 'Yad', 'Software Engineer', 'Engineering', 'Full-Time', 'Admin Manager', '2022-03-01',
+          'EMP-1006', 'Sarah Jenkins', 'Sarah', 'Head of Engineering', 'Engineering', 'Full-Time', 'CEO', '2019-05-10',
+          'Engineering', 'HQ - Sulaymaniyah',
+          '1985-08-22', 40, 'Female', 'American', 'Married', 'A+',
+          'sarah.j@company.com', 'sarah.j.personal@gmail.com', '+964 770 999 8877',
+          'Tech Park, Sulaymaniyah', ${adminPassword}, 'admin', 'Active',
+          6000.00, NULL, NULL, 'Premium Health', NULL,
+          'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)', CURRENT_TIMESTAMP
+        ),
+        (
+          'EMP-1007', 'Alex Studio', 'Alex', 'Head of Design', 'Design', 'Full-Time', 'CEO', '2020-11-20',
+          'Design', 'HQ - Sulaymaniyah',
+          '1990-12-05', 35, 'Male', 'British', 'Single', 'B-',
+          'alex.s@company.com', 'alex.s.personal@gmail.com', '+964 770 666 5544',
+          'Creative Hub, Sulaymaniyah', ${adminPassword}, 'admin', 'Active',
+          5500.00, NULL, NULL, 'Premium Health', 'Adobe CC',
+          'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)', CURRENT_TIMESTAMP
+        ),
+         
+        (
+          'EMP-1002', 'Yad Developer', 'Yad', 'Software Engineer', 'Engineering', 'Full-Time', 'Sarah Jenkins', '2022-03-01',
           'Software Engineering', 'HQ - Sulaymaniyah',
           '2002-05-20', 24, 'Male', 'Iraqi', 'Single', 'A+',
           'yad@company.com', 'yad.dev@gmail.com', '+964 770 222 3344',
           'Salim Street, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
-          4200.00,
-          NULL, NULL, 'Standard Health', 'GitHub Copilot',
+          4200.00, NULL, NULL, 'Standard Health', 'GitHub Copilot',
           'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
-          '09:00:00', '17:00:00', 'Standard (Mon - Fri)',
-          CURRENT_TIMESTAMP
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)', CURRENT_TIMESTAMP
         ),
         (
-          'EMP-1003', 'Lana Amin', 'Lana', 'Product Designer', 'Design', 'Full-Time', 'Admin Manager', '2023-06-10',
+          'EMP-1003', 'Lana Amin', 'Lana', 'Product Designer', 'Design', 'Full-Time', 'Alex Studio', '2023-06-10',
           'UI/UX Design', 'HQ - Sulaymaniyah',
           '1997-09-12', 28, 'Female', 'Iraqi', 'Single', 'B+',
           'lana@company.com', 'lana.amin@gmail.com', '+964 770 333 4455',
           'Barty Street, Sulaymaniyah', ${employeePassword}, 'employee', 'Offline',
-          3800.00,
-          NULL, NULL, 'Standard Health', 'Figma Professional',
+          3800.00, NULL, NULL, 'Standard Health', 'Figma Professional',
           'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-          '09:00:00', '17:00:00', 'Standard (Mon - Fri)',
-          CURRENT_TIMESTAMP - INTERVAL '2 hours'
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)', CURRENT_TIMESTAMP - INTERVAL '2 hours'
         ),
         (
-          'EMP-1004', 'Diyar Karwan', 'Diyar', 'Backend Engineer', 'Engineering', 'Full-Time', 'Admin Manager', '2021-11-20',
+          'EMP-1004', 'Diyar Karwan', 'Diyar', 'Backend Engineer', 'Engineering', 'Full-Time', 'Sarah Jenkins', '2021-11-20',
           'Backend Infrastructure', 'HQ - Sulaymaniyah',
           '1995-11-04', 30, 'Male', 'Iraqi', 'Married', 'O-',
           'diyar@company.com', 'diyar.karwan@gmail.com', '+964 770 444 5566',
           'Sarchinar Way, Sulaymaniyah', ${employeePassword}, 'employee', 'Offline',
-          4000.00,
-          NULL, NULL, 'Standard Health', 'AWS Builder',
+          4000.00, NULL, NULL, 'Standard Health', 'AWS Builder',
           'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-          '09:00:00', '17:00:00', 'Standard (Mon - Fri)',
-          CURRENT_TIMESTAMP - INTERVAL '1 day'
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)', CURRENT_TIMESTAMP - INTERVAL '1 day'
         ),
         (
-          'EMP-1005', 'Sara Omar', 'Sara', 'QA Engineer', 'Engineering', 'Full-Time', 'Admin Manager', '2024-01-05',
+          'EMP-1005', 'Sara Omar', 'Sara', 'QA Engineer', 'Engineering', 'Full-Time', 'Sarah Jenkins', '2024-01-05',
           'Quality Assurance', 'HQ - Sulaymaniyah',
           '1999-01-28', 27, 'Female', 'Iraqi', 'Single', 'AB+',
           'sara@company.com', 'sara.omar@gmail.com', '+964 770 555 6677',
           'Rapakarin Quarter, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
-          3500.00,
-          NULL, NULL, 'Standard Health', NULL,
+          3500.00, NULL, NULL, 'Standard Health', NULL,
           'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80',
-          '09:00:00', '17:00:00', 'Standard (Mon - Fri)',
-          CURRENT_TIMESTAMP - INTERVAL '5 minutes'
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)', CURRENT_TIMESTAMP - INTERVAL '5 minutes'
         )
-      RETURNING id, role, name;
+      
+      RETURNING id, role, name, manager_name; 
     `;
 
     //ADMIN: Time and Attendance Tables
@@ -556,10 +566,14 @@ CREATE TABLE self_assessments (
     const adminId = seededUsers.find((user) => user.role === "admin")?.id;
     if (!adminId) throw new Error("Admin user not found");
 
+    const managers = seededUsers.filter((user) => user.role === "admin");
     const employees = seededUsers.filter((user) => user.role === "employee");
 
     for (const emp of employees) {
-      // Basic HR Data for all employees
+      const employeeManager =
+        managers.find((m) => m.name === emp.manager_name) || managers[0];
+      const managerId = employeeManager.id;
+
       await db`
         INSERT INTO leave_balances (
           user_id, 
@@ -772,64 +786,58 @@ VALUES
       // CAREER DEVELOPMENT
       // ----------------------------------------------------
       await db`
-INSERT INTO career_development (
-    user_id,
-    current_position,
-    target_position,
-    roadmap,
-    target_date
-)
-VALUES
-(
-    ${emp.id},
-    'Software Engineer',
-    'Senior Software Engineer',
-    'Master System Design
-Lead a cross-functional project
-Mentor junior developers
-Improve architecture documentation',
-    '2027-01-01'
-)
-ON CONFLICT (user_id) DO NOTHING;
+    INSERT INTO career_development (
+        user_id,
+        current_position,
+        target_position,
+        roadmap,
+        target_date
+    )
+    VALUES
+    (
+        ${emp.id},
+        'Software Engineer',
+        'Senior Software Engineer',
+        'Master System Design
+    Lead a cross-functional project
+    Mentor junior developers
+    Improve architecture documentation',
+        '2027-01-01'
+    )
+    ON CONFLICT (user_id) DO NOTHING;
 `;
-
-      // ----------------------------------------------------
-      // ONE ON ONE MEETINGS
-      // ----------------------------------------------------
+ 
       await db`
-INSERT INTO one_on_one_meetings (
-    employee_id,
-    manager_id,
-    meeting_date,
-    topic,
-    notes,
-    action_items,
-    status
-)
-VALUES
-(
-    ${emp.id},
-    ${adminId},
-    '2026-07-15',
-    'Quarterly Growth Discussion',
-    'Discussed progress in Next.js migration and backend ownership.',
-    'Complete system design training and lead authentication refactor.',
-    'Completed'
-),
-(
-    ${emp.id},
-    ${adminId},
-    '2026-10-10',
-    'Q4 Planning',
-    'Review progress toward Senior Engineer promotion.',
-    'Finish architecture documentation.',
-    'Scheduled'
-);
+    INSERT INTO one_on_one_meetings (
+        employee_id,
+        manager_id,
+        meeting_date,
+        topic,
+        notes,
+        action_items,
+        status
+    )
+    VALUES
+    (
+        ${emp.id},
+        ${managerId},
+        '2026-07-15',
+        'Quarterly Growth Discussion',
+        'Discussed progress in Next.js migration and backend ownership.',
+        'Complete system design training and lead authentication refactor.',
+        'Completed'
+    ),
+    (
+        ${emp.id},
+        ${managerId},
+        '2026-10-10',
+        'Q4 Planning',
+        'Review progress toward Senior Engineer promotion.',
+        'Finish architecture documentation.',
+        'Scheduled'
+    );
 `;
-
-      // ----------------------------------------------------
-      // PERFORMANCE NOTIFICATIONS
-      // ----------------------------------------------------
+ 
       await db`
 INSERT INTO performance_notifications (
     user_id,

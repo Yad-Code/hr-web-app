@@ -75,6 +75,15 @@ export type Feedback = {
   created_at: DateValue;
 };
 
+// app/lib/employeeDashboard/performance/definitions.ts
+// Add this new interface to your existing definitions:
+
+export interface Colleague {
+  name: string;
+  email: string;
+  role?: string;
+}
+
 export type CareerDevelopment = {
   user_id: string;
   current_position: string;

@@ -2,7 +2,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Feedback } from "@/app/lib/employeeDashboard/performance/definitions";
+import {
+  Feedback,
+  Colleague,
+} from "@/app/lib/employeeDashboard/performance/definitions";
 import {
   markFeedbackAsRead,
   markAllFeedbackAsRead,
@@ -12,8 +15,10 @@ import RequestFeedbackModal from "../modals/request-feedback-modal";
 
 export default function FeedbackTab({
   feedbackList,
+  colleagues,
 }: {
   feedbackList: Feedback[];
+  colleagues: Colleague[];
 }) {
   const [isPending, startTransition] = useTransition();
   const [activeFilter, setActiveFilter] = useState<string>("all");
@@ -56,8 +61,9 @@ export default function FeedbackTab({
     <div className="space-y-6 max-w-4xl">
       {/* Request Feedback Modal */}
       <RequestFeedbackModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={true}
+        onClose={() => {}}
+        colleagues={colleagues}
       />
 
       {/* Header Bar */}

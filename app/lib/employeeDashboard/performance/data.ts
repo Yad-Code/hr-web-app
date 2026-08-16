@@ -12,7 +12,17 @@ import {
   PerformanceNotification,
   PerformanceHistory,
   SelfAssessment,
+  Colleague,
 } from "./definitions";
+
+export async function getColleagues() {
+  return sql<Colleague[]>`
+    SELECT name, email, job_title as role
+    FROM users
+    WHERE status = 'Active'
+    ORDER BY name ASC
+  `;
+}
 
 export async function getPerformanceProfile(userId: string) {
   const rows = await sql<PerformanceProfile[]>`
@@ -131,6 +141,7 @@ export async function getPerformanceDashboard(userId: string) {
     notifications,
     history,
     selfAssessment,
+    colleagues,
   ] = await Promise.all([
     getPerformanceProfile(userId),
     getUserKPIs(userId),
@@ -143,6 +154,7 @@ export async function getPerformanceDashboard(userId: string) {
     getPerformanceNotifications(userId),
     getPerformanceHistory(userId),
     getSelfAssessment(userId),
+    getColleagues(),
   ]);
 
   return {
@@ -157,5 +169,6 @@ export async function getPerformanceDashboard(userId: string) {
     notifications,
     history,
     selfAssessment,
+    colleagues,
   };
 }
