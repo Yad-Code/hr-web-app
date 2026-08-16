@@ -12,8 +12,8 @@ interface TopNavbarProps {
 
 export function TopNavbar({ user }: TopNavbarProps) {
   return (
-    <header className="sticky top-0 z-40 w-full  border-b border-slate-100 px-4 sm:px-6 py-3 flex items-center justify-between shadow-sm backdrop-blur-md bg-white/100">
-      {/* Left Column: Context Title Layout */}
+    <header className="sticky top-0 z-40 w-full  border-b border-slate-100 px-4 sm:px-6 py-3 flex items-center justify-between shadow-sm backdrop-blur-md bg-white">
+   
       <div className="flex flex-col text-left">
         <h2 className="text-base font-bold text-slate-900 leading-tight tracking-tight">
           {user.role === "admin" ? "Dashboard" : "Workspace"}

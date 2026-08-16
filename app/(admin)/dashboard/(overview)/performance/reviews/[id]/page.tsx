@@ -2,6 +2,7 @@
 
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
@@ -102,12 +103,14 @@ export default async function ReviewDetailsPage({
         <div className="space-y-6 lg:col-span-1">
           {/* Employee Card */}
           <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col items-center text-center space-y-4">
-            <img
+            <Image
               src={
                 review.image_url ||
                 "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
               }
               alt={review.employee_name}
+              width={36}
+              height={36}
               className="w-24 h-24 rounded-full object-cover border-4 border-slate-50 shadow-xs"
             />
             <div>

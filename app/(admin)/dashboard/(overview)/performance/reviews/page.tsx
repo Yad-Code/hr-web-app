@@ -2,7 +2,15 @@
 
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import Link from "next/link";
-import { ArrowLeft, Plus, Star, FileText, Calendar, UserCheck } from "lucide-react";
+import Image from "next/image";
+import {
+  ArrowLeft,
+  Plus,
+  Star,
+  FileText,
+  Calendar,
+  UserCheck,
+} from "lucide-react";
 
 interface ReviewRow {
   id: string;
@@ -39,7 +47,8 @@ export default async function PerformanceReviewsPage() {
   `) as unknown as ReviewRow[];
 
   const getRatingBadge = (rating: number) => {
-    if (rating >= 4.5) return "bg-emerald-50 text-emerald-700 border-emerald-200/80";
+    if (rating >= 4.5)
+      return "bg-emerald-50 text-emerald-700 border-emerald-200/80";
     if (rating >= 3.5) return "bg-blue-50 text-blue-700 border-blue-200/80";
     if (rating >= 2.5) return "bg-amber-50 text-amber-700 border-amber-200/80";
     return "bg-rose-50 text-rose-700 border-rose-200/80";
@@ -94,15 +103,20 @@ export default async function PerformanceReviewsPage() {
             <tbody className="divide-y divide-slate-100 text-sm">
               {reviews.length > 0 ? (
                 reviews.map((review) => (
-                  <tr key={review.id} className="hover:bg-slate-50/50 transition-colors">
+                  <tr
+                    key={review.id}
+                    className="hover:bg-slate-50/50 transition-colors"
+                  >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <img
+                        <Image
                           src={
                             review.image_url ||
                             "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
                           }
                           alt={review.employee_name}
+                          width={36}
+                          height={36}
                           className="w-9 h-9 rounded-full object-cover border border-slate-200"
                         />
                         <div>
@@ -137,7 +151,7 @@ export default async function PerformanceReviewsPage() {
                     <td className="px-6 py-4">
                       <span
                         className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border ${getRatingBadge(
-                          Number(review.rating)
+                          Number(review.rating),
                         )}`}
                       >
                         <Star className="w-3 h-3 fill-current" />

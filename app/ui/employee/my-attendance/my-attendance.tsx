@@ -285,7 +285,7 @@ export function AttendanceCalendar({
             >
               <ChevronLeft className="w-4 h-4" />
             </Link>
-            <div className="w-[1px] h-4 bg-slate-200 mx-0.5" /> {/* Divider */}
+            <div className="w-px h-4 bg-slate-200 mx-0.5" /> {/* Divider */}
             <Link
               href={`?month=${monthNames[nextMonthIndex]}&year=${nextYear}`}
               className="p-1 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-500 hover:text-slate-900"

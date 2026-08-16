@@ -21,7 +21,7 @@ export function UpcomingSyncsList({ meetings }: { meetings: MeetingRow[] }) {
   };
 
   return (
-    <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden flex flex-col h-[400px]">
+    <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden flex flex-col h-100">
       {/* Header */}
       <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
         <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">

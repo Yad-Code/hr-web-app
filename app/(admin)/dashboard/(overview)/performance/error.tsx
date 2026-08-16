@@ -17,7 +17,7 @@ export default function PerformanceError({
   }, [error]);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto flex flex-col items-center justify-center min-h-[400px] text-center space-y-4 bg-white border border-rose-100 rounded-2xl shadow-xs">
+    <div className="p-6 max-w-7xl mx-auto flex flex-col items-center justify-center min-h-100 text-center space-y-4 bg-white border border-rose-100 rounded-2xl shadow-xs">
       <div className="p-4 bg-rose-50 text-rose-600 rounded-full">
         <AlertCircle className="w-8 h-8" />
       </div>

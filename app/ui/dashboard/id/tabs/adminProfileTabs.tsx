@@ -124,9 +124,7 @@ export default function AdminProfileTabs({
           />
         )}
 
-        {activeTab === "skills" && (
-          <AdminSkillsTab skills={skills} employeeName={profile.name} />
-        )}
+        {activeTab === "skills" && <AdminSkillsTab skills={skills} />}
       </div>
     </div>
   );

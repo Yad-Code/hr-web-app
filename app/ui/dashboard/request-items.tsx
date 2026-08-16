@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Loader2 } from "lucide-react";
+import Image from "next/image";
 import {
   approveLeaveRequest,
   rejectLeaveRequest,
@@ -54,12 +55,14 @@ export function RequestItem({ request }: RequestItemProps) {
       {/* Top Meta Line: User Info and Type Badge */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2.5">
-          <img
+          <Image
             src={
               request.employee_image ||
               "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&auto=format&fit=crop&q=60"
             }
             alt={request.employee_name}
+            width={36}
+            height={36}
             className="w-7 h-7 rounded-full border border-slate-100 object-cover shadow-xs"
           />
           <div>

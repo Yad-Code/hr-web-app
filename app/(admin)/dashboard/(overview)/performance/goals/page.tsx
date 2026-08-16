@@ -2,7 +2,7 @@
 
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import Link from "next/link";
-import { ArrowLeft, Target, Calendar, Flag, Plus } from "lucide-react";
+import { ArrowLeft, Target, Calendar, Plus } from "lucide-react";
 
 // 1. Define the TypeScript interface for our query
 interface FullGoalRow {

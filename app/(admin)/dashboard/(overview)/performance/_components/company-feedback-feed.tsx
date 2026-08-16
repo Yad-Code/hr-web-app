@@ -3,6 +3,7 @@
 import { MessageSquare, ArrowRight } from "lucide-react";
 import { FeedbackRow } from "../types";
 import Link from "next/link";
+import Image from "next/image";
 
 interface CompanyFeedbackFeedProps {
   feedback: FeedbackRow[];
@@ -62,14 +63,15 @@ export function CompanyFeedbackFeed({ feedback }: CompanyFeedbackFeedProps) {
                   <div className="flex items-center gap-3">
                     {/* Avatar */}
                     {item.recipient_image ? (
-                      <img
+                      <Image
                         src={item.recipient_image}
                         alt={recipientName}
+                        width={36}
+                        height={36}
                         className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0"
                       />
                     ) : (
                       <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold border border-indigo-200 shrink-0">
-                        {/* 👇 Safely grabs the first character now */}
                         {recipientName.charAt(0)}
                       </div>
                     )}
@@ -77,7 +79,6 @@ export function CompanyFeedbackFeed({ feedback }: CompanyFeedbackFeedProps) {
                     {/* Name & Meta */}
                     <div>
                       <span className="text-xs font-bold text-slate-900 group-hover:text-indigo-700 transition-colors block">
-                        {/* 👇 Safely renders the name */}
                         {recipientName}
                       </span>
                       <p className="text-[10px] text-slate-400 font-medium mt-0.5">
@@ -101,7 +102,7 @@ export function CompanyFeedbackFeed({ feedback }: CompanyFeedbackFeedProps) {
                 </div>
 
                 {/* Feedback Text */}
-                <p className="text-[11px] text-slate-500 group-hover:text-slate-600 line-clamp-2 pl-[48px] italic">
+                <p className="text-[11px] text-slate-500 group-hover:text-slate-600 line-clamp-2 pl-12 italic">
                   &quot;{item.text}&quot;
                 </p>
               </div>

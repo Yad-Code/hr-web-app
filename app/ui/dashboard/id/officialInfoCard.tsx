@@ -36,7 +36,7 @@ export default function OfficialInfoCard({
         </div>
 
         <div className="flex items-start gap-3 py-1 border-b border-slate-50">
-          <User className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+          <User className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
           <div className="flex-1">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Full Legal Name
@@ -48,7 +48,7 @@ export default function OfficialInfoCard({
         </div>
 
         <div className="flex items-start gap-3 py-1 border-b border-slate-50">
-          <Briefcase className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+          <Briefcase className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
           <div className="flex-1">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Department & Branch
@@ -63,7 +63,7 @@ export default function OfficialInfoCard({
         </div>
 
         <div className="flex items-start gap-3 py-1 border-b border-slate-50">
-          <Calendar className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+          <Calendar className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
           <div className="flex-1">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Date of Birth
@@ -78,7 +78,7 @@ export default function OfficialInfoCard({
         </div>
 
         <div className="flex items-start gap-3 py-1 border-b border-slate-50">
-          <User className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+          <User className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
           <div className="flex-1">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Gender
@@ -90,7 +90,7 @@ export default function OfficialInfoCard({
         </div>
 
         <div className="flex items-start gap-3 py-1">
-          <Globe className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+          <Globe className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
           <div className="flex-1">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Nationality

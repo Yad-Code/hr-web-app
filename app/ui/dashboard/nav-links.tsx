@@ -11,7 +11,7 @@ import {
   Settings,
   CreditCard,
   Briefcase,
-  FileCheck2,
+  
 } from "lucide-react";
 
 const links = {

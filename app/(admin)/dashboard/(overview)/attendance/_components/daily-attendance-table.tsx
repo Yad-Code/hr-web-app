@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Search, Filter, Edit2 } from "lucide-react";
 import { DailyAttendanceRow } from "../types";
 import { EditAttendanceModal } from "./edit-attendance-modal";
+import Image from "next/image";
 
 export function DailyAttendanceTable({ logs }: { logs: DailyAttendanceRow[] }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -91,12 +92,14 @@ export function DailyAttendanceTable({ logs }: { logs: DailyAttendanceRow[] }) {
                   className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition"
                 >
                   <td className="px-4 py-3 flex items-center gap-3">
-                    <img
+                    <Image
                       src={
                         log.imageUrl ||
                         "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
                       }
                       alt={log.employeeName}
+                      width={36}
+                      height={36}
                       className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700"
                     />
                     <div>

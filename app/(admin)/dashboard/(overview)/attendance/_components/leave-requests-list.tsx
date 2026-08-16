@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Check, X, Loader2 } from "lucide-react";
 import { LeaveRequestRow } from "../types";
 import { updateLeaveRequestStatus } from "../_actions/leave-actions";
+import Image from "next/image";
 
 export function LeaveRequestsList({
   requests,
@@ -51,12 +52,14 @@ export function LeaveRequestsList({
             return (
               <div key={request.id} className="p-4 space-y-3">
                 <div className="flex items-center gap-3">
-                  <img
+                  <Image
                     src={
                       request.imageUrl ||
                       "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
                     }
                     alt={request.employeeName}
+                    width={36}
+                    height={36}
                     className="w-8 h-8 rounded-full object-cover"
                   />
                   <div>

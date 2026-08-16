@@ -20,7 +20,7 @@ export async function PendingRequestsFeed() {
         </h2>
       </div>
 
-      <div className="p-4 space-y-2.5 overflow-y-auto max-h-[350px]">
+      <div className="p-4 space-y-2.5 overflow-y-auto max-h-87.5">
         {pendingRequests && pendingRequests.length > 0 ? (
           pendingRequests.map((req) => (
             <div

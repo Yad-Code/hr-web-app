@@ -138,7 +138,7 @@ export default async function MeetingDetailPage({
               <FileText className="w-4 h-4 text-purple-600" />
               Meeting Agenda & Notes
             </h2>
-            <div className="bg-slate-50/70 border border-slate-100 rounded-xl p-4 text-sm text-slate-700 leading-relaxed min-h-[100px]">
+            <div className="bg-slate-50/70 border border-slate-100 rounded-xl p-4 text-sm text-slate-700 leading-relaxed min-h-25">
               {meeting.notes ? (
                 <p className="whitespace-pre-line">{meeting.notes}</p>
               ) : (
@@ -155,7 +155,7 @@ export default async function MeetingDetailPage({
               <ListChecks className="w-4 h-4 text-indigo-600" />
               Action Items & Follow-ups
             </h2>
-            <div className="bg-slate-50/70 border border-slate-100 rounded-xl p-4 text-sm text-slate-700 leading-relaxed min-h-[80px]">
+            <div className="bg-slate-50/70 border border-slate-100 rounded-xl p-4 text-sm text-slate-700 leading-relaxed min-h-20">
               {meeting.action_items ? (
                 <p className="whitespace-pre-line">{meeting.action_items}</p>
               ) : (
@@ -208,7 +208,7 @@ export default async function MeetingDetailPage({
                 </div>
                 <div>
                   <p className="text-xs text-slate-400 font-medium">Email</p>
-                  <p className="text-xs font-medium text-slate-700 truncate max-w-[180px]">
+                  <p className="text-xs font-medium text-slate-700 truncate max-w-45">
                     {meeting.employee_email}
                   </p>
                 </div>
