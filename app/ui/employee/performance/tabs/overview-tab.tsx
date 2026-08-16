@@ -6,14 +6,13 @@ import {
   PerformanceHistory,
   PerformanceNotification,
 } from "@/app/lib/employeeDashboard/performance/definitions";
-import { formatDate } from "@/app/lib/utils";
 import PerformanceChart from "./performance-chart";
 
 interface OverviewTabProps {
   kpis: KPI[];
   history: PerformanceHistory[];
   notifications: PerformanceNotification[];
-  onNavigateTab?: (tabName: string) => void; // Optional tab switching callback
+  onNavigateTab?: (tabName: string) => void;
 }
 
 export default function OverviewTab({
@@ -24,16 +23,8 @@ export default function OverviewTab({
 }: OverviewTabProps) {
   const unreadNotifications = notifications.filter((n) => !n.is_read);
 
-  // Helper for progress bar color coding
-  const getMetricBarColor = (val: number) => {
-    if (val >= 90) return "bg-emerald-500";
-    if (val >= 75) return "bg-blue-500";
-    return "bg-amber-500";
-  };
-
   return (
     <div className="space-y-8 max-w-5xl">
-      {/* 1. Action Needed Banner (Only shows when unread/urgent items exist) */}
       {unreadNotifications.length > 0 && (
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">

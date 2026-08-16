@@ -22,8 +22,7 @@ export default function LoginForm() {
           <p>{errorMessage}</p>
         </div>
       )}
-
-      {/* Email Field Layout */}
+ 
       <div className="space-y-2">
         <label className="text-xs font-bold text-slate-300 tracking-wide">Email address</label>
         <div className="relative group">
@@ -40,8 +39,7 @@ export default function LoginForm() {
           />
         </div>
       </div>
-
-      {/* Password Field Layout */}
+ 
       <div className="space-y-2">
         <label className="text-xs font-bold text-slate-300 tracking-wide">Password</label>
         <div className="relative group">
@@ -65,8 +63,7 @@ export default function LoginForm() {
           </button>
         </div>
       </div>
-
-      {/* Remember Me Toolbar Link Row */}
+ 
       <div className="flex items-center justify-between pt-1">
         <label className="flex items-center space-x-3 cursor-pointer select-none group">
           <div className="relative">
@@ -87,8 +84,7 @@ export default function LoginForm() {
           Forgot password?
         </a>
       </div>
-
-      {/* Main Action Submit Button */}
+ 
       <button
         type="submit"
         disabled={isPending}

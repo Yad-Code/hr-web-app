@@ -17,10 +17,7 @@ export async function createEmployeeGoal(formData: FormData) {
 
   revalidatePath("/dashboard/performance");
 }
-
-/**
- * 2. Schedule a 1-on-1 meeting
- */
+ 
 export async function scheduleMeeting(
   employeeId: string,
   meetingDate: string,

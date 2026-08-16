@@ -2,8 +2,7 @@
 "use server";
 
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
-
-// Export the Notification interface for TopNavbar
+ 
 export interface Notification {
   id: string;
   user_id: string;
@@ -13,8 +12,7 @@ export interface Notification {
   read: boolean;
   created_at: string;
 }
-
-// Intermediary type for raw database query results
+ 
 interface DbNotificationRow {
   id: string;
   user_id: string;
@@ -24,15 +22,11 @@ interface DbNotificationRow {
   read: boolean;
   created_at: Date | string;
 }
-
-/**
- * Fetch top recent notifications for an employee from PostgreSQL
- */
+ 
 export async function getEmployeeNotifications(
   userId: string,
 ): Promise<Notification[]> {
-  try {
-    // 1. Fetch performance notifications
+  try { 
     const perfNotifs = await db`
       SELECT 
         id,
@@ -47,8 +41,7 @@ export async function getEmployeeNotifications(
       ORDER BY created_at DESC
       LIMIT 10
     `;
-
-    // 2. Fetch unread user feedback as notification items
+ 
     const feedbackNotifs = await db`
       SELECT 
         id,
@@ -63,8 +56,7 @@ export async function getEmployeeNotifications(
       ORDER BY created_at DESC
       LIMIT 5
     `;
-
-    // 3. Strongly typed mapping without 'any'
+ 
     const rawRows = [
       ...perfNotifs,
       ...feedbackNotifs,
@@ -79,8 +71,7 @@ export async function getEmployeeNotifications(
       read: Boolean(item.read),
       created_at: new Date(item.created_at).toISOString(),
     }));
-
-    // Sort by newest first
+ 
     combined.sort(
       (a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
@@ -93,9 +84,7 @@ export async function getEmployeeNotifications(
   }
 }
 
-/**
- * Helper function to map DB types to UI category types
- */
+ 
 function mapTypeToCategory(type: string): Notification["type"] {
   switch (type?.toLowerCase()) {
     case "assessment":
@@ -111,10 +100,7 @@ function mapTypeToCategory(type: string): Notification["type"] {
       return "document";
   }
 }
-
-/**
- * Mark a single notification as read
- */
+ 
 export async function markNotificationAsRead(notificationId: string) {
   try {
     await db`
@@ -135,10 +121,7 @@ export async function markNotificationAsRead(notificationId: string) {
     return { success: false };
   }
 }
-
-/**
- * Mark all notifications as read for a given user
- */
+ 
 export async function markAllNotificationsAsRead(userId: string) {
   try {
     await db`

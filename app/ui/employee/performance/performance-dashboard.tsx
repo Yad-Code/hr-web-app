@@ -18,7 +18,7 @@ import {
 } from "@/app/lib/employeeDashboard/performance/definitions";
 
 import PerformanceHeader from "./performance-header";
-import OverviewTab from "./tabs/overview-tab";
+import OverviewTab from "./tabs/overview-tab"; 
 import GoalsTab from "./tabs/goals-tab";
 import ReviewsTab from "./tabs/reviews-tab";
 import FeedbackTab from "./tabs/feedback-tab";
@@ -59,11 +59,9 @@ export default function PerformanceDashboard({
   ];
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Profile Header */}
+    <div className="flex flex-col gap-6"> 
       <PerformanceHeader profile={initialData.profile} />
-
-      {/* Tab Controls */}
+ 
       <div className="flex gap-2 border-b border-slate-200 overflow-x-auto pb-1">
         {tabs.map((tab) => (
           <button
@@ -79,15 +77,14 @@ export default function PerformanceDashboard({
           </button>
         ))}
       </div>
-
-      {/* Active Tab Panel */}
+ 
       <div>
         {activeTab === "overview" && (
           <OverviewTab
             kpis={initialData.kpis}
             history={initialData.history}
             notifications={initialData.notifications}
-            onNavigateTab={setActiveTab} /* <--- Pass state setter here */
+            onNavigateTab={setActiveTab}  
           />
         )}
         {activeTab === "goals" && <GoalsTab goals={initialData.goals} />}
