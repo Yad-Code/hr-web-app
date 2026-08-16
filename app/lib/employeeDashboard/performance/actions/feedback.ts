@@ -7,8 +7,7 @@ import { getCurrentUserId } from "./utils";
 export async function markFeedbackAsRead(feedbackId: string) {
   try {
     const userId = await getCurrentUserId();
-
-    // Security: Scope the update to the logged-in user
+ 
     await sql`
       UPDATE user_feedback
       SET is_read = true
@@ -59,15 +58,13 @@ export async function requestFeedback(formData: FormData) {
     if (!recipient || !message) {
       return { success: false, error: "Recipient and message are required." };
     }
-
-    // 1. Query returns an array of rows directly
+ 
     const recipientResult = await sql`
-      SELECT id, name FROM users 
-      WHERE email = ${recipient} OR name = ${recipient} OR id = ${recipient}
-      LIMIT 1
-    `;
-
-    // Access the first element directly from the array
+        SELECT id, name FROM users 
+        WHERE email = ${recipient}
+        LIMIT 1
+      `;
+ 
     const recipientUser = recipientResult[0];
 
     if (!recipientUser) {

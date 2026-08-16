@@ -1,6 +1,7 @@
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { MessageSquare, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image"; // 1. Added Next.js Image import
 import { FeedbackRow } from "../types";
 
 export const revalidate = 0;
@@ -16,7 +17,7 @@ export default async function FullFeedbackPage() {
     ORDER BY uf.date DESC 
   `) as unknown as FeedbackRow[];
 
-  // Reusing your existing badge logic for visual consistency
+  // Reusing existing badge logic for visual consistency
   const getTypeBadge = (type: string) => {
     switch (type?.toLowerCase()) {
       case "positive":
@@ -30,7 +31,6 @@ export default async function FullFeedbackPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header & Navigation */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
         <div>
           <Link
@@ -54,7 +54,6 @@ export default async function FullFeedbackPage() {
         </button>
       </div>
 
-      {/* Full List Container */}
       <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
         <div className="p-4 sm:p-6 divide-y divide-slate-100">
           {allFeedback && allFeedback.length > 0 ? (
@@ -73,14 +72,17 @@ export default async function FullFeedbackPage() {
               return (
                 <div
                   key={item.id}
-                  className="py-5 first:pt-2 last:pb-2 flex flex-col sm:flex-row gap-4 sm:items-start hover:bg-slate-50/50 transition-colors rounded-xl px-2 sm:px-4 -mx-2 sm:-mx-4"
+                  id={`feedback-${item.id}`}
+                  className="py-5 first:pt-2 last:pb-2 flex flex-col sm:flex-row gap-4 sm:items-start hover:bg-slate-50/50 transition-colors rounded-xl px-2 sm:px-4 -mx-2 sm:-mx-4 scroll-mt-24 target:bg-indigo-50/40 target:ring-2 target:ring-indigo-100"
                 >
-                  {/* Avatar (Scaled up for full page) */}
+                  {/* Avatar (Optimized with next/image) */}
                   <div className="shrink-0 pt-1">
                     {item.recipient_image ? (
-                      <img
+                      <Image
                         src={item.recipient_image}
                         alt={recipientName}
+                        width={48}
+                        height={48}
                         className="w-12 h-12 rounded-full object-cover border border-slate-200"
                       />
                     ) : (

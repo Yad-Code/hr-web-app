@@ -19,9 +19,10 @@ export async function getManager(userId: string) {
   const rows = await sql<Colleague[]>`
     SELECT m.name, m.email, m.job_title as role
     FROM users u
-    JOIN users m ON u.manager_id = m.id
+    JOIN users m ON u.manager_name = m.name
     WHERE u.id = ${userId}
   `;
+
   return rows[0] ?? null;
 }
 

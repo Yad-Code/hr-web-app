@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { MessageSquare, Bell, CheckCircle, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
+
+import { MessageSquare, Bell, CheckCircle, ArrowRight } from "lucide-react";
 import { FeedbackRequestRow, FeedbackRow } from "../types";
 
 interface FeedbackWidgetProps {
@@ -27,7 +29,7 @@ export function FeedbackWidget({ feedback, requests }: FeedbackWidgetProps) {
   };
 
   return (
-    <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden flex flex-col h-[400px]">
+    <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden flex flex-col h-100">
       {/* Tabbed Header */}
       <div className="border-b border-slate-100 bg-slate-50/50">
         <div className="flex items-center justify-between px-4 py-2">
@@ -78,18 +80,23 @@ export function FeedbackWidget({ feedback, requests }: FeedbackWidgetProps) {
         {activeTab === "feed" &&
           (feedback.length > 0 ? (
             feedback.map((item) => (
-              <div
+              <Link
                 key={item.id}
-                className="block p-3 bg-slate-50/80 rounded-xl border border-slate-100 hover:border-indigo-200 transition-all group space-y-2"
+                href={`/dashboard/performance/feedback#feedback-${item.id}`}
+                className="block p-3 bg-slate-50/80 rounded-xl border border-slate-100 hover:border-indigo-200 hover:shadow-sm transition-all group space-y-2 cursor-pointer"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3">
                     {item.recipient_image ? (
-                      <img
-                        src={item.recipient_image}
-                        alt={item.recipient_name || "User"}
-                        className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0"
-                      />
+                      <div className="relative shrink-0 overflow-hidden rounded-full ring-2 ring-slate-100 group-hover:ring-indigo-200 transition-all">
+                        <Image
+                          src={item.recipient_image}
+                          alt={item.recipient_name || "User"}
+                          width={36}
+                          height={36}
+                          className="w-9 h-9 rounded-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        />
+                      </div>
                     ) : (
                       <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold border border-indigo-200 shrink-0">
                         {(item.recipient_name || "U").charAt(0)}
@@ -113,10 +120,10 @@ export function FeedbackWidget({ feedback, requests }: FeedbackWidgetProps) {
                     {item.type || "Feedback"}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 line-clamp-2 pl-[48px] italic">
+                <p className="text-[11px] text-slate-500 line-clamp-2 pl-12 italic">
                   &quot;{item.text}&quot;
                 </p>
-              </div>
+              </Link>
             ))
           ) : (
             <div className="flex flex-col items-center justify-center py-8 text-center space-y-2">
