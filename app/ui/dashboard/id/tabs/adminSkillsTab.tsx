@@ -14,6 +14,7 @@ const LEVEL_LABELS: Record<number, string> = {
 
 interface AdminSkillsTabProps {
   skills: Skill[];
+  employeeName: string;
 }
 
 export default function AdminSkillsTab({ skills }: AdminSkillsTabProps) {
