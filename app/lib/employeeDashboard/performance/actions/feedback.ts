@@ -7,7 +7,7 @@ import { getCurrentUserId } from "./utils";
 export async function markFeedbackAsRead(feedbackId: string) {
   try {
     const userId = await getCurrentUserId();
- 
+
     await sql`
       UPDATE user_feedback
       SET is_read = true
@@ -58,13 +58,13 @@ export async function requestFeedback(formData: FormData) {
     if (!recipient || !message) {
       return { success: false, error: "Recipient and message are required." };
     }
- 
+
     const recipientResult = await sql`
         SELECT id, name FROM users 
         WHERE email = ${recipient}
         LIMIT 1
       `;
- 
+
     const recipientUser = recipientResult[0];
 
     if (!recipientUser) {
@@ -106,6 +106,51 @@ export async function requestFeedback(formData: FormData) {
     return { success: true };
   } catch (error) {
     console.error("Failed to request feedback:", error);
+    return {
+      success: false,
+      error: "Database error while processing request.",
+    };
+  }
+}
+
+export async function submitFeedbackResponse(formData: FormData) {
+  try {
+    const userId = await getCurrentUserId();
+    const requestId = formData.get("requestId") as string;
+    const type = formData.get("type") as string;
+    const text = formData.get("text") as string;
+
+    if (!userId || !requestId || !text) {
+      return { success: false, error: "Missing required fields." };
+    }
+ 
+    const senderResult = await sql`
+      SELECT name, role FROM users WHERE id = ${userId} LIMIT 1
+    `;
+    const sender = senderResult[0];
+ 
+    const requestResult = await sql`
+      SELECT user_id FROM performance_notifications WHERE id = ${requestId} LIMIT 1
+    `;
+    const recipientId = requestResult[0]?.user_id;
+
+    if (!recipientId) throw new Error("Original request not found.");
+ 
+    await sql`
+      INSERT INTO user_feedback (user_id, sender, role, date, type, text, is_read)
+      VALUES (${recipientId}, ${sender.name}, ${sender.role}, CURRENT_DATE, ${type}, ${text}, false)
+    `;
+ 
+    await sql`
+      UPDATE performance_notifications
+      SET is_read = true
+      WHERE id = ${requestId}
+    `;
+
+    revalidatePath("/dashboard/performance");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to submit feedback response:", error);
     return {
       success: false,
       error: "Database error while processing request.",
