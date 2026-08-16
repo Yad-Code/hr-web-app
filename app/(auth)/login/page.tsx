@@ -38,6 +38,16 @@ export default function LoginPage() {
               <span className="text-slate-500">AdminPass123</span>
             </div>
             <div className="flex justify-between items-center bg-[#0B0F17]/40 p-1.5 px-2.5 rounded-lg border border-slate-800/40">
+              <span className="text-emerald-400 font-semibold">Admin:</span>
+              <span>sarah.j@company.com</span>
+              <span className="text-slate-500">AdminPass123</span>
+            </div>
+            <div className="flex justify-between items-center bg-[#0B0F17]/40 p-1.5 px-2.5 rounded-lg border border-slate-800/40">
+              <span className="text-emerald-400 font-semibold">Admin:</span>
+              <span>alex.s@company.com</span>
+              <span className="text-slate-500">AdminPass123</span>
+            </div>
+            <div className="flex justify-between items-center bg-[#0B0F17]/40 p-1.5 px-2.5 rounded-lg border border-slate-800/40">
               <span className="text-blue-400 font-semibold">Employee:</span>
               <span>yad@company.com</span>
               <span className="text-slate-500">EmployeePass123</span>

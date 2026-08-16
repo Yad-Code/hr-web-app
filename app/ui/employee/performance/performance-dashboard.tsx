@@ -38,7 +38,7 @@ export interface DashboardData {
   notifications: PerformanceNotification[];
   history: PerformanceHistory[];
   selfAssessment: SelfAssessment | null;
-  colleagues: Colleague[];
+  manager: Colleague | null;
 }
 
 export default function PerformanceDashboard({
@@ -97,7 +97,7 @@ export default function PerformanceDashboard({
         {activeTab === "feedback" && (
           <FeedbackTab
             feedbackList={initialData.feedback}
-            colleagues={initialData.colleagues}
+            manager={initialData.manager}
           />
         )}
         {activeTab === "skills" && <SkillsTab skills={initialData.skills} />}

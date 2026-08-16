@@ -14,13 +14,13 @@ export interface Colleague {
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  colleagues: Colleague[]; // 👇 2. Add colleagues to the props
+  manager: Colleague | null;
 }
 
 export default function RequestFeedbackModal({
   isOpen,
   onClose,
-  colleagues,
+  manager,
 }: ModalProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -67,26 +67,19 @@ export default function RequestFeedbackModal({
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Select Recipient
+              Recipient
             </label>
-            {/* 👇 3. Map over the dynamic colleagues array */}
-            <select
-              name="recipient"
-              required
-              defaultValue=""
-              disabled={isPending}
-              className="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white disabled:bg-slate-50"
-            >
-              <option value="" disabled>
-                Select a colleague or manager...
-              </option>
-              {colleagues.map((person) => (
-                <option key={person.email} value={person.email}>
-                  {person.name}{" "}
-                  {person.role ? `(${person.role})` : `(${person.email})`}
-                </option>
-              ))}
-            </select>
+            {/* 👇 Display the manager statically and use a hidden input for form submission */}
+            {manager ? (
+              <div className="w-full p-2.5 text-sm border border-slate-300 rounded-lg bg-slate-50 text-slate-700 cursor-not-allowed">
+                {manager.name} ({manager.role || "Manager"})
+                <input type="hidden" name="recipient" value={manager.email} />
+              </div>
+            ) : (
+              <div className="w-full p-2.5 text-sm border border-red-200 rounded-lg bg-red-50 text-red-600">
+                No assigned manager found. Please contact HR.
+              </div>
+            )}
           </div>
 
           <div>

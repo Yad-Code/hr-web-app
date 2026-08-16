@@ -15,10 +15,10 @@ import RequestFeedbackModal from "../modals/request-feedback-modal";
 
 export default function FeedbackTab({
   feedbackList,
-  colleagues,
+  manager,
 }: {
   feedbackList: Feedback[];
-  colleagues: Colleague[];
+  manager: Colleague | null;
 }) {
   const [isPending, startTransition] = useTransition();
   const [activeFilter, setActiveFilter] = useState<string>("all");
@@ -61,9 +61,9 @@ export default function FeedbackTab({
     <div className="space-y-6 max-w-4xl">
       {/* Request Feedback Modal */}
       <RequestFeedbackModal
-        isOpen={true}
-        onClose={() => {}}
-        colleagues={colleagues}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        manager={manager}
       />
 
       {/* Header Bar */}

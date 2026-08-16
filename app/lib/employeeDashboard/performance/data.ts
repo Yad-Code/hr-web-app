@@ -15,13 +15,14 @@ import {
   Colleague,
 } from "./definitions";
 
-export async function getColleagues() {
-  return sql<Colleague[]>`
-    SELECT name, email, job_title as role
-    FROM users
-    WHERE status = 'Active'
-    ORDER BY name ASC
+export async function getManager(userId: string) {
+  const rows = await sql<Colleague[]>`
+    SELECT m.name, m.email, m.job_title as role
+    FROM users u
+    JOIN users m ON u.manager_id = m.id
+    WHERE u.id = ${userId}
   `;
+  return rows[0] ?? null;
 }
 
 export async function getPerformanceProfile(userId: string) {
@@ -141,7 +142,7 @@ export async function getPerformanceDashboard(userId: string) {
     notifications,
     history,
     selfAssessment,
-    colleagues,
+    manager,
   ] = await Promise.all([
     getPerformanceProfile(userId),
     getUserKPIs(userId),
@@ -154,7 +155,7 @@ export async function getPerformanceDashboard(userId: string) {
     getPerformanceNotifications(userId),
     getPerformanceHistory(userId),
     getSelfAssessment(userId),
-    getColleagues(),
+    getManager(userId),
   ]);
 
   return {
@@ -169,6 +170,6 @@ export async function getPerformanceDashboard(userId: string) {
     notifications,
     history,
     selfAssessment,
-    colleagues,
+    manager,
   };
 }
