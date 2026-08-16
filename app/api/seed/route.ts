@@ -268,6 +268,7 @@ CREATE TABLE self_assessments (
     CREATE TABLE performance_notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    requester_id UUID REFERENCES users(id),
     title VARCHAR(255),
     description TEXT,
     type VARCHAR(50),

@@ -75,19 +75,19 @@ export async function requestFeedback(formData: FormData) {
       };
     }
 
-    // 2. Fetch requester info
     const senderResult = await sql`
       SELECT name FROM users WHERE id = ${userId} LIMIT 1
     `;
     const senderName = senderResult[0]?.name || "A team member";
 
-    // 3. Insert notification linked directly to recipient's ID
     const title = `Feedback Request from ${senderName}`;
     const description = `Requested feedback on ${type}: "${message}"`;
 
+    // FIXED: Added requester_id to track who initiated the request
     await sql`
       INSERT INTO performance_notifications (
         user_id,
+        requester_id,
         title,
         description,
         type,
@@ -95,6 +95,7 @@ export async function requestFeedback(formData: FormData) {
       )
       VALUES (
         ${recipientUser.id},
+        ${userId},
         ${title},
         ${description},
         'Feedback Request',
@@ -123,24 +124,38 @@ export async function submitFeedbackResponse(formData: FormData) {
     if (!userId || !requestId || !text) {
       return { success: false, error: "Missing required fields." };
     }
- 
+
+    // FIXED: Added null check for sender profile to prevent crashes
     const senderResult = await sql`
       SELECT name, role FROM users WHERE id = ${userId} LIMIT 1
     `;
     const sender = senderResult[0];
- 
-    const requestResult = await sql`
-      SELECT user_id FROM performance_notifications WHERE id = ${requestId} LIMIT 1
-    `;
-    const recipientId = requestResult[0]?.user_id;
 
-    if (!recipientId) throw new Error("Original request not found.");
- 
+    if (!sender) {
+      return { success: false, error: "User profile not found." };
+    }
+
+    // FIXED: Securely fetch original requester_id and ensure current user is the intended recipient
+    const requestResult = await sql`
+      SELECT requester_id FROM performance_notifications 
+      WHERE id = ${requestId} AND user_id = ${userId} 
+      LIMIT 1
+    `;
+    const originalRequesterId = requestResult[0]?.requester_id;
+
+    if (!originalRequesterId) {
+      return {
+        success: false,
+        error: "Original feedback request not found or unauthorized.",
+      };
+    }
+
+    // FIXED: Target user_id is now originalRequesterId instead of the responder
     await sql`
       INSERT INTO user_feedback (user_id, sender, role, date, type, text, is_read)
-      VALUES (${recipientId}, ${sender.name}, ${sender.role}, CURRENT_DATE, ${type}, ${text}, false)
+      VALUES (${originalRequesterId}, ${sender.name}, ${sender.role}, CURRENT_DATE, ${type}, ${text}, false)
     `;
- 
+
     await sql`
       UPDATE performance_notifications
       SET is_read = true
