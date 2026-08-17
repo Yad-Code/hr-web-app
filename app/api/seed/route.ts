@@ -411,10 +411,10 @@ CREATE TABLE self_assessments (
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
 `;
- 
+
     const adminPassword = await bcrypt.hash("AdminPass123", 10);
     const employeePassword = await bcrypt.hash("EmployeePass123", 10);
- 
+
     const seededUsers = await db`
       INSERT INTO users (
         employee_id, name, preferred_name, job_title, job_family, employment_type, manager_name, join_date, 
@@ -561,8 +561,6 @@ CREATE TABLE self_assessments (
 );
     `;
 
-    // 5. Seed Leave Balances, Schedules, Requests, Attendance & Performance
-
     // adding admin ID
     const adminId = seededUsers.find((user) => user.role === "admin")?.id;
     if (!adminId) throw new Error("Admin user not found");
@@ -635,13 +633,18 @@ CREATE TABLE self_assessments (
         `;
 
       await db`
+  INSERT INTO user_kpis (user_id, label, value, target, trend, is_up)
+  VALUES
+    (${emp.id}, 'Attendance Rate', '0.0%', '95.0%', '+0.0%', true),
+    (${emp.id}, 'Punctuality (On-Time)', '0.0%', '90.0%', '+0.0%', false),
+    (${emp.id}, 'Team Collaboration', '4.8/5', '4.5/5', '+0.3', true),
+    (${emp.id}, 'Task Completion Rate', '92.0%', '90.0%', '+5.0%', true);
+`;
+      await db`
           INSERT INTO wfh_requests (user_id, request_date, reason, status)
           VALUES (${emp.id}, '2026-07-28', 'Working on server optimization and require quiet space.', 'Pending')
         `;
 
-      // ----------------------------------------------------
-      // PERFORMANCE PROFILE
-      // ----------------------------------------------------
       await db`
 INSERT INTO user_performance (
     user_id,
@@ -658,53 +661,6 @@ VALUES (
     'Excellent'
 )
 ON CONFLICT (user_id) DO NOTHING;
-`;
-
-      // ----------------------------------------------------
-      // KPIs
-      // ----------------------------------------------------
-      await db`
-INSERT INTO user_kpis (
-    user_id,
-    label,
-    value,
-    target,
-    trend,
-    is_up
-)
-VALUES
-(
-    ${emp.id},
-    'Sprint Velocity',
-    '42 pts',
-    '40 pts',
-    '+5%',
-    true
-),
-(
-    ${emp.id},
-    'Code Review Turnaround',
-    '1.2 hrs',
-    '< 2 hrs',
-    '-15 mins',
-    true
-),
-(
-    ${emp.id},
-    'Bugs Escaped',
-    '2',
-    '< 5',
-    '+1',
-    false
-),
-(
-    ${emp.id},
-    'Attendance Reliability',
-    '98%',
-    '95%',
-    'Stable',
-    true
-);
 `;
 
       // ----------------------------------------------------
@@ -807,7 +763,7 @@ VALUES
     )
     ON CONFLICT (user_id) DO NOTHING;
 `;
- 
+
       await db`
     INSERT INTO one_on_one_meetings (
         employee_id,
@@ -838,7 +794,7 @@ VALUES
         'Scheduled'
     );
 `;
- 
+
       await db`
 INSERT INTO performance_notifications (
     user_id,

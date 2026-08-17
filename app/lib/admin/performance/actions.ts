@@ -109,7 +109,17 @@ export async function createNewReview(formData: FormData): Promise<void> {
     goalsForNextCycle,
   } = validatedFields.data;
 
+  // Derive status based on rating score
+  const status =
+    rating >= 4.5 ? "Excellent" : rating >= 3.5 ? "Good" : "Needs Improvement";
+
+  // Calculate next review date (defaulting to 6 months after current review date)
+  const evalDate = new Date(date);
+  evalDate.setMonth(evalDate.getMonth() + 6);
+  const nextReviewDate = evalDate.toISOString().split("T")[0];
+
   try {
+    // 1. Insert the detailed performance review record
     await db`
       INSERT INTO performance_reviews (
         user_id, period, date, reviewer, rating, 
@@ -121,12 +131,35 @@ export async function createNewReview(formData: FormData): Promise<void> {
         ${employeeComments || null}, ${goalsForNextCycle || null}, 'Completed'
       )
     `;
+
+    // 2. Sync / Upsert the top-level user_performance summary for the header
+    await db`
+      INSERT INTO user_performance (user_id, rating, cycle, next_review, status)
+      VALUES (${userId}, ${rating}, ${period}, ${nextReviewDate}, ${status})
+      ON CONFLICT (user_id) DO UPDATE SET
+        rating = EXCLUDED.rating,
+        cycle = EXCLUDED.cycle,
+        next_review = EXCLUDED.next_review,
+        status = EXCLUDED.status
+    `;
+
+    // 3. Notify the employee
+    const notificationDesc = `A new performance review for ${period} has been published by ${reviewer}.`;
+    await db`
+      INSERT INTO performance_notifications (
+        user_id, title, description, type, is_read
+      )
+      VALUES (
+        ${userId}, 'New Performance Review', ${notificationDesc}, 'Review', false
+      )
+    `;
   } catch (error) {
     console.error("Database Error:", error);
     return;
   }
 
-  revalidatePath("/dashboard/performance/reviews");
+  // 4. Invalidate cache globally so header & tab refresh instantly
+  revalidatePath("/", "layout");
   redirect("/dashboard/performance/reviews");
 }
 
@@ -148,7 +181,9 @@ export async function updateMeetingStatus(meetingId: string, status: string) {
   }
 }
 
-export async function scheduleOneOnOneMeeting(formData: FormData): Promise<void> {
+export async function scheduleOneOnOneMeeting(
+  formData: FormData,
+): Promise<void> {
   const employee_id = formData.get("employee_id") as string;
   const manager_id = formData.get("manager_id") as string;
   const meeting_date = formData.get("meeting_date") as string;

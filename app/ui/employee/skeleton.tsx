@@ -1,5 +1,4 @@
-export function EmployeeSearchListSkeleton() {
-  // Array of 5 items to generate simulated rows
+export function EmployeeSearchListSkeleton() { 
   const placeholderRows = Array.from({ length: 5 });
 
   return (

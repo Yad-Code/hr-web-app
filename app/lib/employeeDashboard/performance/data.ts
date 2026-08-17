@@ -37,11 +37,46 @@ export async function getPerformanceProfile(userId: string) {
 }
 
 export async function getUserKPIs(userId: string) {
-  return sql<KPI[]>`
-    SELECT *
-    FROM user_kpis
-    WHERE user_id=${userId}
-  `;
+  const [kpiRows, attendanceStats] = await Promise.all([
+    sql<KPI[]>`
+      SELECT *
+      FROM user_kpis
+      WHERE user_id = ${userId}
+    `,
+    sql<{ total_days: number; present_days: number; on_time_days: number }[]>`
+      SELECT 
+        COUNT(*)::int AS total_days,
+        COUNT(CASE WHEN status IN ('Present', 'Late') THEN 1 END)::int AS present_days,
+        COUNT(CASE WHEN status = 'Present' THEN 1 END)::int AS on_time_days
+      FROM attendance
+      WHERE user_id = ${userId}
+        AND date_trunc('month', date) = date_trunc('month', CURRENT_DATE)
+    `,
+  ]);
+
+  const stats = attendanceStats[0];
+  const totalDays = stats?.total_days || 0;
+  const presentDays = stats?.present_days || 0;
+  const onTimeDays = stats?.on_time_days || 0;
+
+  // Calculates current month rates dynamically (defaults to '0.0%' if no records exist for the month)
+  const dynamicAttendanceRate =
+    totalDays > 0 ? `${((presentDays / totalDays) * 100).toFixed(1)}%` : "0.0%";
+
+  const dynamicPunctualityRate =
+    presentDays > 0
+      ? `${((onTimeDays / presentDays) * 100).toFixed(1)}%`
+      : "0.0%";
+
+  return kpiRows.map((kpi) => {
+    if (kpi.label.toLowerCase().includes("attendance")) {
+      return { ...kpi, value: dynamicAttendanceRate };
+    }
+    if (kpi.label.toLowerCase().includes("punctuality")) {
+      return { ...kpi, value: dynamicPunctualityRate };
+    }
+    return kpi;
+  });
 }
 
 export async function getUserGoals(userId: string) {
