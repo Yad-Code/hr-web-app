@@ -21,7 +21,6 @@ export function LeaveRequestsList({
       const result = await updateLeaveRequestStatus(id, status);
 
       if (!result.success) {
-        // If you are using Sonner or react-hot-toast, trigger it here.
         alert(result.error);
       }
 
@@ -29,7 +28,6 @@ export function LeaveRequestsList({
     });
   };
 
-  // Filter to ensure we only show pending requests in this queue
   const pendingRequests = requests.filter((req) => req.status === "Pending");
 
   return (
@@ -51,25 +49,48 @@ export function LeaveRequestsList({
 
             return (
               <div key={request.id} className="p-4 space-y-3">
-                <div className="flex items-center gap-3">
-                  <Image
-                    src={
-                      request.imageUrl ||
-                      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
-                    }
-                    alt={request.employeeName}
-                    width={36}
-                    height={36}
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
-                  <div>
-                    <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                      {request.employeeName}
-                    </p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                      {request.leaveType} • {request.days} Days
-                    </p>
+                {/* 👈 Updated: Spread out the items to make room for the timestamp */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <Image
+                      src={
+                        request.imageUrl ||
+                        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
+                      }
+                      alt={request.employeeName}
+                      width={36}
+                      height={36}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                    <div>
+                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                        {request.employeeName}
+                      </p>
+
+                      {/* 👈 Added: Job Title */}
+                      {request.jobTitle && (
+                        <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                          {request.jobTitle}
+                        </p>
+                      )}
+
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        {request.leaveType} • {request.days} Days
+                      </p>
+                    </div>
                   </div>
+
+                  {/* 👈 Added: Requested Time Timestamp */}
+                  {request.createdAt && (
+                    <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 text-right whitespace-nowrap">
+                      {new Date(request.createdAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700/50">

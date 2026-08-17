@@ -13,7 +13,6 @@ import {
 export default async function Page() {
   return (
     <main className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-fadeIn">
-      {/* Admin Dashboard Header */}
       <div className="border-b border-slate-100 pb-5 text-left">
         <h1
           className={`${lusitana.className} text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-slate-900`}
@@ -25,22 +24,16 @@ export default async function Page() {
         </p>
       </div>
 
-      {/* Top Summary Cards Grid */}
       <Suspense fallback={<CardsGridSkeleton />}>
         <AdminCardsWrapper />
       </Suspense>
-
-      {/* Main Analytics & Operations Content Layout */}
       <div className="grid gap-6 grid-cols-1 xl:grid-cols-3">
-        {/* Retention & Engagement Line Chart Panel */}
         <div className="xl:col-span-2 flex flex-col justify-between w-full">
           <Suspense fallback={<RetentionEngagementChartSkeleton />}>
-            {/* 2. Replace RetentionEngagementChart with the new AdminChartWrapper */}
             <AdminChartWrapper />
           </Suspense>
         </div>
 
-        {/* Admin Quick Operations Widget Panel */}
         <Suspense fallback={<EmployeeActivitySkeleton />}>
           <QuickOperationsWidget isAdmin={true} />
         </Suspense>

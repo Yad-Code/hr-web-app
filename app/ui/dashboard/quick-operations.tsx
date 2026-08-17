@@ -1,7 +1,7 @@
 import { fetchPendingAdminRequests } from "@/app/lib/employeeDashboard/employee/data";
 import { RequestItem } from "./request-items";
 import { EmployeeOperations } from "./employee-operations";
-import { AutoRefresh } from "../employee/my-attendance/auto-refresh"; // Import the client refresher
+import { AutoRefresh } from "../employee/my-attendance/auto-refresh";
 
 interface PendingRequestType {
   id: string;
@@ -10,6 +10,7 @@ interface PendingRequestType {
   status: string;
   created_at: Date;
   employee_name: string;
+  job_title: string | null;  
   employee_image: string | null;
 }
 
@@ -24,10 +25,8 @@ export async function QuickOperationsWidget({ isAdmin }: QuickOperationsProps) {
 
   return (
     <div className="bg-white border border-slate-100 rounded-2xl shadow-sm flex flex-col xl:min-h-105 w-full overflow-hidden">
-      {/* 1. Trigger background server refresh every 10 seconds for admins */}
       {isAdmin && <AutoRefresh intervalMs={10000} />}
 
-      {/* Unified Dynamic Header */}
       <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
         <div>
           <h3 className="text-sm font-bold text-slate-900 tracking-tight">
@@ -46,7 +45,6 @@ export async function QuickOperationsWidget({ isAdmin }: QuickOperationsProps) {
         )}
       </div>
 
-      {/* Main Content Layout Body Selection */}
       <div className="flex-1 p-0 overflow-y-auto">
         {!isAdmin ? (
           <EmployeeOperations />

@@ -17,6 +17,7 @@ interface RequestItemProps {
     status: string;
     created_at: Date;
     employee_name: string;
+    job_title: string | null;
     employee_image: string | null;
   };
 }
@@ -24,7 +25,6 @@ interface RequestItemProps {
 export function RequestItem({ request }: RequestItemProps) {
   const [isPending, startTransition] = useTransition();
 
-  // Updated type mapper for your system's request types
   const typeLabels: Record<string, string> = {
     wfh: "🏠 WFH",
     dayoff: "🌴 Day Off",
@@ -69,6 +69,14 @@ export function RequestItem({ request }: RequestItemProps) {
             <span className="text-xs font-bold text-slate-800 block leading-tight">
               {request.employee_name}
             </span>
+
+            {request.status.toLowerCase() === "pending" &&
+              request.job_title && (
+                <span className="text-[10px] text-slate-500 font-medium block mb-0.5">
+                  {request.job_title}
+                </span>
+              )}
+
             <span className="text-[10px] text-slate-400 font-medium">
               {formatDistanceToNow(new Date(request.created_at), {
                 addSuffix: true,

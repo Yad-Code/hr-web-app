@@ -22,7 +22,9 @@ export interface LeaveRequestRow {
   id: string;
   employeeName: string;
   imageUrl: string | null;
+  jobTitle: string | null;
   leaveType: string;
+  createdAt: string | Date;
   startDate: string;
   endDate: string;
   days: number;

@@ -15,7 +15,6 @@ interface PageProps {
   searchParams: Promise<{ date?: string }>;
 }
 
-// Explicit database row types to avoid 'any'
 interface AttendanceDbRow {
   id: string;
   employee_name: string;
@@ -25,19 +24,22 @@ interface AttendanceDbRow {
   check_in: string | null;
   check_out: string | null;
   work_hours: string | null;
+  job_title: string | null;
+  created_at: string | Date;
 }
 
 interface LeaveRequestDbRow {
   id: string;
   employee_name: string;
   image_url: string | null;
-  type: string; // Changed from leave_type
+  type: string;
   start_date: string;
   end_date: string;
-  total_days: number; // Changed from days
+  total_days: number;
   status: string;
+  job_title: string | null;
+  created_at: string | Date;
 }
-
 interface ShiftDbRow {
   shift_type: string;
   shift_start: string;
@@ -48,16 +50,13 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
   const resolvedParams = await searchParams;
   const todayString = new Date().toISOString().split("T")[0];
 
-  // Fallback to seeded date if no date query param is provided
   const targetDate = resolvedParams.date || todayString;
 
-  // 1. Fetch Total Employees Count
   const [totalResult] = await db`
     SELECT COUNT(*)::int as count FROM users WHERE role = 'employee'
   `;
   const totalEmployees = totalResult?.count || 0;
 
-  // 2. Fetch Daily Attendance Logs for the selected target date
   const attendanceRows = (await db`
     SELECT 
       a.id,
@@ -84,7 +83,6 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
     workHours: row.work_hours,
   }));
 
-  // Calculate live KPIs based on fetched records
   const presentToday = dailyLogs.filter((l) => l.status === "Present").length;
   const lateToday = dailyLogs.filter((l) => l.status === "Late").length;
   const absentToday = dailyLogs.filter((l) => l.status === "Absent").length;
@@ -98,12 +96,13 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
     onLeaveToday,
   };
 
-  // Fetch Leave Requests from database
   const requestRows = (await db`
     SELECT 
       r.id,
       u.name AS employee_name,
       u.image_url,
+      u.job_title,       
+      r.created_at,      
       r.type,        
       r.start_date,
       r.end_date,
@@ -121,13 +120,13 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
     startDate: row.start_date,
     endDate: row.end_date,
     days: row.total_days,
+    jobTitle: row.job_title,
+    createdAt: row.created_at,
     status: (row.status.charAt(0).toUpperCase() + row.status.slice(1)) as
       | "Pending"
       | "Approved"
       | "Rejected",
   }));
-
-  // 4. Fetch Shift Configurations
   const shiftRows = (await db`
     SELECT DISTINCT shift_type, shift_start, shift_end 
     FROM users 

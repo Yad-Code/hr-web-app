@@ -1,5 +1,5 @@
 // app/lib/employeeDashboard/employee/data.ts
-import { sql } from "@/app/lib/employeeDashboard/employee/db"; // Using our configured singleton instance
+import { sql } from "@/app/lib/employeeDashboard/employee/db";
 import { formatDistanceToNow } from "date-fns";
 import { auth } from "@/auth";
 import { Employee } from "@/app/lib/employeeList/definitions";
@@ -7,6 +7,7 @@ import { Employee } from "@/app/lib/employeeList/definitions";
 export interface PendingRequest {
   id: string;
   employee_name: string;
+  job_title: string | null; 
   image_url: string | null;
   type: "time-off" | "expense";
   description: string;
@@ -24,7 +25,6 @@ export interface AttendanceRecord {
   work_location?: string;
 }
 
-// 1. Profile data fetcher 
 export async function getProfileData(email: string) {
   try {
     const users = await sql`
@@ -66,7 +66,6 @@ export async function getProfileData(email: string) {
   }
 }
 
-// 2. Fetch employee status list
 export async function fetchEmployeeStatusList(): Promise<Employee[]> {
   try {
     const rows = await sql`
@@ -104,7 +103,6 @@ export async function fetchEmployeeStatusList(): Promise<Employee[]> {
   }
 }
 
-// Helper: Relative time string
 export function getRelativeTimeString(date: Date): string {
   const ms = new Date().getTime() - date.getTime();
   const mins = Math.floor(ms / 60000);
@@ -115,13 +113,12 @@ export function getRelativeTimeString(date: Date): string {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-// 3. Get current user role
 export async function getCurrentUserRole() {
   const session = await auth();
   return session?.user?.role || "employee";
 }
 
-// 4. Fetch pending admin requests
+ 
 export async function fetchPendingAdminRequests() {
   try {
     const data = await sql`
@@ -142,6 +139,7 @@ export async function fetchPendingAdminRequests() {
         r.status,
         r.created_at,
         u.name AS employee_name,
+        u.job_title AS job_title, 
         u.image_url AS employee_image
       FROM leave_requests r
       JOIN users u ON r.user_id = u.id
@@ -155,7 +153,6 @@ export async function fetchPendingAdminRequests() {
   }
 }
 
-// 5. Parallel Dashboard Data Fetcher
 export async function fetchDashboardData() {
   try {
     const [statusList, pendingRequests, userRole] = await Promise.all([
@@ -171,7 +168,6 @@ export async function fetchDashboardData() {
   }
 }
 
-// Helper: Normalize time strings to avoid Unicode space issues (\u202f)
 export function getFormattedTime(): string {
   const now = new Date();
   let hours = now.getHours();
@@ -183,7 +179,6 @@ export function getFormattedTime(): string {
   return `${formattedHours}:${minutes} ${ampm}`;
 }
 
-// Helper: Safely calculate shift duration
 export function calculateWorkHours(checkIn: string, checkOut: string): string {
   const parseMins = (timeStr: string) => {
     const cleanStr = timeStr.replace(/\u202f/g, " ").trim();
@@ -204,14 +199,13 @@ export function calculateWorkHours(checkIn: string, checkOut: string): string {
   const endMins = parseMins(checkOut);
   let diff = endMins - startMins;
 
-  if (diff < 0) diff += 24 * 60; // Overnight shift safety
+  if (diff < 0) diff += 24 * 60;
 
   const hours = Math.floor(diff / 60);
   const mins = diff % 60;
   return `${hours}h ${mins}m`;
 }
 
-// Fetch today's attendance record
 export async function getTodayAttendance(
   userId: string,
   date: string,
@@ -231,7 +225,6 @@ export async function getTodayAttendance(
   }
 }
 
-// Record Check-In with optional location parameter (defaults to 'Office')
 export async function createCheckIn(
   userId: string,
   date: string,
@@ -249,7 +242,6 @@ export async function createCheckIn(
   }
 }
 
-// Record Check-Out
 export async function updateCheckOut(
   id: string,
   checkOutTime: string,
