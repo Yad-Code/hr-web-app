@@ -184,16 +184,13 @@ export async function toggleCheckInStatus(
   try {
     const session = await auth();
 
-    // 1. Verify email exists on session
     if (!session?.user?.email) {
-      console.error("Auth Failed: User session email missing.", session);
       return {
         success: false,
         error: "Unauthorized: Missing user session email.",
       };
     }
 
-    // 2. Fetch user ID and their base working days
     const userQuery = await sql`
       SELECT id, working_days FROM users WHERE email = ${session.user.email}
     `;
@@ -207,13 +204,11 @@ export async function toggleCheckInStatus(
     const today = getLocalDateString();
     const nowTime = getFormattedTime();
 
-    // 3. Safely calculate the day of the week to prevent timezone shifting
     const [y, m, d] = today.split("-");
     const dayOfWeek = new Date(Number(y), Number(m) - 1, Number(d)).getDay();
 
     let isWorkingDay = workingDays.includes(dayOfWeek);
 
-    // 4. Check for any approved shift swaps for today
     const overrideQuery = await sql`
       SELECT is_working FROM schedule_overrides 
       WHERE user_id = ${userId} AND target_date = ${today}
@@ -223,21 +218,20 @@ export async function toggleCheckInStatus(
       isWorkingDay = overrideQuery[0].is_working;
     }
 
-    // 5. Block check-in if it's an off day
-    if (!isWorkingDay) {
+    // Fetch existing attendance FIRST
+    const existingRecord = await getTodayAttendance(userId, today);
+
+    // Block NEW check-ins on off-days, but ALWAYS allow check-outs if a record exists!
+    if (!isWorkingDay && !existingRecord) {
       return {
         success: false,
         error: "You are not scheduled to work today. Enjoy your day off!",
       };
     }
 
-    const existingRecord = await getTodayAttendance(userId, today);
-
     if (!existingRecord) {
-      // Action: Check In
       await createCheckIn(userId, today, nowTime, location);
     } else if (!existingRecord.check_out) {
-      // Action: Check Out
       const checkInTime = existingRecord.check_in || nowTime;
       const workHours = calculateWorkHours(checkInTime, nowTime);
       await updateCheckOut(existingRecord.id, nowTime, workHours);
@@ -549,5 +543,134 @@ export async function rejectLeaveRequest(requestId: string) {
   } catch (error) {
     console.error("Error rejecting leave request:", error);
     return { success: false, error: "Failed to decline request." };
+  }
+}
+
+export async function exportAttendanceCSV(monthStr?: string) {
+  try {
+    const session = await auth();
+    if (!session?.user?.email) return { success: false, error: "Unauthorized" };
+
+    const userQuery = await sql`
+      SELECT id, name, working_days FROM users WHERE email = ${session.user.email}
+    `;
+    if (!userQuery || userQuery.length === 0) {
+      return { success: false, error: "User not found." };
+    }
+
+    const user = userQuery[0];
+    const workingDays = user.working_days || [1, 2, 3, 4, 5];
+
+    // Determine target year and month based on input or current date
+    let yearNum: number;
+    let monthNum: number;
+
+    if (monthStr && /^\d{4}-\d{2}$/.test(monthStr)) {
+      const [y, m] = monthStr.split("-");
+      yearNum = parseInt(y, 10);
+      monthNum = parseInt(m, 10) - 1;
+    } else {
+      const now = new Date();
+      yearNum = now.getFullYear();
+      monthNum = now.getMonth();
+    }
+
+    const daysInMonth = new Date(yearNum, monthNum + 1, 0).getDate();
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const logs = await sql`
+      SELECT date, check_in, check_out, work_hours, status, work_location 
+      FROM attendance WHERE user_id = ${user.id}
+    `;
+    const overrides = await sql`
+      SELECT target_date, is_working 
+      FROM schedule_overrides WHERE user_id = ${user.id}
+    `;
+
+    const headers = [
+      "Date",
+      "Check In",
+      "Check Out",
+      "Work Hours",
+      "Location",
+      "Status",
+    ];
+    const csvRows = [];
+
+    for (let i = 1; i <= daysInMonth; i++) {
+      const dateObj = new Date(yearNum, monthNum, i);
+
+      const y = dateObj.getFullYear();
+      const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+      const d = String(dateObj.getDate()).padStart(2, "0");
+      const dbDateStr = `${y}-${m}-${d}`;
+
+      const displayDate = dateObj.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+
+      const log = logs.find((l) => {
+        const lDate =
+          typeof l.date === "string" ? l.date : l.date.toISOString();
+        return lDate.startsWith(dbDateStr);
+      });
+
+      const override = overrides.find((o) => {
+        const oDate =
+          typeof o.target_date === "string"
+            ? o.target_date
+            : o.target_date.toISOString();
+        return oDate.startsWith(dbDateStr);
+      });
+
+      let isWorkingDay = workingDays.includes(dateObj.getDay());
+      let overrideBadge = null;
+
+      if (override) {
+        isWorkingDay = override.is_working;
+        overrideBadge = override.is_working ? "Swapped In" : "Swapped Out";
+      }
+
+      let status = "";
+      const checkIn = log?.check_in || "--:--";
+      const checkOut = log?.check_out || "--:--";
+      const workHours = log?.work_hours || "--";
+      let location = log?.work_location || "--";
+
+      if (!isWorkingDay) {
+        status = overrideBadge || "Off Day";
+        location = "--";
+      } else if (log) {
+        status = overrideBadge
+          ? `${log.status} (${overrideBadge})`
+          : log.status;
+      } else {
+        if (dateObj < today) {
+          status = "Absent";
+        } else {
+          status = overrideBadge ? `Scheduled (${overrideBadge})` : "Scheduled";
+          location = dateObj.getTime() === today.getTime() ? "Pending" : "--";
+        }
+      }
+
+      csvRows.push(
+        `"${displayDate}","${checkIn}","${checkOut}","${workHours}","${location}","${status}"`,
+      );
+    }
+
+    // Reverse so the newest days are at the top, matching the UI
+    csvRows.reverse();
+
+    const csvContent = [headers.join(","), ...csvRows].join("\n");
+    const filename = `${user.name.replace(/\s+/g, "_")}_Timesheet_${yearNum}_${String(monthNum + 1).padStart(2, "0")}.csv`;
+
+    return { success: true, csv: csvContent, filename };
+  } catch (error) {
+    console.error("Export Error:", error);
+    return { success: false, error: "Failed to generate export file." };
   }
 }

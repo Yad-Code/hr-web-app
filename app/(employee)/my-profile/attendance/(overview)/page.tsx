@@ -13,6 +13,7 @@ import {
   SectionHeader,
   PendingExchangesWidget,
   PendingExchangeRequest,
+  ExportButton,
 } from "@/app/ui/employee/my-attendance/my-attendance";
 import {
   TodayStatusSkeleton,
@@ -20,19 +21,6 @@ import {
   CalendarSkeleton,
   LogTableSkeleton,
 } from "@/app/ui/employee/my-attendance/skeletons";
-import { Download } from "lucide-react";
-
-function ExportButton() {
-  return (
-    <button
-      type="button"
-      className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-xs active:scale-95 cursor-pointer"
-    >
-      <Download className="w-4 h-4 text-slate-500" />
-      <span>Export Report</span>
-    </button>
-  );
-}
 
 async function AttendanceContent({ userId }: { userId: string }) {
   const data = await getAttendanceData(userId);

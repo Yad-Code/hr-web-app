@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Clock,
   Filter,
+  Download,
 } from "lucide-react";
 
 import {
@@ -22,8 +23,71 @@ import {
 import {
   toggleCheckInStatus,
   submitWFHRequest,
+  respondToExchangeRequest,
+  exportAttendanceCSV,
 } from "@/app/lib/employeeDashboard/employee/actions";
-import { respondToExchangeRequest } from "@/app/lib/employeeDashboard/employee/actions";
+
+export function ExportButton() {
+  const [isExporting, setIsExporting] = useState(false);
+
+  // Default to the current month (e.g., "2026-09")
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      // Pass the chosen month to the server
+      const result = await exportAttendanceCSV(selectedMonth);
+
+      if (!result.success || !result.csv) {
+        alert(result.error || "Failed to generate export.");
+        return;
+      }
+
+      const blob = new Blob([result.csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", result.filename || "attendance_report.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Download failed:", error);
+      alert("An unexpected error occurred while downloading.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="month"
+        value={selectedMonth}
+        onChange={(e) => setSelectedMonth(e.target.value)}
+        className="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-xs outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer"
+      />
+      <button
+        type="button"
+        onClick={handleExport}
+        disabled={isExporting}
+        className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-xs active:scale-95 cursor-pointer disabled:opacity-50"
+      >
+        {isExporting ? (
+          <Loader2 className="w-4 h-4 text-slate-500 animate-spin" />
+        ) : (
+          <Download className="w-4 h-4 text-slate-500" />
+        )}
+        <span>{isExporting ? "Exporting..." : "Export"}</span>
+      </button>
+    </div>
+  );
+}
 
 export function SectionHeader({
   title,
@@ -66,7 +130,6 @@ export function TodayStatusCard({
   const shiftEnd = data?.shiftEnd || "05:00 PM";
   const shiftType = data?.shiftType || "Standard (Mon - Fri)";
 
-  // Safely calculate if today is a working day
   const todayObj = new Date();
   const todayStr = todayObj.toLocaleDateString("en-US", {
     month: "short",
@@ -115,7 +178,6 @@ export function TodayStatusCard({
             {!isWorkingDay ? "Scheduled Off" : data?.status || "Not Checked In"}
           </span>
 
-          {/* Hide location selector if off-day or already checked in */}
           {!isCheckedIn && isWorkingDay && (
             <select
               value={location}
@@ -133,12 +195,14 @@ export function TodayStatusCard({
           <button
             type="button"
             onClick={handleToggle}
-            disabled={isPending || isCheckedOut || !isWorkingDay}
+            disabled={
+              isPending || isCheckedOut || (!isWorkingDay && !isCheckedIn)
+            }
             className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all disabled:opacity-50 disabled:bg-slate-300 disabled:text-slate-500 cursor-pointer active:scale-95"
           >
             {isPending ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : !isWorkingDay ? (
+            ) : !isWorkingDay && !isCheckedIn ? (
               "Day Off"
             ) : isCheckedOut ? (
               "Done For Today"
@@ -175,7 +239,11 @@ export function TodayStatusCard({
             <MapPin className="w-3 h-3 text-indigo-500" /> Location
           </p>
           <p className="text-lg font-bold text-slate-800 mt-0.5">
-            {!isWorkingDay ? "--" : isCheckedIn ? data?.workLocation : location}
+            {!isWorkingDay && !isCheckedIn
+              ? "--"
+              : isCheckedIn
+                ? data?.workLocation
+                : location}
           </p>
         </div>
       </div>
