@@ -23,8 +23,8 @@ export interface AttendanceData {
     annualTotal: number;
     sickRemaining: number;
     sickTotal: number;
-    monthlyTotalHours: number; // Added
-    monthlyRemainingHours: number; // Added
+    monthlyTotalHours: number;
+    monthlyRemainingHours: number;
   };
   currentMonth: string;
   currentYear: number;
@@ -32,7 +32,10 @@ export interface AttendanceData {
     date: string;
     status: "present" | "absent" | "late" | "leave" | "weekend" | "upcoming";
     checkIn?: string;
-  }>;
+  }>; 
+  workingDays: number[];
+  overrides: Array<{ date: string; isWorking: boolean }>;
+
   attendanceLog: Array<{
     id: string;
     date: string;
@@ -56,7 +59,6 @@ export async function getAttendanceData(
       return getFallbackAttendanceData(currentMonthName, currentYearNum);
     }
 
-    // 1. Fetch today's record
     const todayStr = now.toISOString().split("T")[0];
     const todayLogs = await sql`
       SELECT check_in, check_out, status, work_location
@@ -65,22 +67,24 @@ export async function getAttendanceData(
       LIMIT 1
     `;
 
-    // 2. Fetch monthly logs
     const monthlyLogs = await sql`
       SELECT id, date, check_in, check_out, work_hours, status, work_location
       FROM attendance
       WHERE user_id = ${userId}
       ORDER BY date DESC
-      LIMIT 30
     `;
 
-    // 3. Fetch real leave balances
     const balanceLogs = await sql`
       SELECT annual_total, annual_remaining, sick_total, sick_remaining, monthly_total_hours, monthly_remaining_hours
       FROM leave_balances
       WHERE user_id = ${userId}
       LIMIT 1
     `;
+
+    const profile =
+      await sql`SELECT working_days FROM users WHERE id = ${userId} LIMIT 1`;
+    const overridesLog =
+      await sql`SELECT target_date, is_working FROM schedule_overrides WHERE user_id = ${userId}`;
 
     const todayRecord = todayLogs[0];
     const balanceRecord = balanceLogs[0];
@@ -100,7 +104,6 @@ export async function getAttendanceData(
         lateArrivals: monthlyLogs.filter((l) => l.status === "Late").length,
         totalHoursLogged: 168,
       },
-      // Now using live database values with fallbacks
       leaveBalance: {
         annualRemaining: balanceRecord?.annual_remaining ?? 0,
         annualTotal: balanceRecord?.annual_total ?? 20,
@@ -112,6 +115,15 @@ export async function getAttendanceData(
       currentMonth: currentMonthName,
       currentYear: currentYearNum,
       calendarDays: [],
+      workingDays: profile[0]?.working_days || [1, 2, 3, 4, 5],
+      overrides: overridesLog.map((o) => ({
+        date: new Date(o.target_date).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+        isWorking: o.is_working,
+      })),
       attendanceLog: monthlyLogs.map((log) => ({
         id: log.id,
         date: new Date(log.date).toLocaleDateString("en-US", {
@@ -156,12 +168,15 @@ function getFallbackAttendanceData(
       annualTotal: 20,
       sickRemaining: 6,
       sickTotal: 10,
-      monthlyTotalHours: 16, // Added
-      monthlyRemainingHours: 14, // Added
+      monthlyTotalHours: 16,
+      monthlyRemainingHours: 14,
     },
     currentMonth: month,
     currentYear: year,
     calendarDays: [],
+    // ADDED: Fallback values for the new scheduling system
+    workingDays: [1, 2, 3, 4, 5], // Default Monday to Friday
+    overrides: [], // No shift swaps in the fallback data
     attendanceLog: [
       {
         id: "1",

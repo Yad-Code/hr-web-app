@@ -68,9 +68,9 @@ async function AttendanceContent({ userId }: { userId: string }) {
       <div className="grid gap-6 grid-cols-1 xl:grid-cols-3">
         <div className="xl:col-span-2">
           <AttendanceCalendar
-            currentMonth={data.currentMonth || "July"}
-            currentYear={data.currentYear || 2026}
-            calendarDays={[]}
+            logs={data.attendanceLog}
+            workingDays={data.workingDays}
+            overrides={data.overrides}
           />
         </div>
         <div className="xl:col-span-1 space-y-4">

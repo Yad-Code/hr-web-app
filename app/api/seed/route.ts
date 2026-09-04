@@ -33,6 +33,7 @@ export async function GET() {
     await db`DROP TABLE IF EXISTS attendance`;
     await db`DROP TABLE IF EXISTS requests`;
     await db`DROP TABLE IF EXISTS schedules`;
+
     await db`DROP TABLE IF EXISTS users CASCADE`;
     await db`DROP TYPE IF EXISTS user_role`;
     await db`DROP TYPE IF EXISTS user_status`;
@@ -40,6 +41,7 @@ export async function GET() {
     await db`DROP TABLE IF EXISTS payment_methods`;
     await db`DROP TABLE IF EXISTS pay_stub_items`;
     await db`DROP TABLE IF EXISTS pay_stubs`;
+    await db`DROP TABLE IF EXISTS schedule_overrides`;
 
     //ADMIN Time and Attendance tables
     await db`DROP TABLE IF EXISTS leave_requests`;
@@ -86,9 +88,21 @@ export async function GET() {
         image_url TEXT,
         shift_start TIME DEFAULT '09:00:00' NOT NULL,
         shift_end TIME DEFAULT '17:00:00' NOT NULL,
-        shift_type VARCHAR(50) DEFAULT 'Standard (Mon - Fri)' NOT NULL,
+        shift_type VARCHAR(50) DEFAULT 'Standard' NOT NULL,
+        working_days INT[] DEFAULT '{1,2,3,4,5}',  
         last_seen_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
       )
+    `;
+
+    await db`
+      CREATE TABLE schedule_overrides (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          target_date DATE NOT NULL,
+          is_working BOOLEAN NOT NULL, -- True if taking an extra shift, False if giving one away
+          notes TEXT,
+          UNIQUE(user_id, target_date) -- Prevents duplicate conflicts on the same day
+      );
     `;
 
     await db`
@@ -422,7 +436,7 @@ CREATE TABLE self_assessments (
         blood_group, email, personal_email, personal_phone, current_address, 
         password_hash, role, status, base_salary, 
         public_org, private_org, insurance, subscription,
-        image_url, shift_start, shift_end, shift_type, last_seen_at
+        image_url, shift_start, shift_end, shift_type, working_days, last_seen_at
        )
       VALUES  
         (
@@ -433,7 +447,7 @@ CREATE TABLE self_assessments (
           'Main Street, District 101, Sulaymaniyah', ${adminPassword}, 'admin', 'Active',
           5000.00, NULL, NULL, 'Premium Health', NULL,
           'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-          '09:00:00', '17:00:00', 'Standard (Mon - Fri)', CURRENT_TIMESTAMP
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
         ),
         (
           'EMP-1006', 'Sarah Jenkins', 'Sarah', 'Head of Engineering', 'Engineering', 'Full-Time', 'CEO', '2019-05-10',
@@ -443,7 +457,7 @@ CREATE TABLE self_assessments (
           'Tech Park, Sulaymaniyah', ${adminPassword}, 'admin', 'Active',
           6000.00, NULL, NULL, 'Premium Health', NULL,
           'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-          '09:00:00', '17:00:00', 'Standard (Mon - Fri)', CURRENT_TIMESTAMP
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
         ),
         (
           'EMP-1007', 'Alex Studio', 'Alex', 'Head of Design', 'Design', 'Full-Time', 'CEO', '2020-11-20',
@@ -453,7 +467,7 @@ CREATE TABLE self_assessments (
           'Creative Hub, Sulaymaniyah', ${adminPassword}, 'admin', 'Active',
           5500.00, NULL, NULL, 'Premium Health', 'Adobe CC',
           'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
-          '09:00:00', '17:00:00', 'Standard (Mon - Fri)', CURRENT_TIMESTAMP
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
         ),
          
         (
@@ -464,7 +478,7 @@ CREATE TABLE self_assessments (
           'Salim Street, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
           4200.00, NULL, NULL, 'Standard Health', 'GitHub Copilot',
           'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
-          '09:00:00', '17:00:00', 'Standard (Mon - Fri)', CURRENT_TIMESTAMP
+          '09:00:00', '17:00:00', 'Weekend Flex', '{6,0,1}', CURRENT_TIMESTAMP
         ),
         (
           'EMP-1003', 'Lana Amin', 'Lana', 'Product Designer', 'Design', 'Full-Time', 'Alex Studio', '2023-06-10',
@@ -474,7 +488,7 @@ CREATE TABLE self_assessments (
           'Barty Street, Sulaymaniyah', ${employeePassword}, 'employee', 'Offline',
           3800.00, NULL, NULL, 'Standard Health', 'Figma Professional',
           'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-          '09:00:00', '17:00:00', 'Standard (Mon - Fri)', CURRENT_TIMESTAMP - INTERVAL '2 hours'
+          '09:00:00', '17:00:00', 'Mid-Week Core', '{2,3,4}', CURRENT_TIMESTAMP - INTERVAL '2 hours'
         ),
         (
           'EMP-1004', 'Diyar Karwan', 'Diyar', 'Backend Engineer', 'Engineering', 'Full-Time', 'Sarah Jenkins', '2021-11-20',
@@ -484,7 +498,7 @@ CREATE TABLE self_assessments (
           'Sarchinar Way, Sulaymaniyah', ${employeePassword}, 'employee', 'Offline',
           4000.00, NULL, NULL, 'Standard Health', 'AWS Builder',
           'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-          '09:00:00', '17:00:00', 'Standard (Mon - Fri)', CURRENT_TIMESTAMP - INTERVAL '1 day'
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP - INTERVAL '1 day'
         ),
         (
           'EMP-1005', 'Sara Omar', 'Sara', 'QA Engineer', 'Engineering', 'Full-Time', 'Sarah Jenkins', '2024-01-05',
@@ -494,12 +508,11 @@ CREATE TABLE self_assessments (
           'Rapakarin Quarter, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
           3500.00, NULL, NULL, 'Standard Health', NULL,
           'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80',
-          '09:00:00', '17:00:00', 'Standard (Mon - Fri)', CURRENT_TIMESTAMP - INTERVAL '5 minutes'
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP - INTERVAL '5 minutes'
         )
       
-      RETURNING id, role, name, manager_name; 
-    `;
- 
+      RETURNING id, role, name, manager_name;
+      `;
 
     await db`
       CREATE TABLE leave_requests (

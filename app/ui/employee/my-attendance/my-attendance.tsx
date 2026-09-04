@@ -1,7 +1,6 @@
 "use client";
-
-import Link from "next/link";
-import { useState, useTransition } from "react";
+ 
+import { useState, useTransition, useMemo } from "react";
 import {
   MapPin,
   Loader2,
@@ -10,13 +9,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Filter,
 } from "lucide-react";
 
 import {
   TodayAttendance,
   AttendanceSummary,
-  LeaveBalance,
-  CalendarDay,
+  LeaveBalance, 
   AttendanceLog,
 } from "@/app/lib/employeeDashboard/attendance/definitions";
 
@@ -24,8 +23,8 @@ import {
   toggleCheckInStatus,
   submitWFHRequest,
 } from "@/app/lib/employeeDashboard/employee/actions";
-
 import { respondToExchangeRequest } from "@/app/lib/employeeDashboard/employee/actions";
+
 export function SectionHeader({
   title,
   description,
@@ -191,86 +190,60 @@ export function AttendanceStatsGrid({
 }
 
 interface AttendanceCalendarProps {
-  currentMonth: string;
-  currentYear: number;
-  calendarDays?: (CalendarDay | number)[];
-  /**
-   * Array of day indexes considered working days.
-   * Day indexes: 0 = Sun, 1 = Mon, 2 = Tue, 3 = Wed, 4 = Thu, 5 = Fri, 6 = Sat
-   * Default below: [1, 2, 3, 4, 5] (Monday to Friday)
-   * Change to [0, 1, 2, 3, 4] if working Sunday to Thursday.
-   */
-  workingDays?: number[];
+  logs?: AttendanceLog[];  
+  workingDays?: number[]; 
+  overrides?: { date: string; isWorking: boolean }[]; 
 }
 
 export function AttendanceCalendar({
-  currentMonth,
-  currentYear,
-  calendarDays = [],
+  logs = [],
   workingDays = [1, 2, 3, 4, 5],
+  overrides = [],  
 }: AttendanceCalendarProps) {
+  const [currentDate, setCurrentDate] = useState(new Date());
+
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+
+  const monthIndex = currentDate.getMonth();
+  const yearNum = currentDate.getFullYear();
+  const monthName = currentDate.toLocaleString("default", { month: "long" });
+
+  // Calculate calendar grid
+  const daysInMonth = new Date(yearNum, monthIndex + 1, 0).getDate();
+  const startDayOfWeek = new Date(yearNum, monthIndex, 1).getDay();
+
+  // Create padding for the first row
+  const paddedDays = [
+    ...Array.from({ length: startDayOfWeek }, () => null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
 
-  const monthIndex = new Date(`${currentMonth} 1, ${currentYear}`).getMonth();
-  const daysInMonth = new Date(currentYear, monthIndex + 1, 0).getDate();
-  const startDayOfWeek = new Date(currentYear, monthIndex, 1).getDay();
-
-  const prevMonthIndex = monthIndex === 0 ? 11 : monthIndex - 1;
-  const prevYear = monthIndex === 0 ? currentYear - 1 : currentYear;
-
-  const nextMonthIndex = monthIndex === 11 ? 0 : monthIndex + 1;
-  const nextYear = monthIndex === 11 ? currentYear + 1 : currentYear;
-
-  const normalizedDays: CalendarDay[] =
-    calendarDays && calendarDays.length > 0
-      ? calendarDays.map((d) => (typeof d === "number" ? { date: d } : d))
-      : Array.from({ length: daysInMonth }, (_, i) => ({ date: i + 1 }));
-
-  const hasLeadingPadding =
-    normalizedDays.length > 0 && normalizedDays[0].date === null;
-  const paddedDays: CalendarDay[] = hasLeadingPadding
-    ? normalizedDays
-    : [
-        ...Array.from({ length: startDayOfWeek }, () => ({ date: null })),
-        ...normalizedDays,
-      ];
+  // Navigation handlers (Instant, no server reload)
+  const prevMonth = () => setCurrentDate(new Date(yearNum, monthIndex - 1, 1));
+  const nextMonth = () => setCurrentDate(new Date(yearNum, monthIndex + 1, 1));
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs text-left h-full">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs text-left h-full flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <div className="flex items-center gap-4">
-          <h3 className="text-sm font-bold text-slate-900 w-28">
-            {currentMonth} {currentYear}
+          <h3 className="text-sm font-bold text-slate-900 w-32">
+            {monthName} {yearNum}
           </h3>
 
-          <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5">
-            <Link
-              href={`?month=${monthNames[prevMonthIndex]}&year=${prevYear}`}
-              className="p-1 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-500 hover:text-slate-900"
+          <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5 shadow-xs">
+            <button
+              onClick={prevMonth}
+              className="p-1 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-500 hover:text-slate-900 cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4" />
-            </Link>
+            </button>
             <div className="w-px h-4 bg-slate-200 mx-0.5" />
-            <Link
-              href={`?month=${monthNames[nextMonthIndex]}&year=${nextYear}`}
-              className="p-1 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-500 hover:text-slate-900"
+            <button
+              onClick={nextMonth}
+              className="p-1 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-500 hover:text-slate-900 cursor-pointer"
             >
               <ChevronRight className="w-4 h-4" />
-            </Link>
+            </button>
           </div>
         </div>
 
@@ -281,86 +254,86 @@ export function AttendanceCalendar({
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-slate-200" />
-            <span>Off Day / Weekend</span>
+            <span>Off Day</span>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-7 gap-1 text-center mb-2">
-        {weekDays.map((day, idx) => {
-          const isWorkHeader = workingDays.includes(idx);
-          return (
-            <span
-              key={day}
-              className={`text-[10px] font-bold uppercase ${
-                isWorkHeader ? "text-slate-700" : "text-slate-300"
-              }`}
-            >
-              {day}
-            </span>
-          );
-        })}
+        {weekDays.map((day, idx) => (
+          <span
+            key={day}
+            className={`text-[10px] font-bold uppercase tracking-wider ${
+              workingDays.includes(idx) ? "text-slate-700" : "text-slate-300"
+            }`}
+          >
+            {day}
+          </span>
+        ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1.5">
-        {paddedDays.map((item, idx) => {
-          const dayNum = item?.date;
-
-          if (dayNum === null || dayNum === undefined) {
+      <div className="grid grid-cols-7 gap-1.5 flex-1">
+        {paddedDays.map((dayNum, idx) => {
+          if (dayNum === null) {
             return (
               <div
                 key={`pad-${idx}`}
-                className="min-h-13 bg-slate-50/30 rounded-xl border border-dashed border-slate-100"
+                className="min-h-[3.5rem] bg-slate-50/30 rounded-xl border border-dashed border-slate-100"
               />
             );
           }
 
-          const dateObj = new Date(currentYear, monthIndex, dayNum);
-          const dayOfWeek = dateObj.getDay();
-          const isWorkingDay = workingDays.includes(dayOfWeek);
+          const dateObj = new Date(yearNum, monthIndex, dayNum);
+          const dateString = dateObj.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          });
 
-          const status = item.status?.toLowerCase();
+          let isWorkingDay = workingDays.includes(dateObj.getDay());
+          let overrideBadge = null;
+
+          const override = overrides.find((o) => o.date === dateString);
+          if (override) {
+            isWorkingDay = override.isWorking;
+            overrideBadge = override.isWorking
+              ? "Shift Swapped In"
+              : "Shift Swapped Out";
+          }
+
+          const logForDay = logs.find((log) => log.date === dateString);
+          const status = logForDay?.status?.toLowerCase();
+
+          let bgClass = "bg-white border-slate-200 text-slate-800";
+          let statusText = overrideBadge || "Scheduled";
 
           if (!isWorkingDay) {
-            return (
-              <div
-                key={`day-${dayNum}-${idx}`}
-                className="p-2 rounded-xl text-center border text-xs min-h-13 flex flex-col items-center justify-between bg-slate-100/60 border-slate-200/50 text-slate-400 opacity-60"
-              >
-                <span className="font-bold text-[11px]">{dayNum}</span>
-                <span className="text-[9px] font-medium uppercase tracking-tight">
-                  Off
-                </span>
-              </div>
-            );
+            bgClass =
+              "bg-slate-50/50 border-slate-100 text-slate-400 opacity-70";
+            statusText = overrideBadge || "Off";
+          } else if (status === "present") {
+            bgClass = "bg-emerald-50 border-emerald-200 text-emerald-900";
+            statusText = "Present";
+          } else if (status === "late") {
+            bgClass = "bg-amber-50 border-amber-200 text-amber-900";
+            statusText = "Late";
+          } else if (status === "absent") {
+            bgClass = "bg-rose-50 border-rose-200 text-rose-900";
+            statusText = "Absent";
+          } else if (status === "on leave") {
+            bgClass = "bg-purple-50 border-purple-200 text-purple-900";
+            statusText = "Leave";
           }
 
           return (
             <div
-              key={`day-${dayNum}-${idx}`}
-              className={`p-2 rounded-xl text-center border text-xs min-h-13 flex flex-col items-center justify-between transition-all ${
-                status === "present"
-                  ? "bg-emerald-50 border-emerald-200 text-emerald-900 font-semibold"
-                  : status === "late"
-                    ? "bg-amber-50 border-amber-200 text-amber-900 font-semibold"
-                    : status === "absent"
-                      ? "bg-rose-50 border-rose-200 text-rose-900 font-semibold"
-                      : "bg-white border-slate-300 text-slate-800 shadow-2xs hover:border-indigo-400"
-              }`}
+              key={`day-${dayNum}`}
+              className={`p-2 rounded-xl text-center border min-h-[3.5rem] flex flex-col justify-between ${bgClass}`}
             >
-              <span className="font-bold text-[11px] text-slate-900">
-                {dayNum}
+              <span className="font-bold text-[11px]">{dayNum}</span>
+              <span className="text-[9px] font-bold uppercase">
+                {statusText}
               </span>
-
-              {item.status ? (
-                <span className="text-[9px] font-bold tracking-tight opacity-90 capitalize">
-                  {item.status}
-                </span>
-              ) : (
-                <span className="text-[9px] font-medium text-slate-400">
-                  Scheduled
-                </span>
-              )}
             </div>
           );
         })}
@@ -423,56 +396,172 @@ export function LeaveBalanceCard({
 
 export function AttendanceLogTable({
   logs,
+  month,
+  year,
 }: {
   logs: AttendanceLog[];
   month?: string;
   year?: number;
-}) {
+}) { 
+  const [currentDate, setCurrentDate] = useState(() => {
+    const date = new Date();
+    if (month && year) {
+      date.setMonth(new Date(Date.parse(`${month} 1, 2000`)).getMonth());
+      date.setFullYear(year);
+    }
+    return date;
+  });
+
+  const [statusFilter, setStatusFilter] = useState("All");
+
+  // Filter instantly without hitting the server
+  const filteredLogs = useMemo(() => {
+    return logs.filter((log) => {
+      const logDate = new Date(log.date);
+      const matchesMonth =
+        logDate.getMonth() === currentDate.getMonth() &&
+        logDate.getFullYear() === currentDate.getFullYear();
+      const matchesStatus =
+        statusFilter === "All" ||
+        log.status.toLowerCase() === statusFilter.toLowerCase();
+
+      return matchesMonth && matchesStatus;
+    });
+  }, [logs, currentDate, statusFilter]);
+
+  const monthName = currentDate.toLocaleString("default", { month: "long" });
+  const yearNum = currentDate.getFullYear();
+
   return (
-    <div className="bg-white border border-slate-100 rounded-2xl shadow-xs overflow-hidden text-left">
-      <div className="p-4 border-b border-slate-100">
-        <h3 className="text-sm font-bold text-slate-900">Attendance History</h3>
+    <div className="bg-white border border-slate-100 rounded-2xl shadow-xs overflow-hidden text-left flex flex-col">
+      <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+            <Clock className="w-4 h-4" />
+          </div>
+          <h3 className="text-sm font-bold text-slate-900">
+            Attendance History
+          </h3>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-xs">
+            <Filter className="w-3.5 h-3.5 text-slate-400" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="text-xs font-semibold text-slate-600 outline-none bg-transparent cursor-pointer"
+            >
+              <option value="All">All Statuses</option>
+              <option value="present">Present</option>
+              <option value="late">Late</option>
+              <option value="absent">Absent</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5 shadow-xs">
+            <button
+              onClick={() =>
+                setCurrentDate(
+                  new Date(
+                    currentDate.getFullYear(),
+                    currentDate.getMonth() - 1,
+                    1,
+                  ),
+                )
+              }
+              className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500 cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-xs font-bold text-slate-700 w-24 text-center">
+              {monthName} {yearNum}
+            </span>
+            <button
+              onClick={() =>
+                setCurrentDate(
+                  new Date(
+                    currentDate.getFullYear(),
+                    currentDate.getMonth() + 1,
+                    1,
+                  ),
+                )
+              }
+              className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500 cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </div>
-      <div className="overflow-x-auto">
+
+      <div className="overflow-x-auto min-h-[300px]">
         <table className="w-full text-left text-xs text-slate-600">
-          <thead className="bg-slate-50/80 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+          <thead className="bg-slate-50 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
             <tr>
-              <th className="px-4 py-3">Date</th>
-              <th className="px-4 py-3">Check In</th>
-              <th className="px-4 py-3">Check Out</th>
-              <th className="px-4 py-3">Work Hours</th>
-              <th className="px-4 py-3">Status</th>
+              <th className="px-5 py-3">Date</th>
+              <th className="px-5 py-3">Check In</th>
+              <th className="px-5 py-3">Check Out</th>
+              <th className="px-5 py-3">Work Hours</th>
+              <th className="px-5 py-3">Location</th>
+              <th className="px-5 py-3">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {logs.map((log) => (
-              <tr key={log.id} className="hover:bg-slate-50/50">
-                <td className="px-4 py-3 font-medium text-slate-900">
-                  {log.date}
-                </td>
-                <td className="px-4 py-3">{log.checkIn || "--:--"}</td>
-                <td className="px-4 py-3">{log.checkOut || "--:--"}</td>
-                <td className="px-4 py-3">{log.workHours || "--"}</td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                      log.status === "Present"
-                        ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-                        : "bg-amber-50 text-amber-700 border-amber-100"
-                    }`}
-                  >
-                    {log.status}
-                  </span>
+            {filteredLogs.length > 0 ? (
+              filteredLogs.map((log) => (
+                <tr
+                  key={log.id}
+                  className="hover:bg-slate-50/50 transition-colors"
+                >
+                  <td className="px-5 py-3 font-bold text-slate-800">
+                    {log.date}
+                  </td>
+                  <td className="px-5 py-3 font-medium text-slate-600">
+                    {log.checkIn || "--:--"}
+                  </td>
+                  <td className="px-5 py-3 font-medium text-slate-600">
+                    {log.checkOut || "--:--"}
+                  </td>
+                  <td className="px-5 py-3 font-medium text-slate-600">
+                    {log.workHours || "--"}
+                  </td>
+                  <td className="px-5 py-3 text-slate-500">
+                    {log.location || "Office"}
+                  </td>
+                  <td className="px-5 py-3">
+                    <span
+                      className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wide uppercase ${
+                        log.status === "Present"
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-100/50"
+                          : log.status === "Late"
+                            ? "bg-amber-50 text-amber-700 border border-amber-100/50"
+                            : "bg-rose-50 text-rose-700 border border-rose-100/50"
+                      }`}
+                    >
+                      {log.status}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={6} className="px-5 py-12 text-center">
+                  <p className="text-sm font-semibold text-slate-500">
+                    No attendance logs found for {monthName}.
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Check a different month or clear your filters.
+                  </p>
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
     </div>
   );
 }
-
 type RequestType = "wfh" | "timeoff" | "dayoff" | "exchange";
 type LeaveCategory = "annual" | "sick" | "unpaid";
 

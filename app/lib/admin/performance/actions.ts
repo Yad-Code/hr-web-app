@@ -55,8 +55,7 @@ export async function createNewGoal(formData: FormData): Promise<void> {
     console.error("Database Error:", error);
     return;
   }
-
-  // Revalidate the cache for the performance overview and redirect
+ 
   revalidatePath("/dashboard/performance");
   redirect("/dashboard/performance");
 }
@@ -224,4 +223,40 @@ export async function scheduleOneOnOneMeeting(
   }
 
   redirect("/dashboard/performance/meetings");
+}
+
+export async function approveLeaveRequest(requestId: string) {
+  try { 
+    const requestResult = await db`SELECT * FROM leave_requests WHERE id = ${requestId}`;
+    const request = requestResult[0];
+
+    if (!request) return { success: false, error: "Request not found." };
+ 
+    await db`UPDATE leave_requests SET status = 'Approved' WHERE id = ${requestId}`;
+ 
+    if (request.type === 'exchange' && request.helper_id) {
+       
+      await db`
+        INSERT INTO schedule_overrides (user_id, target_date, is_working, notes)
+        VALUES 
+          (${request.user_id}, ${request.original_date}, false, 'Shift given to helper'),
+          (${request.user_id}, ${request.exchange_date}, true, 'Shift taken from helper')
+        ON CONFLICT (user_id, target_date) DO UPDATE SET is_working = EXCLUDED.is_working
+      `;
+ 
+      await db`
+        INSERT INTO schedule_overrides (user_id, target_date, is_working, notes)
+        VALUES 
+          (${request.helper_id}, ${request.original_date}, true, 'Covering requester shift'),
+          (${request.helper_id}, ${request.exchange_date}, false, 'Shift given to requester')
+        ON CONFLICT (user_id, target_date) DO UPDATE SET is_working = EXCLUDED.is_working
+      `;
+    }
+
+    revalidatePath("/", "layout");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to approve request:", error);
+    return { success: false, error: "Database transaction failed." };
+  }
 }

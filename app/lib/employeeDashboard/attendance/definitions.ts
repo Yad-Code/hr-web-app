@@ -45,6 +45,7 @@ export interface AttendanceLog {
   checkOut: string | null;
   workHours: string | null;
   status: AttendanceStatus | string;
+  location: string;  
 }
 
 export interface AttendanceData {
