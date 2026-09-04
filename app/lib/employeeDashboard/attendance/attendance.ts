@@ -32,7 +32,7 @@ export interface AttendanceData {
     date: string;
     status: "present" | "absent" | "late" | "leave" | "weekend" | "upcoming";
     checkIn?: string;
-  }>; 
+  }>;
   workingDays: number[];
   overrides: Array<{ date: string; isWorking: boolean }>;
 
@@ -116,14 +116,23 @@ export async function getAttendanceData(
       currentYear: currentYearNum,
       calendarDays: [],
       workingDays: profile[0]?.working_days || [1, 2, 3, 4, 5],
-      overrides: overridesLog.map((o) => ({
-        date: new Date(o.target_date).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
-        isWorking: o.is_working,
-      })),
+      overrides: overridesLog.map((o) => {
+        const dateStr =
+          typeof o.target_date === "string"
+            ? o.target_date
+            : o.target_date.toISOString();
+        const [y, m, d] = dateStr.split("T")[0].split("-");
+        const safeDate = new Date(Number(y), Number(m) - 1, Number(d));
+
+        return {
+          date: safeDate.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          }),
+          isWorking: o.is_working,
+        };
+      }),
       attendanceLog: monthlyLogs.map((log) => ({
         id: log.id,
         date: new Date(log.date).toLocaleDateString("en-US", {

@@ -37,15 +37,13 @@ function ExportButton() {
 async function AttendanceContent({ userId }: { userId: string }) {
   const data = await getAttendanceData(userId);
 
-  // 1. Get the logged-in user's department
-  const userProfile = await sql`
-    SELECT department FROM users WHERE id = ${userId}
-  `;
+  const userProfile =
+    await sql`SELECT department FROM users WHERE id = ${userId}`;
   const userDept = userProfile[0]?.department;
 
-  // 2. Fetch ONLY colleagues in the same department
+  // UPDATED: Fetch working_days array for each colleague
   const colleaguesQuery = await sql`
-    SELECT id, name, job_title 
+    SELECT id, name, job_title, working_days 
     FROM users 
     WHERE role = 'employee' 
       AND id != ${userId}
@@ -57,6 +55,7 @@ async function AttendanceContent({ userId }: { userId: string }) {
     id: string;
     name: string;
     job_title: string | null;
+    working_days: number[];
   }[];
 
   const pendingExchangesQuery = await sql`
@@ -71,7 +70,6 @@ async function AttendanceContent({ userId }: { userId: string }) {
   return (
     <>
       <TodayStatusCard data={data.today} />
-
       <AttendanceStatsGrid
         summary={data.summary}
         leaveBalance={data.leaveBalance}
@@ -91,16 +89,18 @@ async function AttendanceContent({ userId }: { userId: string }) {
           <LeaveBalanceCard leaveBalance={data.leaveBalance} />
         </div>
       </div>
-
+ 
       <AttendanceLogTable
         logs={data.attendanceLog}
+        overrides={data.overrides}
         month={data.currentMonth}
         year={data.currentYear}
       />
-
+ 
       <AbsenceRequestModal
         leaveBalance={data.leaveBalance}
         colleagues={colleagues}
+        workingDays={data.workingDays}
       />
     </>
   );

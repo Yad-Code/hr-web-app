@@ -396,10 +396,12 @@ export function LeaveBalanceCard({
 
 export function AttendanceLogTable({
   logs,
+  overrides = [],
   month,
   year,
 }: {
   logs: AttendanceLog[];
+  overrides?: { date: string; isWorking: boolean }[];
   month?: string;
   year?: number;
 }) {
@@ -509,41 +511,62 @@ export function AttendanceLogTable({
           </thead>
           <tbody className="divide-y divide-slate-100">
             {filteredLogs.length > 0 ? (
-              filteredLogs.map((log) => (
-                <tr
-                  key={log.id}
-                  className="hover:bg-slate-50/50 transition-colors"
-                >
-                  <td className="px-5 py-3 font-bold text-slate-800">
-                    {log.date}
-                  </td>
-                  <td className="px-5 py-3 font-medium text-slate-600">
-                    {log.checkIn || "--:--"}
-                  </td>
-                  <td className="px-5 py-3 font-medium text-slate-600">
-                    {log.checkOut || "--:--"}
-                  </td>
-                  <td className="px-5 py-3 font-medium text-slate-600">
-                    {log.workHours || "--"}
-                  </td>
-                  <td className="px-5 py-3 text-slate-500">
-                    {log.location || "Office"}
-                  </td>
-                  <td className="px-5 py-3">
-                    <span
-                      className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wide uppercase ${
-                        log.status === "Present"
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-100/50"
-                          : log.status === "Late"
-                            ? "bg-amber-50 text-amber-700 border border-amber-100/50"
-                            : "bg-rose-50 text-rose-700 border border-rose-100/50"
-                      }`}
-                    >
-                      {log.status}
-                    </span>
-                  </td>
-                </tr>
-              ))
+              filteredLogs.map((log) => {
+                const override = overrides.find((o) => o.date === log.date);
+                let displayStatus = log.status;
+                let badgeClass = "";
+
+                if (override && !override.isWorking) {
+                  displayStatus = "Swapped Out";
+                  badgeClass = "bg-slate-100 text-slate-500 border-slate-200";
+                } else if (override && override.isWorking) {
+                  displayStatus =
+                    log.status === "Present"
+                      ? "Present (Swapped In)"
+                      : `${log.status} (Swapped In)`;
+                  badgeClass =
+                    log.status === "Present"
+                      ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                      : "bg-amber-50 text-amber-700 border border-amber-200";
+                } else {
+                  // Standard badge colors
+                  badgeClass =
+                    log.status === "Present"
+                      ? "bg-emerald-50 text-emerald-700 border border-emerald-100/50"
+                      : log.status === "Late"
+                        ? "bg-amber-50 text-amber-700 border border-amber-100/50"
+                        : "bg-rose-50 text-rose-700 border border-rose-100/50";
+                }
+                return (
+                  <tr
+                    key={log.id}
+                    className="hover:bg-slate-50/50 transition-colors"
+                  >
+                    <td className="px-5 py-3 font-bold text-slate-800">
+                      {log.date}
+                    </td>
+                    <td className="px-5 py-3 font-medium text-slate-600">
+                      {log.checkIn || "--:--"}
+                    </td>
+                    <td className="px-5 py-3 font-medium text-slate-600">
+                      {log.checkOut || "--:--"}
+                    </td>
+                    <td className="px-5 py-3 font-medium text-slate-600">
+                      {log.workHours || "--"}
+                    </td>
+                    <td className="px-5 py-3 text-slate-500">
+                      {log.location || "Office"}
+                    </td>
+                    <td className="px-5 py-3">
+                      <span
+                        className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wide uppercase ${badgeClass}`}
+                      >
+                        {displayStatus}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
                 <td colSpan={6} className="px-5 py-12 text-center">
@@ -568,9 +591,16 @@ type LeaveCategory = "annual" | "sick" | "unpaid";
 export function AbsenceRequestModal({
   leaveBalance,
   colleagues = [],
+  workingDays = [1, 2, 3, 4, 5],
 }: {
-  leaveBalance?: LeaveBalance;
-  colleagues?: { id: string; name: string; job_title: string | null }[];
+  leaveBalance?: LeaveBalance; 
+  colleagues?: {
+    id: string;
+    name: string;
+    job_title: string | null;
+    working_days: number[];
+  }[];
+  workingDays?: number[];
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [requestType, setRequestType] = useState<RequestType>("wfh");
@@ -580,6 +610,15 @@ export function AbsenceRequestModal({
   const [helperId, setHelperId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+ 
+  const [originalDate, setOriginalDate] = useState("");
+  const [exchangeDate, setExchangeDate] = useState("");
+
+  const getDayOfWeek = (dateStr: string) => {
+    if (!dateStr) return -1;
+    const [y, m, d] = dateStr.split("-");
+    return new Date(Number(y), Number(m) - 1, Number(d)).getDay();
+  };
 
   const calculateTotalDays = () => {
     if (!startDate || !endDate) return 0;
@@ -612,6 +651,32 @@ export function AbsenceRequestModal({
 
       if (leaveCategory === "sick" && totalDays > leaveBalance.sickRemaining) {
         return `Requested duration (${totalDays} days) exceeds remaining Sick Leave (${leaveBalance.sickRemaining} days available).`;
+      }
+    }
+
+    if (requestType === "exchange") {
+      const origDay = getDayOfWeek(originalDate);
+      const exchDay = getDayOfWeek(exchangeDate);
+      const helper = colleagues.find((c) => c.id === helperId);
+ 
+      if (originalDate && !workingDays.includes(origDay)) {
+        return "Original Date must be one of your normally scheduled working days.";
+      }
+ 
+      if (exchangeDate && workingDays.includes(exchDay)) {
+        return "You are already scheduled to work on the Target Exchange Date.";
+      }
+ 
+      if (
+        helper &&
+        exchangeDate &&
+        (!helper.working_days || !helper.working_days.includes(exchDay))
+      ) {
+        return `The Exchange Date is not a scheduled working day for ${helper.name}.`;
+      }
+ 
+      if (helper && originalDate && helper.working_days?.includes(origDay)) {
+        return `${helper.name} is already scheduled to work on your Original Date.`;
       }
     }
 
@@ -788,15 +853,18 @@ export function AbsenceRequestModal({
                           </option>
                         ))
                       )}
-                    </select> 
+                    </select>
                   </div>
                   <div>
                     <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
                       Original Day Off / Shift Date
                     </label>
+                    {/* FIXED 3: Added value and onChange binding */}
                     <input
                       type="date"
                       name="originalDate"
+                      value={originalDate}
+                      onChange={(e) => setOriginalDate(e.target.value)}
                       required
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-indigo-600"
                     />
@@ -805,9 +873,12 @@ export function AbsenceRequestModal({
                     <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
                       Target Exchange Date
                     </label>
+                    {/* FIXED 4: Added value and onChange binding */}
                     <input
                       type="date"
                       name="exchangeDate"
+                      value={exchangeDate}
+                      onChange={(e) => setExchangeDate(e.target.value)}
                       required
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-indigo-600"
                     />
@@ -941,6 +1012,21 @@ export function PendingExchangesWidget({
     });
   };
 
+  // FIXED 5: Added the Date Formatter back to prevent timezone day-shifting
+  const formatSafeDate = (dateVal: string | Date) => {
+    if (typeof dateVal === "string" && dateVal.includes("-")) {
+      const [y, m, d] = dateVal.split("T")[0].split("-");
+      return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString(
+        "en-US",
+        { month: "short", day: "numeric" },
+      );
+    }
+    return new Date(dateVal).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+  };
+
   return (
     <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 shadow-xs text-left space-y-4 animate-in fade-in slide-in-from-bottom-2">
       <h3 className="text-sm font-bold text-amber-900 flex items-center gap-2">
@@ -962,17 +1048,10 @@ export function PendingExchangesWidget({
             <div className="text-[11px] text-slate-600 bg-amber-50/50 p-2 rounded-lg border border-amber-100/50 space-y-1">
               <p>
                 <strong>Their Shift:</strong>{" "}
-                {new Date(req.original_date).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })}
+                {formatSafeDate(req.original_date)}
               </p>
               <p>
-                <strong>Your Shift:</strong>{" "}
-                {new Date(req.exchange_date).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })}
+                <strong>Your Shift:</strong> {formatSafeDate(req.exchange_date)}
               </p>
               {req.reason && (
                 <p className="italic text-slate-500 mt-1 border-t border-amber-100 pt-1">

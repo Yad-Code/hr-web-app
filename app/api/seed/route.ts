@@ -430,7 +430,7 @@ CREATE TABLE self_assessments (
     const employeePassword = await bcrypt.hash("EmployeePass123", 10);
 
     const seededUsers = await db`
-      INSERT INTO users (
+     INSERT INTO users (
         employee_id, name, preferred_name, job_title, job_family, employment_type, manager_name, join_date, 
         department, branch, date_of_birth, age, gender, nationality, marital_status, 
         blood_group, email, personal_email, personal_phone, current_address, 
@@ -472,7 +472,7 @@ CREATE TABLE self_assessments (
          
         (
           'EMP-1002', 'Yad Developer', 'Yad', 'Software Engineer', 'Engineering', 'Full-Time', 'Sarah Jenkins', '2022-03-01',
-          'Software Engineering', 'HQ - Sulaymaniyah',
+          'Engineering', 'HQ - Sulaymaniyah', -- CHANGED TO Engineering
           '2002-05-20', 24, 'Male', 'Iraqi', 'Single', 'A+',
           'yad@company.com', 'yad.dev@gmail.com', '+964 770 222 3344',
           'Salim Street, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
@@ -482,7 +482,7 @@ CREATE TABLE self_assessments (
         ),
         (
           'EMP-1003', 'Lana Amin', 'Lana', 'Product Designer', 'Design', 'Full-Time', 'Alex Studio', '2023-06-10',
-          'UI/UX Design', 'HQ - Sulaymaniyah',
+          'Design', 'HQ - Sulaymaniyah', -- CHANGED TO Design
           '1997-09-12', 28, 'Female', 'Iraqi', 'Single', 'B+',
           'lana@company.com', 'lana.amin@gmail.com', '+964 770 333 4455',
           'Barty Street, Sulaymaniyah', ${employeePassword}, 'employee', 'Offline',
@@ -492,7 +492,7 @@ CREATE TABLE self_assessments (
         ),
         (
           'EMP-1004', 'Diyar Karwan', 'Diyar', 'Backend Engineer', 'Engineering', 'Full-Time', 'Sarah Jenkins', '2021-11-20',
-          'Backend Infrastructure', 'HQ - Sulaymaniyah',
+          'Engineering', 'HQ - Sulaymaniyah', -- CHANGED TO Engineering
           '1995-11-04', 30, 'Male', 'Iraqi', 'Married', 'O-',
           'diyar@company.com', 'diyar.karwan@gmail.com', '+964 770 444 5566',
           'Sarchinar Way, Sulaymaniyah', ${employeePassword}, 'employee', 'Offline',
@@ -502,7 +502,7 @@ CREATE TABLE self_assessments (
         ),
         (
           'EMP-1005', 'Sara Omar', 'Sara', 'QA Engineer', 'Engineering', 'Full-Time', 'Sarah Jenkins', '2024-01-05',
-          'Quality Assurance', 'HQ - Sulaymaniyah',
+          'Engineering', 'HQ - Sulaymaniyah', -- CHANGED TO Engineering
           '1999-01-28', 27, 'Female', 'Iraqi', 'Single', 'AB+',
           'sara@company.com', 'sara.omar@gmail.com', '+964 770 555 6677',
           'Rapakarin Quarter, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
