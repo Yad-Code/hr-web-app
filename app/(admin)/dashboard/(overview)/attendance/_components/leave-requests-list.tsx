@@ -16,14 +16,9 @@ export function LeaveRequestsList({
 
   const handleStatusUpdate = (id: string, status: "Approved" | "Rejected") => {
     setProcessingId(id);
-
     startTransition(async () => {
       const result = await updateLeaveRequestStatus(id, status);
-
-      if (!result.success) {
-        alert(result.error);
-      }
-
+      if (!result.success) alert(result.error);
       setProcessingId(null);
     });
   };
@@ -47,9 +42,11 @@ export function LeaveRequestsList({
             const isCurrentlyProcessing =
               isPending && processingId === request.id;
 
+            // Check if start and end dates are identical for cleaner UI
+            const isSingleDay = request.startDate === request.endDate;
+
             return (
               <div key={request.id} className="p-4 space-y-3">
-                {/* 👈 Updated: Spread out the items to make room for the timestamp */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <Image
@@ -67,20 +64,22 @@ export function LeaveRequestsList({
                         {request.employeeName}
                       </p>
 
-                      {/* 👈 Added: Job Title */}
                       {request.jobTitle && (
                         <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
                           {request.jobTitle}
                         </p>
                       )}
 
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                        {request.leaveType} • {request.days} Days
+                      {/* Evaluates real data: Shows Hours if it exists, otherwise Days */}
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 capitalize">
+                        {request.leaveType} •{" "}
+                        {request.hours && request.hours > 0
+                          ? `${request.hours} Hours`
+                          : `${request.days} Days`}
                       </p>
                     </div>
                   </div>
 
-                  {/* 👈 Added: Requested Time Timestamp */}
                   {request.createdAt && (
                     <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 text-right whitespace-nowrap">
                       {new Date(request.createdAt).toLocaleDateString("en-US", {
@@ -99,14 +98,20 @@ export function LeaveRequestsList({
                       month: "short",
                       day: "numeric",
                     })}
-                    {" - "}
-                    {new Date(request.endDate).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })}
+
+                    {/* Only show End Date if it spans multiple days */}
+                    {!isSingleDay && (
+                      <>
+                        {" - "}
+                        {new Date(request.endDate).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </>
+                    )}
                   </span>
+
                   <div className="flex gap-1.5">
-                    {/* Reject Button */}
                     <button
                       onClick={() => handleStatusUpdate(request.id, "Rejected")}
                       disabled={isPending}
@@ -119,7 +124,6 @@ export function LeaveRequestsList({
                       )}
                     </button>
 
-                    {/* Approve Button */}
                     <button
                       onClick={() => handleStatusUpdate(request.id, "Approved")}
                       disabled={isPending}

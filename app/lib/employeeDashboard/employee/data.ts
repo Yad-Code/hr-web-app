@@ -7,7 +7,7 @@ import { Employee } from "@/app/lib/employeeList/definitions";
 export interface PendingRequest {
   id: string;
   employee_name: string;
-  job_title: string | null; 
+  job_title: string | null;
   image_url: string | null;
   type: "time-off" | "expense";
   description: string;
@@ -118,7 +118,6 @@ export async function getCurrentUserRole() {
   return session?.user?.role || "employee";
 }
 
- 
 export async function fetchPendingAdminRequests() {
   try {
     const data = await sql`
@@ -143,7 +142,8 @@ export async function fetchPendingAdminRequests() {
         u.image_url AS employee_image
       FROM leave_requests r
       JOIN users u ON r.user_id = u.id
-      WHERE r.status ILIKE 'pending'
+      -- ONLY SHOW PENDING IF IT IS NOT AN EXCHANGE, OR IF THE HELPER ALREADY ACCEPTED
+      WHERE r.status ILIKE 'pending' AND (r.type != 'exchange' OR r.helper_status = 'Accepted')
       ORDER BY r.created_at DESC
     `;
     return data;

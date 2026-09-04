@@ -11,6 +11,8 @@ import {
   AttendanceLogTable,
   AbsenceRequestModal,
   SectionHeader,
+  PendingExchangesWidget,
+  PendingExchangeRequest,
 } from "@/app/ui/employee/my-attendance/my-attendance";
 import {
   TodayStatusSkeleton,
@@ -34,6 +36,25 @@ function ExportButton() {
 
 async function AttendanceContent({ userId }: { userId: string }) {
   const data = await getAttendanceData(userId);
+  const colleaguesQuery = await sql`
+  SELECT id, name FROM users 
+  WHERE role = 'employee' AND id != ${userId}
+  ORDER BY name ASC
+`;
+
+  const colleagues = colleaguesQuery as unknown as {
+    id: string;
+    name: string;
+  }[];
+
+  const pendingExchangesQuery = await sql`
+    SELECT r.id, r.original_date, r.exchange_date, r.reason, u.name as requester_name
+    FROM leave_requests r
+    JOIN users u ON r.user_id = u.id
+    WHERE r.helper_id = ${userId} AND r.helper_status = 'Pending'
+  `;
+  const pendingExchanges =
+    pendingExchangesQuery as unknown as PendingExchangeRequest[];
 
   return (
     <>
@@ -53,6 +74,7 @@ async function AttendanceContent({ userId }: { userId: string }) {
           />
         </div>
         <div className="xl:col-span-1 space-y-4">
+          <PendingExchangesWidget requests={pendingExchanges} />
           <ShiftSummaryCard data={data.today} />
           <LeaveBalanceCard leaveBalance={data.leaveBalance} />
         </div>
@@ -64,8 +86,10 @@ async function AttendanceContent({ userId }: { userId: string }) {
         year={data.currentYear}
       />
 
-      {/* Moved inside so it receives the user's fetched leave balances */}
-      <AbsenceRequestModal leaveBalance={data.leaveBalance} />
+      <AbsenceRequestModal
+        leaveBalance={data.leaveBalance}
+        colleagues={colleagues}
+      />
     </>
   );
 }

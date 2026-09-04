@@ -499,26 +499,28 @@ CREATE TABLE self_assessments (
       
       RETURNING id, role, name, manager_name; 
     `;
-
-    //ADMIN: Time and Attendance Tables
+ 
 
     await db`
       CREATE TABLE leave_requests (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        type VARCHAR(50) NOT NULL,                 
-        leave_category VARCHAR(50),               
-        start_date DATE,
-        end_date DATE,
-        total_days INT DEFAULT 0,
-        hours INT DEFAULT 0,
-        original_date DATE,                         
-        exchange_date DATE,                         
-        reason TEXT NOT NULL,
-        status VARCHAR(50) DEFAULT 'Pending' NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      type VARCHAR(50) NOT NULL,                 
+      leave_category VARCHAR(50),               
+      start_date DATE,
+      end_date DATE,
+      total_days INT DEFAULT 0,
+      hours INT DEFAULT 0,
+      original_date DATE,                         
+      exchange_date DATE,  
+      helper_id UUID REFERENCES users(id) ON DELETE SET NULL, 
+      helper_status VARCHAR(50) DEFAULT 'Pending', 
+      
+      reason TEXT NOT NULL,
+      status VARCHAR(50) DEFAULT 'Pending' NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
 `;
 
     await db`

@@ -12,7 +12,6 @@ import {
   Clock,
 } from "lucide-react";
 
-// Import clean types from definitions
 import {
   TodayAttendance,
   AttendanceSummary,
@@ -26,9 +25,7 @@ import {
   submitWFHRequest,
 } from "@/app/lib/employeeDashboard/employee/actions";
 
-// ----------------------------------------------------------------------
-// 1. Section Header
-// ----------------------------------------------------------------------
+import { respondToExchangeRequest } from "@/app/lib/employeeDashboard/employee/actions";
 export function SectionHeader({
   title,
   description,
@@ -51,10 +48,6 @@ export function SectionHeader({
   );
 }
 
-// ----------------------------------------------------------------------
-// 2. Today's Status Card
-// ----------------------------------------------------------------------
-
 export function TodayStatusCard({ data }: { data?: TodayAttendance }) {
   const [isPending, startTransition] = useTransition();
   const [location, setLocation] = useState<"Office" | "Remote">("Office");
@@ -62,7 +55,6 @@ export function TodayStatusCard({ data }: { data?: TodayAttendance }) {
   const isCheckedIn = Boolean(data?.checkIn);
   const isCheckedOut = Boolean(data?.checkOut);
 
-  // Fallback defaults if shift parameters aren't supplied by backend query
   const shiftStart = data?.shiftStart || "09:00 AM";
   const shiftEnd = data?.shiftEnd || "05:00 PM";
   const shiftType = data?.shiftType || "Standard (Mon - Fri)";
@@ -78,7 +70,6 @@ export function TodayStatusCard({ data }: { data?: TodayAttendance }) {
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs text-left">
-      {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
         <div>
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -161,9 +152,7 @@ export function TodayStatusCard({ data }: { data?: TodayAttendance }) {
     </div>
   );
 }
-// ----------------------------------------------------------------------
-// 3. Stats Grid
-// ----------------------------------------------------------------------
+
 export function AttendanceStatsGrid({
   summary,
   leaveBalance,
@@ -201,9 +190,6 @@ export function AttendanceStatsGrid({
   );
 }
 
-// ----------------------------------------------------------------------
-// 4. Fixed Attendance Calendar Component
-// ----------------------------------------------------------------------
 interface AttendanceCalendarProps {
   currentMonth: string;
   currentYear: number;
@@ -221,7 +207,7 @@ export function AttendanceCalendar({
   currentMonth,
   currentYear,
   calendarDays = [],
-  workingDays = [1, 2, 3, 4, 5], // Default: Mon - Fri
+  workingDays = [1, 2, 3, 4, 5],
 }: AttendanceCalendarProps) {
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const monthNames = [
@@ -239,25 +225,21 @@ export function AttendanceCalendar({
     "December",
   ];
 
-  // 1. Calculate current date metrics
   const monthIndex = new Date(`${currentMonth} 1, ${currentYear}`).getMonth();
   const daysInMonth = new Date(currentYear, monthIndex + 1, 0).getDate();
   const startDayOfWeek = new Date(currentYear, monthIndex, 1).getDay();
 
-  // 2. Calculate Previous / Next navigation targets
   const prevMonthIndex = monthIndex === 0 ? 11 : monthIndex - 1;
   const prevYear = monthIndex === 0 ? currentYear - 1 : currentYear;
 
   const nextMonthIndex = monthIndex === 11 ? 0 : monthIndex + 1;
   const nextYear = monthIndex === 11 ? currentYear + 1 : currentYear;
 
-  // 3. Normalize input data
   const normalizedDays: CalendarDay[] =
     calendarDays && calendarDays.length > 0
       ? calendarDays.map((d) => (typeof d === "number" ? { date: d } : d))
       : Array.from({ length: daysInMonth }, (_, i) => ({ date: i + 1 }));
 
-  // 4. Add leading padding slots
   const hasLeadingPadding =
     normalizedDays.length > 0 && normalizedDays[0].date === null;
   const paddedDays: CalendarDay[] = hasLeadingPadding
@@ -269,11 +251,8 @@ export function AttendanceCalendar({
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs text-left h-full">
-      {/* Calendar Header & Legend */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-        {/* Title & Navigation */}
         <div className="flex items-center gap-4">
-          {/* Fixed width to prevent jumping when month names change length */}
           <h3 className="text-sm font-bold text-slate-900 w-28">
             {currentMonth} {currentYear}
           </h3>
@@ -285,7 +264,7 @@ export function AttendanceCalendar({
             >
               <ChevronLeft className="w-4 h-4" />
             </Link>
-            <div className="w-px h-4 bg-slate-200 mx-0.5" /> {/* Divider */}
+            <div className="w-px h-4 bg-slate-200 mx-0.5" />
             <Link
               href={`?month=${monthNames[nextMonthIndex]}&year=${nextYear}`}
               className="p-1 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-500 hover:text-slate-900"
@@ -295,7 +274,6 @@ export function AttendanceCalendar({
           </div>
         </div>
 
-        {/* Visual Legend */}
         <div className="flex items-center gap-3 text-[11px] text-slate-500 font-medium">
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-slate-900" />
@@ -308,7 +286,6 @@ export function AttendanceCalendar({
         </div>
       </div>
 
-      {/* Weekday Column Headers */}
       <div className="grid grid-cols-7 gap-1 text-center mb-2">
         {weekDays.map((day, idx) => {
           const isWorkHeader = workingDays.includes(idx);
@@ -325,12 +302,10 @@ export function AttendanceCalendar({
         })}
       </div>
 
-      {/* Days Grid */}
       <div className="grid grid-cols-7 gap-1.5">
         {paddedDays.map((item, idx) => {
           const dayNum = item?.date;
 
-          // Padding Cell
           if (dayNum === null || dayNum === undefined) {
             return (
               <div
@@ -340,14 +315,12 @@ export function AttendanceCalendar({
             );
           }
 
-          // Calculate Day of Week for this specific day
           const dateObj = new Date(currentYear, monthIndex, dayNum);
           const dayOfWeek = dateObj.getDay();
           const isWorkingDay = workingDays.includes(dayOfWeek);
 
           const status = item.status?.toLowerCase();
 
-          // 1. NON-WORKING DAY / WEEKEND STYLING
           if (!isWorkingDay) {
             return (
               <div
@@ -362,7 +335,6 @@ export function AttendanceCalendar({
             );
           }
 
-          // 2. WORKING DAY STYLING (Based on status)
           return (
             <div
               key={`day-${dayNum}-${idx}`}
@@ -373,7 +345,7 @@ export function AttendanceCalendar({
                     ? "bg-amber-50 border-amber-200 text-amber-900 font-semibold"
                     : status === "absent"
                       ? "bg-rose-50 border-rose-200 text-rose-900 font-semibold"
-                      : "bg-white border-slate-300 text-slate-800 shadow-2xs hover:border-indigo-400" // Default Working Day
+                      : "bg-white border-slate-300 text-slate-800 shadow-2xs hover:border-indigo-400"
               }`}
             >
               <span className="font-bold text-[11px] text-slate-900">
@@ -397,12 +369,7 @@ export function AttendanceCalendar({
   );
 }
 
-// ----------------------------------------------------------------------
-// 5. Shift Summary Card
-// ----------------------------------------------------------------------
 export function ShiftSummaryCard({ data }: { data?: TodayAttendance }) {
-  // Assuming your TodayAttendance definition includes shift details,
-  // or you pass a separate Shift profile object.
   const shiftStart = data?.shiftStart || "09:00 AM";
   const shiftEnd = data?.shiftEnd || "05:00 PM";
   const shiftType = data?.shiftType || "Standard (Mon - Fri)";
@@ -420,12 +387,6 @@ export function ShiftSummaryCard({ data }: { data?: TodayAttendance }) {
   );
 }
 
-// ----------------------------------------------------------------------
-// 6. Leave Balance Card
-// ----------------------------------------------------------------------
-// ----------------------------------------------------------------------
-// 6. Leave Balance Card
-// ----------------------------------------------------------------------
 export function LeaveBalanceCard({
   leaveBalance,
 }: {
@@ -435,7 +396,6 @@ export function LeaveBalanceCard({
     <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-xs text-left">
       <h3 className="text-sm font-bold text-slate-900 mb-3">Leave Balances</h3>
       <div className="space-y-3 text-xs">
-        {/* Monthly Time-Off Hours */}
         <div className="flex justify-between items-center p-2 bg-indigo-50/50 rounded-lg border border-indigo-50">
           <span className="text-indigo-900 font-medium">Monthly Time-Off</span>
           <span className="font-bold text-indigo-700">
@@ -444,7 +404,6 @@ export function LeaveBalanceCard({
           </span>
         </div>
 
-        {/* Existing Annual and Sick Leaves */}
         <div className="flex justify-between text-slate-600 px-1">
           <span>Annual Leave</span>
           <span className="font-semibold">
@@ -462,9 +421,6 @@ export function LeaveBalanceCard({
   );
 }
 
-// ----------------------------------------------------------------------
-// 7. Attendance Log Table
-// ----------------------------------------------------------------------
 export function AttendanceLogTable({
   logs,
 }: {
@@ -517,28 +473,25 @@ export function AttendanceLogTable({
   );
 }
 
-// ----------------------------------------------------------------------
-// 8. Unified Absence & Shift Request Modal (With Balance Validation)
-// ----------------------------------------------------------------------
 type RequestType = "wfh" | "timeoff" | "dayoff" | "exchange";
 type LeaveCategory = "annual" | "sick" | "unpaid";
 
 export function AbsenceRequestModal({
-      leaveBalance,
-    }: {
-      leaveBalance?: LeaveBalance;
-    }) {
-    const [isOpen, setIsOpen] = useState(false);
+  leaveBalance,
+  colleagues = [],
+}: {
+  leaveBalance?: LeaveBalance;
+  colleagues?: { id: string; name: string }[];
+}) {
+  const [isOpen, setIsOpen] = useState(false);
   const [requestType, setRequestType] = useState<RequestType>("wfh");
   const [leaveCategory, setLeaveCategory] = useState<LeaveCategory>("annual");
   const [hours, setHours] = useState<number | "">("");
   const [isPending, startTransition] = useTransition();
-
-  // Date states for calculating full day off duration
+  const [helperId, setHelperId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  // Calculate inclusive number of days between start & end dates
   const calculateTotalDays = () => {
     if (!startDate || !endDate) return 0;
     const start = new Date(startDate);
@@ -550,13 +503,9 @@ export function AbsenceRequestModal({
 
   const totalDays = calculateTotalDays();
 
-  // --------------------------------------------------------------------
-  // Dynamic Balance Validation Helper
-  // --------------------------------------------------------------------
   const getValidationError = (): string | null => {
     if (!leaveBalance) return null;
 
-    // 1. Check Monthly Hourly Time-Off
     if (requestType === "timeoff") {
       const requestedHours = Number(hours) || 0;
       if (requestedHours > leaveBalance.monthlyRemainingHours) {
@@ -564,7 +513,6 @@ export function AbsenceRequestModal({
       }
     }
 
-    // 2. Check Day Off Balances (Annual / Sick)
     if (requestType === "dayoff" && totalDays > 0) {
       if (
         leaveCategory === "annual" &&
@@ -586,7 +534,6 @@ export function AbsenceRequestModal({
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Prevent submission if balance is exceeded
     if (validationError) {
       return;
     }
@@ -656,9 +603,6 @@ export function AbsenceRequestModal({
                 </select>
               </div>
 
-              {/* ------------------------------------------------------------- */}
-              {/* FULL DAY OFF                                                  */}
-              {/* ------------------------------------------------------------- */}
               {requestType === "dayoff" && (
                 <>
                   <div>
@@ -728,11 +672,29 @@ export function AbsenceRequestModal({
                 </>
               )}
 
-              {/* ------------------------------------------------------------- */}
-              {/* SHIFT EXCHANGE                                                */}
-              {/* ------------------------------------------------------------- */}
               {requestType === "exchange" && (
                 <>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                      Select Helper / Coworker
+                    </label>
+                    <select
+                      name="helperId"
+                      value={helperId}
+                      onChange={(e) => setHelperId(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-indigo-600"
+                    >
+                      <option value="" disabled>
+                        Select a coworker...
+                      </option>
+                      {colleagues.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <div>
                     <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
                       Original Day Off / Shift Date
@@ -758,9 +720,6 @@ export function AbsenceRequestModal({
                 </>
               )}
 
-              {/* ------------------------------------------------------------- */}
-              {/* HOURLY TIME-OFF                                               */}
-              {/* ------------------------------------------------------------- */}
               {requestType === "timeoff" && (
                 <>
                   <div>
@@ -803,9 +762,6 @@ export function AbsenceRequestModal({
                 </>
               )}
 
-              {/* ------------------------------------------------------------- */}
-              {/* WFH                                                           */}
-              {/* ------------------------------------------------------------- */}
               {requestType === "wfh" && (
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
@@ -820,7 +776,6 @@ export function AbsenceRequestModal({
                 </div>
               )}
 
-              {/* Shared Field: Reason */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
                   Reason / Notes
@@ -834,14 +789,12 @@ export function AbsenceRequestModal({
                 />
               </div>
 
-              {/* Validation Warning Alert */}
               {validationError && (
                 <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-medium">
                   {validationError}
                 </div>
               )}
 
-              {/* Actions */}
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
@@ -866,5 +819,92 @@ export function AbsenceRequestModal({
         </div>
       )}
     </>
+  );
+}
+
+export interface PendingExchangeRequest {
+  id: string;
+  original_date: string | Date;
+  exchange_date: string | Date;
+  reason: string;
+  requester_name: string;
+}
+
+export function PendingExchangesWidget({
+  requests,
+}: {
+  requests: PendingExchangeRequest[];
+}) {
+  const [isPending, startTransition] = useTransition();
+
+  if (!requests || requests.length === 0) return null;
+
+  const handleResponse = (id: string, status: "Accepted" | "Rejected") => {
+    startTransition(async () => {
+      const res = await respondToExchangeRequest(id, status);
+      if (!res.success) alert(res.error);
+    });
+  };
+
+  return (
+    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 shadow-xs text-left space-y-4 animate-in fade-in slide-in-from-bottom-2">
+      <h3 className="text-sm font-bold text-amber-900 flex items-center gap-2">
+        <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+        Shift Swap Requests
+      </h3>
+
+      <div className="space-y-3">
+        {requests.map((req) => (
+          <div
+            key={req.id}
+            className="p-3 bg-white border border-amber-100 rounded-xl shadow-xs space-y-3"
+          >
+            <p className="text-xs text-slate-800">
+              <span className="font-bold">{req.requester_name}</span> wants to
+              swap shifts with you.
+            </p>
+
+            <div className="text-[11px] text-slate-600 bg-amber-50/50 p-2 rounded-lg border border-amber-100/50 space-y-1">
+              <p>
+                <strong>Their Shift:</strong>{" "}
+                {new Date(req.original_date).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                })}
+              </p>
+              <p>
+                <strong>Your Shift:</strong>{" "}
+                {new Date(req.exchange_date).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                })}
+              </p>
+              {req.reason && (
+                <p className="italic text-slate-500 mt-1 border-t border-amber-100 pt-1">
+                  &quot;{req.reason}&quot;
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleResponse(req.id, "Rejected")}
+                disabled={isPending}
+                className="flex-1 py-1.5 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg text-[11px] font-bold transition disabled:opacity-50 cursor-pointer"
+              >
+                Decline
+              </button>
+              <button
+                onClick={() => handleResponse(req.id, "Accepted")}
+                disabled={isPending}
+                className="flex-1 py-1.5 bg-amber-500 text-white hover:bg-amber-600 rounded-lg text-[11px] font-bold transition disabled:opacity-50 cursor-pointer"
+              >
+                Accept Swap
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

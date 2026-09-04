@@ -13,7 +13,7 @@ import {
   calculateWorkHours,
 } from "@/app/lib/employeeDashboard/employee/data";
 import { sql } from "@/app/lib/employeeDashboard/employee/db";
- 
+
 export async function uploadProfilePicture(formData: FormData) {
   const session = await auth();
   if (!session?.user?.email) {
@@ -71,7 +71,7 @@ export async function uploadProfilePicture(formData: FormData) {
     return { success: false, error: "Failed to upload image" };
   }
 }
- 
+
 const ProfileUpdateSchema = z.object({
   preferredName: z
     .string()
@@ -93,7 +93,6 @@ const ProfileUpdateSchema = z.object({
   currentAddress: z.string().trim().optional(),
 });
 
- 
 export async function updateEmployeeProfile(
   prevState: ActionState,
   formData: FormData,
@@ -170,7 +169,7 @@ export async function updateEmployeeProfile(
     };
   }
 }
- 
+
 function getLocalDateString(): string {
   const now = new Date();
   const yyyy = now.getFullYear();
@@ -229,9 +228,10 @@ export async function toggleCheckInStatus(
     return { success: false, error: `Server error: ${message}` };
   }
 }
- 
+
 export async function submitWFHRequest(formData: FormData) {
   const session = await auth();
+  const helperId = formData.get("helperId") as string | null;
 
   if (!session?.user?.email) {
     return { success: false, error: "Unauthorized" };
@@ -245,7 +245,6 @@ export async function submitWFHRequest(formData: FormData) {
   }
 
   try {
-    // 1. Resolve Postgres UUID for current user
     const userQuery = await sql`
       SELECT id FROM users WHERE email = ${session.user.email}
     `;
@@ -256,7 +255,6 @@ export async function submitWFHRequest(formData: FormData) {
 
     const userId = userQuery[0].id;
 
-    // 2. Fetch balance for backend validation
     const [balance] = await sql`
       SELECT annual_remaining, sick_remaining, monthly_remaining_hours
       FROM leave_balances
@@ -271,7 +269,6 @@ export async function submitWFHRequest(formData: FormData) {
     let originalDate: string | null = null;
     let exchangeDate: string | null = null;
 
-    // 3. Extract request parameters based on type
     if (type === "wfh") {
       startDate = formData.get("date") as string;
       endDate = startDate;
@@ -333,7 +330,6 @@ export async function submitWFHRequest(formData: FormData) {
       }
     }
 
-    // 4. Insert into updated leave_requests table
     await sql`
       INSERT INTO leave_requests (
         user_id,
@@ -363,7 +359,23 @@ export async function submitWFHRequest(formData: FormData) {
       )
     `;
 
-    // 5. Revalidate cache for real-time UI updates
+    await sql`
+  INSERT INTO leave_requests (
+    user_id, type, start_date, end_date, original_date, exchange_date, helper_id, helper_status, reason, status
+  ) VALUES (
+    ${userId}, ${type}, ${startDate}, ${endDate}, ${originalDate}, ${exchangeDate}, 
+    ${helperId || null}, 
+    ${type === "exchange" ? "Pending" : "N/A"}, -- Requires helper approval if exchange
+    ${reason}, 'Pending'
+  )
+`;
+
+    if (type === "exchange" && helperId) {
+      await sql`
+    INSERT INTO performance_notifications (user_id, requester_id, title, description, type)
+    VALUES (${helperId}, ${userId}, 'Shift Exchange Request', 'Someone wants to trade shifts with you.', 'Exchange')
+  `;
+    }
     revalidatePath("/my-profile/attendance");
     revalidatePath("/dashboard");
 
@@ -374,10 +386,8 @@ export async function submitWFHRequest(formData: FormData) {
   }
 }
 
-
 export async function approveLeaveRequest(requestId: string) {
   try {
-    // 1. Fetch the request details from leave_requests
     const requests = await sql`
       SELECT id, user_id, type, leave_category, total_days, hours, status 
       FROM leave_requests 
@@ -390,7 +400,6 @@ export async function approveLeaveRequest(requestId: string) {
 
     const request = requests[0];
 
-    // Guard against approving requests that are already processed
     if (request.status !== "Pending") {
       return {
         success: false,
@@ -400,7 +409,6 @@ export async function approveLeaveRequest(requestId: string) {
 
     const { user_id, type, leave_category, total_days, hours } = request;
 
-    // 2. Perform deductions based on request type
     if (type === "dayoff") {
       if (leave_category === "annual") {
         const [balance] = await sql`
@@ -437,7 +445,6 @@ export async function approveLeaveRequest(requestId: string) {
           WHERE user_id = ${user_id}
         `;
       }
-      // 'unpaid' category requires no balance deduction
     } else if (type === "timeoff") {
       const [balance] = await sql`
         SELECT monthly_remaining_hours FROM leave_balances WHERE user_id = ${user_id}
@@ -456,22 +463,46 @@ export async function approveLeaveRequest(requestId: string) {
         WHERE user_id = ${user_id}
       `;
     }
-    // WFH & Shift Exchange require no balance deductions
 
-    // 3. Mark request as Approved
     await sql`
       UPDATE leave_requests 
       SET status = 'Approved', updated_at = CURRENT_TIMESTAMP
       WHERE id = ${requestId}
     `;
 
-    // 4. Revalidate cache for both Admin and Employee views
     revalidatePath("/dashboard");
 
     return { success: true };
   } catch (error) {
     console.error("Error approving leave request:", error);
     return { success: false, error: "Failed to approve request." };
+  }
+}
+
+export async function respondToExchangeRequest(
+  requestId: string,
+  status: "Accepted" | "Rejected",
+) {
+  try {
+    if (status === "Rejected") {
+      await sql`
+        UPDATE leave_requests 
+        SET helper_status = 'Rejected', status = 'Rejected' 
+        WHERE id = ${requestId}
+      `;
+    } else {
+      await sql`
+        UPDATE leave_requests 
+        SET helper_status = 'Accepted' 
+        WHERE id = ${requestId}
+      `;
+    }
+
+    revalidatePath("/", "layout");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to respond to exchange:", error);
+    return { success: false, error: "Failed to update request." };
   }
 }
 

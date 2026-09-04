@@ -27,19 +27,21 @@ interface AttendanceDbRow {
   job_title: string | null;
   created_at: string | Date;
 }
-
 interface LeaveRequestDbRow {
   id: string;
   employee_name: string;
   image_url: string | null;
   type: string;
+  leave_category: string | null; // Added
   start_date: string;
   end_date: string;
   total_days: number;
+  hours: number;
   status: string;
   job_title: string | null;
   created_at: string | Date;
 }
+
 interface ShiftDbRow {
   shift_type: string;
   shift_start: string;
@@ -103,30 +105,45 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
       u.image_url,
       u.job_title,       
       r.created_at,      
-      r.type,        
+      r.type, 
+      r.leave_category,       
       r.start_date,
       r.end_date,
       r.total_days,     
+      r.hours,
       r.status
     FROM leave_requests r
     JOIN users u ON r.user_id = u.id
   `) as unknown as LeaveRequestDbRow[];
 
-  const leaveRequests: LeaveRequestRow[] = requestRows.map((row) => ({
-    id: row.id,
-    employeeName: row.employee_name,
-    imageUrl: row.image_url,
-    leaveType: row.type,
-    startDate: row.start_date,
-    endDate: row.end_date,
-    days: row.total_days,
-    jobTitle: row.job_title,
-    createdAt: row.created_at,
-    status: (row.status.charAt(0).toUpperCase() + row.status.slice(1)) as
-      | "Pending"
-      | "Approved"
-      | "Rejected",
-  }));
+  const leaveRequests: LeaveRequestRow[] = requestRows.map((row) => {
+    let formattedType = row.type;
+    if (row.type === "timeoff") formattedType = "Hourly Time-Off";
+    else if (row.type === "dayoff")
+      formattedType = row.leave_category
+        ? `${row.leave_category} Leave`
+        : "Day Off";
+    else if (row.type === "wfh") formattedType = "Work From Home";
+    else if (row.type === "exchange") formattedType = "Shift Exchange";
+
+    return {
+      id: row.id,
+      employeeName: row.employee_name,
+      imageUrl: row.image_url,
+      leaveType: formattedType,
+      startDate: row.start_date,
+      endDate: row.end_date,
+      days: row.total_days,
+      hours: row.hours, // Pass actual hours
+      jobTitle: row.job_title,
+      createdAt: row.created_at,
+      status: (row.status.charAt(0).toUpperCase() + row.status.slice(1)) as
+        | "Pending"
+        | "Approved"
+        | "Rejected",
+    };
+  }) as unknown as LeaveRequestRow[];
+
   const shiftRows = (await db`
     SELECT DISTINCT shift_type, shift_start, shift_end 
     FROM users 
@@ -154,7 +171,6 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
           </p>
         </div>
 
-        {/* Pass the targetDate prop here! */}
         <AttendanceHeaderActions logs={dailyLogs} targetDate={targetDate} />
       </div>
 

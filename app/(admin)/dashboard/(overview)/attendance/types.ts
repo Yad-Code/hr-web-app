@@ -26,6 +26,7 @@ export interface LeaveRequestRow {
   leaveType: string;
   createdAt: string | Date;
   startDate: string;
+  hours?: number;
   endDate: string;
   days: number;
   status: "Pending" | "Approved" | "Rejected";
