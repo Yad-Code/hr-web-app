@@ -36,15 +36,27 @@ function ExportButton() {
 
 async function AttendanceContent({ userId }: { userId: string }) {
   const data = await getAttendanceData(userId);
+
+  // 1. Get the logged-in user's department
+  const userProfile = await sql`
+    SELECT department FROM users WHERE id = ${userId}
+  `;
+  const userDept = userProfile[0]?.department;
+
+  // 2. Fetch ONLY colleagues in the same department
   const colleaguesQuery = await sql`
-  SELECT id, name FROM users 
-  WHERE role = 'employee' AND id != ${userId}
-  ORDER BY name ASC
-`;
+    SELECT id, name, job_title 
+    FROM users 
+    WHERE role = 'employee' 
+      AND id != ${userId}
+      AND department = ${userDept}
+    ORDER BY name ASC
+  `;
 
   const colleagues = colleaguesQuery as unknown as {
     id: string;
     name: string;
+    job_title: string | null;
   }[];
 
   const pendingExchangesQuery = await sql`

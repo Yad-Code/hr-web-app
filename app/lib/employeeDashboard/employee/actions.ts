@@ -285,7 +285,6 @@ export async function submitWFHRequest(formData: FormData) {
         return { success: false, error: "Start and end dates are required." };
       }
 
-      // Balance guardrails
       if (balance) {
         if (
           leaveCategory === "annual" &&
@@ -330,6 +329,8 @@ export async function submitWFHRequest(formData: FormData) {
       }
     }
 
+    const helperStatus = type === "exchange" ? "Pending" : "N/A";
+
     await sql`
       INSERT INTO leave_requests (
         user_id,
@@ -341,41 +342,35 @@ export async function submitWFHRequest(formData: FormData) {
         hours,
         original_date,
         exchange_date,
+        helper_id,
+        helper_status,
         reason,
         status
       )
       VALUES (
         ${userId},
         ${type},
-        ${leaveCategory},
-        ${startDate},
-        ${endDate},
+        ${leaveCategory || null},
+        ${startDate || null},
+        ${endDate || null},
         ${totalDays},
         ${hours},
-        ${originalDate},
-        ${exchangeDate},
+        ${originalDate || null},
+        ${exchangeDate || null},
+        ${helperId || null},
+        ${helperStatus},
         ${reason},
         'Pending'
       )
     `;
 
-    await sql`
-  INSERT INTO leave_requests (
-    user_id, type, start_date, end_date, original_date, exchange_date, helper_id, helper_status, reason, status
-  ) VALUES (
-    ${userId}, ${type}, ${startDate}, ${endDate}, ${originalDate}, ${exchangeDate}, 
-    ${helperId || null}, 
-    ${type === "exchange" ? "Pending" : "N/A"}, -- Requires helper approval if exchange
-    ${reason}, 'Pending'
-  )
-`;
-
     if (type === "exchange" && helperId) {
       await sql`
-    INSERT INTO performance_notifications (user_id, requester_id, title, description, type)
-    VALUES (${helperId}, ${userId}, 'Shift Exchange Request', 'Someone wants to trade shifts with you.', 'Exchange')
-  `;
+        INSERT INTO performance_notifications (user_id, requester_id, title, description, type)
+        VALUES (${helperId}, ${userId}, 'Shift Exchange Request', 'Someone wants to trade shifts with you.', 'Exchange')
+      `;
     }
+ 
     revalidatePath("/my-profile/attendance");
     revalidatePath("/dashboard");
 
@@ -388,8 +383,10 @@ export async function submitWFHRequest(formData: FormData) {
 
 export async function approveLeaveRequest(requestId: string) {
   try {
+    // UPDATED: Fetch the new exchange fields needed for overrides
     const requests = await sql`
-      SELECT id, user_id, type, leave_category, total_days, hours, status 
+      SELECT id, user_id, type, leave_category, total_days, hours, status, 
+             helper_id, original_date, exchange_date
       FROM leave_requests 
       WHERE id = ${requestId}
     `;
@@ -409,61 +406,63 @@ export async function approveLeaveRequest(requestId: string) {
 
     const { user_id, type, leave_category, total_days, hours } = request;
 
+    // --- LEAVE BALANCE LOGIC ---
     if (type === "dayoff") {
       if (leave_category === "annual") {
-        const [balance] = await sql`
-          SELECT annual_remaining FROM leave_balances WHERE user_id = ${user_id}
-        `;
-
+        const [balance] =
+          await sql`SELECT annual_remaining FROM leave_balances WHERE user_id = ${user_id}`;
         if (balance && balance.annual_remaining < total_days) {
           return {
             success: false,
-            error: `Employee has insufficient Annual Leave balance (${balance.annual_remaining} left).`,
+            error: `Insufficient Annual Leave balance (${balance.annual_remaining} left).`,
           };
         }
-
-        await sql`
-          UPDATE leave_balances 
-          SET annual_remaining = annual_remaining - ${total_days}
-          WHERE user_id = ${user_id}
-        `;
+        await sql`UPDATE leave_balances SET annual_remaining = annual_remaining - ${total_days} WHERE user_id = ${user_id}`;
       } else if (leave_category === "sick") {
-        const [balance] = await sql`
-          SELECT sick_remaining FROM leave_balances WHERE user_id = ${user_id}
-        `;
-
+        const [balance] =
+          await sql`SELECT sick_remaining FROM leave_balances WHERE user_id = ${user_id}`;
         if (balance && balance.sick_remaining < total_days) {
           return {
             success: false,
-            error: `Employee has insufficient Sick Leave balance (${balance.sick_remaining} left).`,
+            error: `Insufficient Sick Leave balance (${balance.sick_remaining} left).`,
           };
         }
-
-        await sql`
-          UPDATE leave_balances 
-          SET sick_remaining = sick_remaining - ${total_days}
-          WHERE user_id = ${user_id}
-        `;
+        await sql`UPDATE leave_balances SET sick_remaining = sick_remaining - ${total_days} WHERE user_id = ${user_id}`;
       }
     } else if (type === "timeoff") {
-      const [balance] = await sql`
-        SELECT monthly_remaining_hours FROM leave_balances WHERE user_id = ${user_id}
-      `;
-
+      const [balance] =
+        await sql`SELECT monthly_remaining_hours FROM leave_balances WHERE user_id = ${user_id}`;
       if (balance && balance.monthly_remaining_hours < hours) {
         return {
           success: false,
-          error: `Employee has insufficient monthly hours remaining (${balance.monthly_remaining_hours} hrs left).`,
+          error: `Insufficient monthly hours remaining (${balance.monthly_remaining_hours} hrs left).`,
         };
       }
+      await sql`UPDATE leave_balances SET monthly_remaining_hours = monthly_remaining_hours - ${hours} WHERE user_id = ${user_id}`;
+    }
 
+    // --- NEW: SCHEDULE OVERRIDE LOGIC ---
+    if (type === "exchange" && request.helper_id) {
+      // 1. Requester Overrides
       await sql`
-        UPDATE leave_balances 
-        SET monthly_remaining_hours = monthly_remaining_hours - ${hours}
-        WHERE user_id = ${user_id}
+        INSERT INTO schedule_overrides (user_id, target_date, is_working, notes)
+        VALUES 
+          (${user_id}, ${request.original_date}, false, 'Shift given to helper'),
+          (${user_id}, ${request.exchange_date}, true, 'Shift taken from helper')
+        ON CONFLICT (user_id, target_date) DO UPDATE SET is_working = EXCLUDED.is_working
+      `;
+
+      // 2. Helper Overrides
+      await sql`
+        INSERT INTO schedule_overrides (user_id, target_date, is_working, notes)
+        VALUES 
+          (${request.helper_id}, ${request.original_date}, true, 'Covering requester shift'),
+          (${request.helper_id}, ${request.exchange_date}, false, 'Shift given to requester')
+        ON CONFLICT (user_id, target_date) DO UPDATE SET is_working = EXCLUDED.is_working
       `;
     }
 
+    // --- FINALIZE STATUS ---
     await sql`
       UPDATE leave_requests 
       SET status = 'Approved', updated_at = CURRENT_TIMESTAMP
@@ -471,6 +470,7 @@ export async function approveLeaveRequest(requestId: string) {
     `;
 
     revalidatePath("/dashboard");
+    revalidatePath("/my-profile/attendance"); // Ensure calendars refresh immediately
 
     return { success: true };
   } catch (error) {

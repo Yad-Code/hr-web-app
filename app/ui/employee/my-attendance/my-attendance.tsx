@@ -1,5 +1,5 @@
 "use client";
- 
+
 import { useState, useTransition, useMemo } from "react";
 import {
   MapPin,
@@ -15,7 +15,7 @@ import {
 import {
   TodayAttendance,
   AttendanceSummary,
-  LeaveBalance, 
+  LeaveBalance,
   AttendanceLog,
 } from "@/app/lib/employeeDashboard/attendance/definitions";
 
@@ -190,15 +190,15 @@ export function AttendanceStatsGrid({
 }
 
 interface AttendanceCalendarProps {
-  logs?: AttendanceLog[];  
-  workingDays?: number[]; 
-  overrides?: { date: string; isWorking: boolean }[]; 
+  logs?: AttendanceLog[];
+  workingDays?: number[];
+  overrides?: { date: string; isWorking: boolean }[];
 }
 
 export function AttendanceCalendar({
   logs = [],
   workingDays = [1, 2, 3, 4, 5],
-  overrides = [],  
+  overrides = [],
 }: AttendanceCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -278,7 +278,7 @@ export function AttendanceCalendar({
             return (
               <div
                 key={`pad-${idx}`}
-                className="min-h-[3.5rem] bg-slate-50/30 rounded-xl border border-dashed border-slate-100"
+                className="min-h-14 bg-slate-50/30 rounded-xl border border-dashed border-slate-100"
               />
             );
           }
@@ -328,7 +328,7 @@ export function AttendanceCalendar({
           return (
             <div
               key={`day-${dayNum}`}
-              className={`p-2 rounded-xl text-center border min-h-[3.5rem] flex flex-col justify-between ${bgClass}`}
+              className={`p-2 rounded-xl text-center border min-h-14 flex flex-col justify-between ${bgClass}`}
             >
               <span className="font-bold text-[11px]">{dayNum}</span>
               <span className="text-[9px] font-bold uppercase">
@@ -402,7 +402,7 @@ export function AttendanceLogTable({
   logs: AttendanceLog[];
   month?: string;
   year?: number;
-}) { 
+}) {
   const [currentDate, setCurrentDate] = useState(() => {
     const date = new Date();
     if (month && year) {
@@ -495,7 +495,7 @@ export function AttendanceLogTable({
         </div>
       </div>
 
-      <div className="overflow-x-auto min-h-[300px]">
+      <div className="overflow-x-auto min-h-75">
         <table className="w-full text-left text-xs text-slate-600">
           <thead className="bg-slate-50 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
             <tr>
@@ -570,7 +570,7 @@ export function AbsenceRequestModal({
   colleagues = [],
 }: {
   leaveBalance?: LeaveBalance;
-  colleagues?: { id: string; name: string }[];
+  colleagues?: { id: string; name: string; job_title: string | null }[];
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [requestType, setRequestType] = useState<RequestType>("wfh");
@@ -673,7 +673,6 @@ export function AbsenceRequestModal({
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 text-left">
-              {/* Type Selector */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
                   Request Type
@@ -775,14 +774,21 @@ export function AbsenceRequestModal({
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-indigo-600"
                     >
                       <option value="" disabled>
-                        Select a coworker...
+                        Select an eligible coworker...
                       </option>
-                      {colleagues.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
+
+                      {colleagues.length === 0 ? (
+                        <option disabled>
+                          No peers available in your department.
                         </option>
-                      ))}
-                    </select>
+                      ) : (
+                        colleagues.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name} {c.job_title ? `(${c.job_title})` : ""}
+                          </option>
+                        ))
+                      )}
+                    </select> 
                   </div>
                   <div>
                     <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
