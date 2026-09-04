@@ -502,23 +502,19 @@ export async function respondToExchangeRequest(
   requestId: string,
   status: "Accepted" | "Rejected",
 ) {
-  try {
+ try {
     if (status === "Rejected") {
       await sql`
         UPDATE leave_requests 
         SET helper_status = 'Rejected', status = 'Rejected' 
         WHERE id = ${requestId}
       `;
-    } else {
-      // 1. Update the coworker's acceptance
-      await sql`
+    } else { 
+     await sql`
         UPDATE leave_requests 
         SET helper_status = 'Accepted' 
         WHERE id = ${requestId}
       `;
-
-      // 2. AUTO-APPROVE IT so the schedule overrides are created instantly!
-      await approveLeaveRequest(requestId);
     }
 
     revalidatePath("/", "layout");
