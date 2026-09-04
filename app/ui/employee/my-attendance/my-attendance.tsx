@@ -47,7 +47,15 @@ export function SectionHeader({
   );
 }
 
-export function TodayStatusCard({ data }: { data?: TodayAttendance }) {
+export function TodayStatusCard({
+  data,
+  workingDays = [1, 2, 3, 4, 5],
+  overrides = [],
+}: {
+  data?: TodayAttendance;
+  workingDays?: number[];
+  overrides?: { date: string; isWorking: boolean }[];
+}) {
   const [isPending, startTransition] = useTransition();
   const [location, setLocation] = useState<"Office" | "Remote">("Office");
 
@@ -57,6 +65,20 @@ export function TodayStatusCard({ data }: { data?: TodayAttendance }) {
   const shiftStart = data?.shiftStart || "09:00 AM";
   const shiftEnd = data?.shiftEnd || "05:00 PM";
   const shiftType = data?.shiftType || "Standard (Mon - Fri)";
+
+  // Safely calculate if today is a working day
+  const todayObj = new Date();
+  const todayStr = todayObj.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  let isWorkingDay = workingDays.includes(todayObj.getDay());
+
+  const override = overrides.find((o) => o.date === todayStr);
+  if (override) {
+    isWorkingDay = override.isWorking;
+  }
 
   const handleToggle = () => {
     startTransition(async () => {
@@ -72,7 +94,7 @@ export function TodayStatusCard({ data }: { data?: TodayAttendance }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
         <div>
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            Today s Status
+            Today&#39;s Status
           </span>
           <p className="text-xs font-medium text-slate-500 mt-0.5">
             {shiftType} • {shiftStart} - {shiftEnd}
@@ -80,13 +102,21 @@ export function TodayStatusCard({ data }: { data?: TodayAttendance }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            {data?.status || "Not Checked In"}
+          <span
+            className={`px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 border ${
+              isWorkingDay
+                ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                : "bg-slate-50 text-slate-500 border-slate-200"
+            }`}
+          >
+            {isWorkingDay && (
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            )}
+            {!isWorkingDay ? "Scheduled Off" : data?.status || "Not Checked In"}
           </span>
 
-          {/* Location Selector (Hidden after initial check-in) */}
-          {!isCheckedIn && (
+          {/* Hide location selector if off-day or already checked in */}
+          {!isCheckedIn && isWorkingDay && (
             <select
               value={location}
               onChange={(e) =>
@@ -103,11 +133,13 @@ export function TodayStatusCard({ data }: { data?: TodayAttendance }) {
           <button
             type="button"
             onClick={handleToggle}
-            disabled={isPending || isCheckedOut}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all disabled:opacity-50 cursor-pointer active:scale-95"
+            disabled={isPending || isCheckedOut || !isWorkingDay}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all disabled:opacity-50 disabled:bg-slate-300 disabled:text-slate-500 cursor-pointer active:scale-95"
           >
             {isPending ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : !isWorkingDay ? (
+              "Day Off"
             ) : isCheckedOut ? (
               "Done For Today"
             ) : isCheckedIn ? (
@@ -119,7 +151,6 @@ export function TodayStatusCard({ data }: { data?: TodayAttendance }) {
         </div>
       </div>
 
-      {/* Grid Display */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
           <p className="text-[11px] font-medium text-slate-400 flex items-center gap-1">
@@ -144,7 +175,7 @@ export function TodayStatusCard({ data }: { data?: TodayAttendance }) {
             <MapPin className="w-3 h-3 text-indigo-500" /> Location
           </p>
           <p className="text-lg font-bold text-slate-800 mt-0.5">
-            {isCheckedIn ? data?.workLocation : location}
+            {!isWorkingDay ? "--" : isCheckedIn ? data?.workLocation : location}
           </p>
         </div>
       </div>
@@ -208,11 +239,9 @@ export function AttendanceCalendar({
   const yearNum = currentDate.getFullYear();
   const monthName = currentDate.toLocaleString("default", { month: "long" });
 
-  // Calculate calendar grid
   const daysInMonth = new Date(yearNum, monthIndex + 1, 0).getDate();
   const startDayOfWeek = new Date(yearNum, monthIndex, 1).getDay();
 
-  // Create padding for the first row
   const paddedDays = [
     ...Array.from({ length: startDayOfWeek }, () => null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
@@ -256,6 +285,10 @@ export function AttendanceCalendar({
             <span className="w-2.5 h-2.5 rounded-full bg-slate-200" />
             <span>Off Day</span>
           </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-indigo-400" />
+            <span>Shift Swap</span>
+          </div>
         </div>
       </div>
 
@@ -296,42 +329,50 @@ export function AttendanceCalendar({
           const override = overrides.find((o) => o.date === dateString);
           if (override) {
             isWorkingDay = override.isWorking;
-            overrideBadge = override.isWorking
-              ? "Shift Swapped In"
-              : "Shift Swapped Out";
+            overrideBadge = override.isWorking ? "Swapped In" : "Swapped Out";
           }
 
           const logForDay = logs.find((log) => log.date === dateString);
           const status = logForDay?.status?.toLowerCase();
 
-          let bgClass = "bg-white border-slate-200 text-slate-800";
-          let statusText = overrideBadge || "Scheduled";
+          // Apply specialized styles based on working day and overrides
+          let bgClass = "bg-white border-slate-200 text-slate-800 shadow-2xs";
+          let statusText = "Scheduled";
 
-          if (!isWorkingDay) {
+          if (overrideBadge === "Swapped Out") {
+            bgClass =
+              "bg-slate-50 border-dashed border-slate-200 text-slate-400 opacity-80";
+            statusText = "Swapped Out";
+          } else if (!isWorkingDay) {
             bgClass =
               "bg-slate-50/50 border-slate-100 text-slate-400 opacity-70";
-            statusText = overrideBadge || "Off";
+            statusText = "Off";
           } else if (status === "present") {
             bgClass = "bg-emerald-50 border-emerald-200 text-emerald-900";
-            statusText = "Present";
+            statusText = overrideBadge ? "Present (Swap)" : "Present";
           } else if (status === "late") {
             bgClass = "bg-amber-50 border-amber-200 text-amber-900";
-            statusText = "Late";
+            statusText = overrideBadge ? "Late (Swap)" : "Late";
           } else if (status === "absent") {
             bgClass = "bg-rose-50 border-rose-200 text-rose-900";
-            statusText = "Absent";
+            statusText = overrideBadge ? "Absent (Swap)" : "Absent";
           } else if (status === "on leave") {
             bgClass = "bg-purple-50 border-purple-200 text-purple-900";
             statusText = "Leave";
+          } else if (overrideBadge === "Swapped In") {
+            // Future swapped-in shift that hasn't happened yet
+            bgClass =
+              "bg-indigo-50 border-indigo-200 text-indigo-900 shadow-sm";
+            statusText = "Swapped In";
           }
 
           return (
             <div
               key={`day-${dayNum}`}
-              className={`p-2 rounded-xl text-center border min-h-14 flex flex-col justify-between ${bgClass}`}
+              className={`p-2 rounded-xl text-center border min-h-14 flex flex-col justify-between ${bgClass} transition-colors hover:border-slate-300`}
             >
               <span className="font-bold text-[11px]">{dayNum}</span>
-              <span className="text-[9px] font-bold uppercase">
+              <span className="text-[9px] font-bold uppercase tracking-tight leading-tight">
                 {statusText}
               </span>
             </div>
@@ -395,13 +436,15 @@ export function LeaveBalanceCard({
 }
 
 export function AttendanceLogTable({
-  logs,
+  logs = [],
   overrides = [],
+  workingDays = [1, 2, 3, 4, 5],
   month,
   year,
 }: {
   logs: AttendanceLog[];
   overrides?: { date: string; isWorking: boolean }[];
+  workingDays?: number[];
   month?: string;
   year?: number;
 }) {
@@ -416,20 +459,99 @@ export function AttendanceLogTable({
 
   const [statusFilter, setStatusFilter] = useState("All");
 
-  // Filter instantly without hitting the server
-  const filteredLogs = useMemo(() => {
-    return logs.filter((log) => {
-      const logDate = new Date(log.date);
-      const matchesMonth =
-        logDate.getMonth() === currentDate.getMonth() &&
-        logDate.getFullYear() === currentDate.getFullYear();
-      const matchesStatus =
-        statusFilter === "All" ||
-        log.status.toLowerCase() === statusFilter.toLowerCase();
+  // 1. Generate a row for EVERY day of the month
+  const allDaysInMonth = useMemo(() => {
+    const yearNum = currentDate.getFullYear();
+    const monthNum = currentDate.getMonth();
+    const daysInMonth = new Date(yearNum, monthNum + 1, 0).getDate();
 
-      return matchesMonth && matchesStatus;
-    });
-  }, [logs, currentDate, statusFilter]);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const rows = [];
+
+    for (let i = 1; i <= daysInMonth; i++) {
+      const dateObj = new Date(yearNum, monthNum, i);
+      const dateString = dateObj.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+
+      const log = logs.find((l) => l.date === dateString);
+      const override = overrides.find((o) => o.date === dateString);
+
+      let isWorkingDay = workingDays.includes(dateObj.getDay());
+      let overrideBadge = null;
+
+      // 2. Check for Shift Swaps
+      if (override) {
+        isWorkingDay = override.isWorking;
+        overrideBadge = override.isWorking ? "Swapped In" : "Swapped Out";
+      }
+
+      let displayStatus = "";
+      let badgeClass = "";
+      let rawStatusForFilter = "";
+
+      // 3. Determine the correct label and color
+      if (!isWorkingDay) {
+        displayStatus = overrideBadge || "Off Day";
+        badgeClass = "bg-slate-50 text-slate-400 border border-slate-200";
+        rawStatusForFilter = "off";
+      } else if (log) {
+        displayStatus = overrideBadge
+          ? `${log.status} (${overrideBadge})`
+          : (log.status as string);
+        badgeClass =
+          log.status === "Present"
+            ? "bg-emerald-50 text-emerald-700 border border-emerald-100/50"
+            : log.status === "Late"
+              ? "bg-amber-50 text-amber-700 border border-amber-100/50"
+              : "bg-rose-50 text-rose-700 border border-rose-100/50";
+        rawStatusForFilter =
+          typeof log.status === "string" ? log.status.toLowerCase() : "";
+      } else {
+        if (dateObj < today) {
+          displayStatus = "Absent";
+          badgeClass = "bg-rose-50 text-rose-700 border border-rose-100/50";
+          rawStatusForFilter = "absent";
+        } else {
+          displayStatus = overrideBadge
+            ? `Scheduled (${overrideBadge})`
+            : "Scheduled";
+          badgeClass =
+            "bg-white text-slate-600 border border-slate-200 shadow-2xs";
+          rawStatusForFilter = "scheduled";
+        }
+      }
+
+      rows.push({
+        id: log?.id || `generated-${dateString}`,
+        date: dateString,
+        checkIn: log?.checkIn || "--:--",
+        checkOut: log?.checkOut || "--:--",
+        workHours: log?.workHours || "--",
+        location:
+          log?.location ||
+          (isWorkingDay && dateObj >= today ? "Pending" : "--"),
+        status: displayStatus,
+        badgeClass,
+        rawStatus: rawStatusForFilter,
+      });
+    }
+
+    return rows.reverse();
+  }, [currentDate, logs, overrides, workingDays]);
+
+  const filteredLogs = useMemo(() => {
+    if (statusFilter === "All") return allDaysInMonth;
+    return allDaysInMonth.filter(
+      (row) =>
+        row.rawStatus === statusFilter ||
+        row.status.toLowerCase().includes(statusFilter),
+    );
+  }, [allDaysInMonth, statusFilter]);
 
   const monthName = currentDate.toLocaleString("default", { month: "long" });
   const yearNum = currentDate.getFullYear();
@@ -442,7 +564,7 @@ export function AttendanceLogTable({
             <Clock className="w-4 h-4" />
           </div>
           <h3 className="text-sm font-bold text-slate-900">
-            Attendance History
+            Monthly Timesheet
           </h3>
         </div>
 
@@ -458,6 +580,8 @@ export function AttendanceLogTable({
               <option value="present">Present</option>
               <option value="late">Late</option>
               <option value="absent">Absent</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="off">Off Day</option>
             </select>
           </div>
 
@@ -497,9 +621,9 @@ export function AttendanceLogTable({
         </div>
       </div>
 
-      <div className="overflow-x-auto min-h-75">
+      <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
         <table className="w-full text-left text-xs text-slate-600">
-          <thead className="bg-slate-50 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+          <thead className="bg-slate-50 text-slate-400 font-semibold uppercase tracking-wider text-[10px] sticky top-0 z-10 shadow-xs">
             <tr>
               <th className="px-5 py-3">Date</th>
               <th className="px-5 py-3">Check In</th>
@@ -511,70 +635,50 @@ export function AttendanceLogTable({
           </thead>
           <tbody className="divide-y divide-slate-100">
             {filteredLogs.length > 0 ? (
-              filteredLogs.map((log) => {
-                const override = overrides.find((o) => o.date === log.date);
-                let displayStatus = log.status;
-                let badgeClass = "";
-
-                if (override && !override.isWorking) {
-                  displayStatus = "Swapped Out";
-                  badgeClass = "bg-slate-100 text-slate-500 border-slate-200";
-                } else if (override && override.isWorking) {
-                  displayStatus =
-                    log.status === "Present"
-                      ? "Present (Swapped In)"
-                      : `${log.status} (Swapped In)`;
-                  badgeClass =
-                    log.status === "Present"
-                      ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                      : "bg-amber-50 text-amber-700 border border-amber-200";
-                } else {
-                  // Standard badge colors
-                  badgeClass =
-                    log.status === "Present"
-                      ? "bg-emerald-50 text-emerald-700 border border-emerald-100/50"
-                      : log.status === "Late"
-                        ? "bg-amber-50 text-amber-700 border border-amber-100/50"
-                        : "bg-rose-50 text-rose-700 border border-rose-100/50";
-                }
-                return (
-                  <tr
-                    key={log.id}
-                    className="hover:bg-slate-50/50 transition-colors"
+              filteredLogs.map((row) => (
+                <tr
+                  key={row.id}
+                  className={`transition-colors ${row.rawStatus === "off" ? "bg-slate-50/40" : "hover:bg-slate-50/80"}`}
+                >
+                  <td
+                    className={`px-5 py-3 font-bold ${row.rawStatus === "off" ? "text-slate-400" : "text-slate-800"}`}
                   >
-                    <td className="px-5 py-3 font-bold text-slate-800">
-                      {log.date}
-                    </td>
-                    <td className="px-5 py-3 font-medium text-slate-600">
-                      {log.checkIn || "--:--"}
-                    </td>
-                    <td className="px-5 py-3 font-medium text-slate-600">
-                      {log.checkOut || "--:--"}
-                    </td>
-                    <td className="px-5 py-3 font-medium text-slate-600">
-                      {log.workHours || "--"}
-                    </td>
-                    <td className="px-5 py-3 text-slate-500">
-                      {log.location || "Office"}
-                    </td>
-                    <td className="px-5 py-3">
-                      <span
-                        className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wide uppercase ${badgeClass}`}
-                      >
-                        {displayStatus}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })
+                    {row.date}
+                  </td>
+                  <td
+                    className={`px-5 py-3 font-medium ${row.rawStatus === "off" ? "text-slate-300" : "text-slate-500"}`}
+                  >
+                    {row.checkIn}
+                  </td>
+                  <td
+                    className={`px-5 py-3 font-medium ${row.rawStatus === "off" ? "text-slate-300" : "text-slate-500"}`}
+                  >
+                    {row.checkOut}
+                  </td>
+                  <td
+                    className={`px-5 py-3 font-medium ${row.rawStatus === "off" ? "text-slate-300" : "text-slate-500"}`}
+                  >
+                    {row.workHours}
+                  </td>
+                  <td
+                    className={`px-5 py-3 ${row.rawStatus === "off" ? "text-slate-300" : "text-slate-400"}`}
+                  >
+                    {row.location}
+                  </td>
+                  <td className="px-5 py-3">
+                    <span
+                      className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wide uppercase ${row.badgeClass}`}
+                    >
+                      {row.status}
+                    </span>
+                  </td>
+                </tr>
+              ))
             ) : (
               <tr>
                 <td colSpan={6} className="px-5 py-12 text-center">
                   <p className="text-sm font-semibold text-slate-500">
-                    No attendance logs found for {monthName}.
-                  </p>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Check a different month or clear your filters.
+                    No records found for this filter.
                   </p>
                 </td>
               </tr>
@@ -593,7 +697,7 @@ export function AbsenceRequestModal({
   colleagues = [],
   workingDays = [1, 2, 3, 4, 5],
 }: {
-  leaveBalance?: LeaveBalance; 
+  leaveBalance?: LeaveBalance;
   colleagues?: {
     id: string;
     name: string;
@@ -610,7 +714,7 @@ export function AbsenceRequestModal({
   const [helperId, setHelperId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
- 
+
   const [originalDate, setOriginalDate] = useState("");
   const [exchangeDate, setExchangeDate] = useState("");
 
@@ -658,15 +762,15 @@ export function AbsenceRequestModal({
       const origDay = getDayOfWeek(originalDate);
       const exchDay = getDayOfWeek(exchangeDate);
       const helper = colleagues.find((c) => c.id === helperId);
- 
+
       if (originalDate && !workingDays.includes(origDay)) {
         return "Original Date must be one of your normally scheduled working days.";
       }
- 
+
       if (exchangeDate && workingDays.includes(exchDay)) {
         return "You are already scheduled to work on the Target Exchange Date.";
       }
- 
+
       if (
         helper &&
         exchangeDate &&
@@ -674,7 +778,7 @@ export function AbsenceRequestModal({
       ) {
         return `The Exchange Date is not a scheduled working day for ${helper.name}.`;
       }
- 
+
       if (helper && originalDate && helper.working_days?.includes(origDay)) {
         return `${helper.name} is already scheduled to work on your Original Date.`;
       }

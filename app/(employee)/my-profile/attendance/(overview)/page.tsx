@@ -69,7 +69,11 @@ async function AttendanceContent({ userId }: { userId: string }) {
 
   return (
     <>
-      <TodayStatusCard data={data.today} />
+      <TodayStatusCard
+        data={data.today}
+        workingDays={data.workingDays}
+        overrides={data.overrides}
+      />
       <AttendanceStatsGrid
         summary={data.summary}
         leaveBalance={data.leaveBalance}
@@ -89,14 +93,15 @@ async function AttendanceContent({ userId }: { userId: string }) {
           <LeaveBalanceCard leaveBalance={data.leaveBalance} />
         </div>
       </div>
- 
+
       <AttendanceLogTable
         logs={data.attendanceLog}
         overrides={data.overrides}
+        workingDays={data.workingDays}
         month={data.currentMonth}
         year={data.currentYear}
       />
- 
+
       <AbsenceRequestModal
         leaveBalance={data.leaveBalance}
         colleagues={colleagues}

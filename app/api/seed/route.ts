@@ -515,65 +515,65 @@ CREATE TABLE self_assessments (
       `;
 
     await db`
-      CREATE TABLE leave_requests (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      type VARCHAR(50) NOT NULL,                 
-      leave_category VARCHAR(50),               
-      start_date DATE,
-      end_date DATE,
-      total_days INT DEFAULT 0,
-      hours INT DEFAULT 0,
-      original_date DATE,                         
-      exchange_date DATE,  
-      helper_id UUID REFERENCES users(id) ON DELETE SET NULL, 
-      helper_status VARCHAR(50) DEFAULT 'Pending', 
-      
-      reason TEXT NOT NULL,
-      status VARCHAR(50) DEFAULT 'Pending' NOT NULL,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-    );
-`;
+        CREATE TABLE leave_requests (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        type VARCHAR(50) NOT NULL,                 
+        leave_category VARCHAR(50),               
+        start_date DATE,
+        end_date DATE,
+        total_days INT DEFAULT 0,
+        hours INT DEFAULT 0,
+        original_date DATE,                         
+        exchange_date DATE,  
+        helper_id UUID REFERENCES users(id) ON DELETE SET NULL, 
+        helper_status VARCHAR(50) DEFAULT 'Pending', 
+        
+        reason TEXT NOT NULL,
+        status VARCHAR(50) DEFAULT 'Pending' NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
 
     await db`
-  CREATE TABLE shift_rules (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    shift_name VARCHAR(100) NOT NULL,
-    start_time TIME NOT NULL,
-    end_time TIME NOT NULL,
-    grace_period_minutes INT DEFAULT 15 NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-  )
-`;
+      CREATE TABLE shift_rules (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        shift_name VARCHAR(100) NOT NULL,
+        start_time TIME NOT NULL,
+        end_time TIME NOT NULL,
+        grace_period_minutes INT DEFAULT 15 NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
 
     await db`
-  CREATE TABLE employment_history (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    title VARCHAR(150) NOT NULL,
-    company VARCHAR(150) NOT NULL,
-    period VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-  );
-`;
+      CREATE TABLE employment_history (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title VARCHAR(150) NOT NULL,
+        company VARCHAR(150) NOT NULL,
+        period VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
 
     await db`
-  INSERT INTO shift_rules (shift_name, start_time, end_time, grace_period_minutes)
-  VALUES 
-    ('Standard Shift (GMT+3)', '09:00:00', '17:00:00', 15),
-    ('Engineering Flex', '10:00:00', '18:00:00', 30)
-`;
+      INSERT INTO shift_rules (shift_name, start_time, end_time, grace_period_minutes)
+      VALUES 
+        ('Standard Shift (GMT+3)', '09:00:00', '17:00:00', 15),
+        ('Engineering Flex', '10:00:00', '18:00:00', 30)
+    `;
 
     await db`
-    CREATE TABLE IF NOT EXISTS performance_meetings (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    meeting_date TIMESTAMP WITH TIME ZONE NOT NULL,
-    topic VARCHAR(255),
-    status VARCHAR(50) DEFAULT 'Scheduled',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+        CREATE TABLE IF NOT EXISTS performance_meetings (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        meeting_date TIMESTAMP WITH TIME ZONE NOT NULL,
+        topic VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'Scheduled',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
     `;
 
     // adding admin ID

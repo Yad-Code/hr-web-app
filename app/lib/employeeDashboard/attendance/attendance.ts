@@ -83,9 +83,9 @@ export async function getAttendanceData(
 
     const profile =
       await sql`SELECT working_days FROM users WHERE id = ${userId} LIMIT 1`;
-    const overridesLog =
-      await sql`SELECT target_date, is_working FROM schedule_overrides WHERE user_id = ${userId}`;
-
+    const overridesLog = await sql`
+      SELECT target_date, is_working FROM schedule_overrides WHERE user_id = ${userId}
+    `;
     const todayRecord = todayLogs[0];
     const balanceRecord = balanceLogs[0];
 
@@ -112,15 +112,16 @@ export async function getAttendanceData(
         monthlyTotalHours: balanceRecord?.monthly_total_hours ?? 16,
         monthlyRemainingHours: balanceRecord?.monthly_remaining_hours ?? 0,
       },
-      currentMonth: currentMonthName,
-      currentYear: currentYearNum,
       calendarDays: [],
       workingDays: profile[0]?.working_days || [1, 2, 3, 4, 5],
+      currentMonth: new Date().toLocaleString("en-US", { month: "long" }),
+      currentYear: new Date().getFullYear(),
       overrides: overridesLog.map((o) => {
         const dateStr =
           typeof o.target_date === "string"
             ? o.target_date
             : o.target_date.toISOString();
+
         const [y, m, d] = dateStr.split("T")[0].split("-");
         const safeDate = new Date(Number(y), Number(m) - 1, Number(d));
 
@@ -133,19 +134,27 @@ export async function getAttendanceData(
           isWorking: o.is_working,
         };
       }),
-      attendanceLog: monthlyLogs.map((log) => ({
-        id: log.id,
-        date: new Date(log.date).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
-        checkIn: log.check_in || "--:--",
-        checkOut: log.check_out || "--:--",
-        workHours: log.work_hours || "0h 0m",
-        status: log.status || "Present",
-        location: log.work_location || "Office",
-      })),
+      attendanceLog: monthlyLogs.map((log) => {
+        const dateStr =
+          typeof log.date === "string" ? log.date : log.date.toISOString();
+
+        const [y, m, d] = dateStr.split("T")[0].split("-");
+        const safeDate = new Date(Number(y), Number(m) - 1, Number(d));
+
+        return {
+          id: log.id,
+          date: safeDate.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          }),
+          checkIn: log.check_in || "--:--",
+          checkOut: log.check_out || "--:--",
+          workHours: log.work_hours || "0h 0m",
+          status: log.status || "Present",
+          location: log.work_location || "Office",
+        };
+      }),
     };
   } catch (error) {
     console.error("Failed to fetch attendance data:", error);

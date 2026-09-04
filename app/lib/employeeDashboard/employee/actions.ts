@@ -193,9 +193,9 @@ export async function toggleCheckInStatus(
       };
     }
 
-    // 2. Resolve actual Postgres UUID using verified email
+    // 2. Fetch user ID and their base working days
     const userQuery = await sql`
-      SELECT id FROM users WHERE email = ${session.user.email}
+      SELECT id, working_days FROM users WHERE email = ${session.user.email}
     `;
 
     if (!userQuery || userQuery.length === 0) {
@@ -203,8 +203,33 @@ export async function toggleCheckInStatus(
     }
 
     const userId = userQuery[0].id;
+    const workingDays = userQuery[0].working_days || [1, 2, 3, 4, 5];
     const today = getLocalDateString();
     const nowTime = getFormattedTime();
+
+    // 3. Safely calculate the day of the week to prevent timezone shifting
+    const [y, m, d] = today.split("-");
+    const dayOfWeek = new Date(Number(y), Number(m) - 1, Number(d)).getDay();
+
+    let isWorkingDay = workingDays.includes(dayOfWeek);
+
+    // 4. Check for any approved shift swaps for today
+    const overrideQuery = await sql`
+      SELECT is_working FROM schedule_overrides 
+      WHERE user_id = ${userId} AND target_date = ${today}
+    `;
+
+    if (overrideQuery && overrideQuery.length > 0) {
+      isWorkingDay = overrideQuery[0].is_working;
+    }
+
+    // 5. Block check-in if it's an off day
+    if (!isWorkingDay) {
+      return {
+        success: false,
+        error: "You are not scheduled to work today. Enjoy your day off!",
+      };
+    }
 
     const existingRecord = await getTodayAttendance(userId, today);
 
@@ -370,7 +395,7 @@ export async function submitWFHRequest(formData: FormData) {
         VALUES (${helperId}, ${userId}, 'Shift Exchange Request', 'Someone wants to trade shifts with you.', 'Exchange')
       `;
     }
- 
+
     revalidatePath("/my-profile/attendance");
     revalidatePath("/dashboard");
 
@@ -491,11 +516,15 @@ export async function respondToExchangeRequest(
         WHERE id = ${requestId}
       `;
     } else {
+      // 1. Update the coworker's acceptance
       await sql`
         UPDATE leave_requests 
         SET helper_status = 'Accepted' 
         WHERE id = ${requestId}
       `;
+
+      // 2. AUTO-APPROVE IT so the schedule overrides are created instantly!
+      await approveLeaveRequest(requestId);
     }
 
     revalidatePath("/", "layout");
