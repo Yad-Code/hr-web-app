@@ -49,10 +49,16 @@ export interface AttendanceData {
 
 export async function getAttendanceData(
   userId?: string,
+  targetMonth?: string,
 ): Promise<AttendanceData> {
   const now = new Date();
+
   const currentMonthName = now.toLocaleString("default", { month: "long" });
   const currentYearNum = now.getFullYear();
+
+  const targetDate = targetMonth ? new Date(`${targetMonth}-01T12:00:00`) : now;
+  const targetY = targetDate.getFullYear();
+  const targetM = targetDate.getMonth();
 
   try {
     if (!userId) {
@@ -83,11 +89,73 @@ export async function getAttendanceData(
 
     const profile =
       await sql`SELECT working_days FROM users WHERE id = ${userId} LIMIT 1`;
-    const overridesLog = await sql`
-      SELECT target_date, is_working FROM schedule_overrides WHERE user_id = ${userId}
-    `;
+    const workingDays = profile[0]?.working_days || [1, 2, 3, 4, 5];
+
+    const overridesLog =
+      await sql`SELECT target_date, is_working FROM schedule_overrides WHERE user_id = ${userId}`;
     const todayRecord = todayLogs[0];
     const balanceRecord = balanceLogs[0];
+
+    const isCurrentMonth =
+      targetY === now.getFullYear() && targetM === now.getMonth();
+    const limitDate = isCurrentMonth
+      ? now.getDate()
+      : new Date(targetY, targetM + 1, 0).getDate();
+
+    const thisMonthLogs = monthlyLogs.filter((log) => {
+      const dateStr =
+        typeof log.date === "string" ? log.date : log.date.toISOString();
+      return dateStr.startsWith(
+        `${targetY}-${String(targetM + 1).padStart(2, "0")}`,
+      );
+    });
+
+    const daysPresent = thisMonthLogs.filter((l) => {
+      const status = (l.status || "").trim().toLowerCase();
+      return status === "present" || status === "late";
+    }).length;
+
+    const lateArrivals = thisMonthLogs.filter((l) => {
+      const status = (l.status || "").trim().toLowerCase();
+      return status === "late";
+    }).length;
+
+    let totalMinutes = 0;
+    thisMonthLogs.forEach((log) => {
+      const status = (log.status || "").trim().toLowerCase();
+      if (status === "present" || status === "late") {
+        if (log.work_hours) {
+          const match = log.work_hours.match(/(\d+)\s*h\s*(\d*)\s*m?/i);
+          if (match) {
+            totalMinutes +=
+              (parseInt(match[1]) || 0) * 60 + (parseInt(match[2]) || 0);
+          }
+        }
+      }
+    });
+    const totalHoursLogged = Math.floor(totalMinutes / 60);
+    let expectedWorkingDays = 0;
+    for (let i = 1; i <= limitDate; i++) {
+      const dObj = new Date(targetY, targetM, i);
+      const dbDateStr = `${targetY}-${String(targetM + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
+
+      let isWorkingDay = workingDays.includes(dObj.getDay());
+      const override = overridesLog.find((o) => {
+        const oDate =
+          typeof o.target_date === "string"
+            ? o.target_date
+            : o.target_date.toISOString();
+        return oDate.startsWith(dbDateStr);
+      });
+
+      if (override) isWorkingDay = override.is_working;
+      if (isWorkingDay) expectedWorkingDays++;
+    }
+
+    const attendanceRate =
+      expectedWorkingDays > 0
+        ? Math.min(100, Math.round((daysPresent / expectedWorkingDays) * 100))
+        : 100;
 
     return {
       today: {
@@ -98,12 +166,7 @@ export async function getAttendanceData(
         shiftEnd: "05:00 PM",
         workLocation: todayRecord?.work_location || "Office",
       },
-      summary: {
-        attendanceRate: 96,
-        daysPresent: monthlyLogs.length,
-        lateArrivals: monthlyLogs.filter((l) => l.status === "Late").length,
-        totalHoursLogged: 168,
-      },
+      summary: { attendanceRate, daysPresent, lateArrivals, totalHoursLogged },
       leaveBalance: {
         annualRemaining: balanceRecord?.annual_remaining ?? 0,
         annualTotal: balanceRecord?.annual_total ?? 20,
@@ -113,9 +176,9 @@ export async function getAttendanceData(
         monthlyRemainingHours: balanceRecord?.monthly_remaining_hours ?? 0,
       },
       calendarDays: [],
-      workingDays: profile[0]?.working_days || [1, 2, 3, 4, 5],
-      currentMonth: new Date().toLocaleString("en-US", { month: "long" }),
-      currentYear: new Date().getFullYear(),
+      workingDays,
+      currentMonth: targetDate.toLocaleString("en-US", { month: "long" }),
+      currentYear: targetY,
       overrides: overridesLog.map((o) => {
         const dateStr =
           typeof o.target_date === "string"

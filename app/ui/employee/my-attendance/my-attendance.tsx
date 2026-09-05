@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useTransition, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+
 import {
   MapPin,
   Loader2,
   X,
-  Plus,
-  ChevronLeft,
-  ChevronRight,
+  Plus, 
   Clock,
   Filter,
   Download,
@@ -27,21 +27,40 @@ import {
   exportAttendanceCSV,
 } from "@/app/lib/employeeDashboard/employee/actions";
 
-export function ExportButton() {
-  const [isExporting, setIsExporting] = useState(false);
+export function DashboardControls() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // Default to the current month (e.g., "2026-09")
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  });
+  // Read current month from URL, or default to right now
+  const currentMonth =
+    searchParams.get("month") || new Date().toISOString().slice(0, 7);
+
+  const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("month", e.target.value);
+    router.push(`?${params.toString()}`); // Update URL to trigger server refresh
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="month"
+        value={currentMonth}
+        onChange={handleMonthChange}
+        className="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-xs outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer"
+      />
+      <ExportButton selectedMonth={currentMonth} />
+    </div>
+  );
+}
+
+export function ExportButton({ selectedMonth }: { selectedMonth: string }) {
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      // Pass the chosen month to the server
       const result = await exportAttendanceCSV(selectedMonth);
-
       if (!result.success || !result.csv) {
         alert(result.error || "Failed to generate export.");
         return;
@@ -65,27 +84,19 @@ export function ExportButton() {
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <input
-        type="month"
-        value={selectedMonth}
-        onChange={(e) => setSelectedMonth(e.target.value)}
-        className="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-xs outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer"
-      />
-      <button
-        type="button"
-        onClick={handleExport}
-        disabled={isExporting}
-        className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-xs active:scale-95 cursor-pointer disabled:opacity-50"
-      >
-        {isExporting ? (
-          <Loader2 className="w-4 h-4 text-slate-500 animate-spin" />
-        ) : (
-          <Download className="w-4 h-4 text-slate-500" />
-        )}
-        <span>{isExporting ? "Exporting..." : "Export"}</span>
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={handleExport}
+      disabled={isExporting}
+      className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-xs active:scale-95 cursor-pointer disabled:opacity-50"
+    >
+      {isExporting ? (
+        <Loader2 className="w-4 h-4 text-slate-500 animate-spin" />
+      ) : (
+        <Download className="w-4 h-4 text-slate-500" />
+      )}
+      <span>{isExporting ? "Exporting..." : "Export"}</span>
+    </button>
   );
 }
 
@@ -292,21 +303,26 @@ interface AttendanceCalendarProps {
   logs?: AttendanceLog[];
   workingDays?: number[];
   overrides?: { date: string; isWorking: boolean }[];
+  month?: string;
+  year?: number;
 }
 
 export function AttendanceCalendar({
   logs = [],
   workingDays = [1, 2, 3, 4, 5],
   overrides = [],
+  month,
+  year,
 }: AttendanceCalendarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  // Sync strictly to the global month/year passed from the server
+  const monthIndex = month
+    ? new Date(Date.parse(`${month} 1, 2000`)).getMonth()
+    : new Date().getMonth();
+  const yearNum = year || new Date().getFullYear();
+  const monthName =
+    month || new Date().toLocaleString("default", { month: "long" });
 
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-  const monthIndex = currentDate.getMonth();
-  const yearNum = currentDate.getFullYear();
-  const monthName = currentDate.toLocaleString("default", { month: "long" });
-
   const daysInMonth = new Date(yearNum, monthIndex + 1, 0).getDate();
   const startDayOfWeek = new Date(yearNum, monthIndex, 1).getDay();
 
@@ -315,10 +331,6 @@ export function AttendanceCalendar({
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
 
-  // Navigation handlers (Instant, no server reload)
-  const prevMonth = () => setCurrentDate(new Date(yearNum, monthIndex - 1, 1));
-  const nextMonth = () => setCurrentDate(new Date(yearNum, monthIndex + 1, 1));
-
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs text-left h-full flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
@@ -326,22 +338,6 @@ export function AttendanceCalendar({
           <h3 className="text-sm font-bold text-slate-900 w-32">
             {monthName} {yearNum}
           </h3>
-
-          <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5 shadow-xs">
-            <button
-              onClick={prevMonth}
-              className="p-1 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-500 hover:text-slate-900 cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <div className="w-px h-4 bg-slate-200 mx-0.5" />
-            <button
-              onClick={nextMonth}
-              className="p-1 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-500 hover:text-slate-900 cursor-pointer"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
         </div>
 
         <div className="flex items-center gap-3 text-[11px] text-slate-500 font-medium">
@@ -385,22 +381,33 @@ export function AttendanceCalendar({
           }
 
           const dateObj = new Date(yearNum, monthIndex, dayNum);
-          const dateString = dateObj.toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          });
-
           let isWorkingDay = workingDays.includes(dateObj.getDay());
           let overrideBadge = null;
 
-          const override = overrides.find((o) => o.date === dateString);
+          // ROBUST DATE MATCHING: Ignores text formatting differences
+          const override = overrides.find((o) => {
+            const d = new Date(o.date);
+            return (
+              d.getDate() === dayNum &&
+              d.getMonth() === monthIndex &&
+              d.getFullYear() === yearNum
+            );
+          });
+
           if (override) {
             isWorkingDay = override.isWorking;
             overrideBadge = override.isWorking ? "Swapped In" : "Swapped Out";
           }
 
-          const logForDay = logs.find((log) => log.date === dateString);
+          const logForDay = logs.find((l) => {
+            const d = new Date(l.date);
+            return (
+              d.getDate() === dayNum &&
+              d.getMonth() === monthIndex &&
+              d.getFullYear() === yearNum
+            );
+          });
+
           const status = logForDay?.status?.toLowerCase();
 
           // Apply specialized styles based on working day and overrides
@@ -428,7 +435,6 @@ export function AttendanceCalendar({
             bgClass = "bg-purple-50 border-purple-200 text-purple-900";
             statusText = "Leave";
           } else if (overrideBadge === "Swapped In") {
-            // Future swapped-in shift that hasn't happened yet
             bgClass =
               "bg-indigo-50 border-indigo-200 text-indigo-900 shadow-sm";
             statusText = "Swapped In";
@@ -507,7 +513,7 @@ export function AttendanceLogTable({
   logs = [],
   overrides = [],
   workingDays = [1, 2, 3, 4, 5],
-  month, 
+  month,
   year,
 }: {
   logs: AttendanceLog[];
@@ -516,43 +522,52 @@ export function AttendanceLogTable({
   month?: string;
   year?: number;
 }) {
-  const [currentDate, setCurrentDate] = useState(() => {
-    const date = new Date();
-    if (month && year) {
-      date.setMonth(new Date(Date.parse(`${month} 1, 2000`)).getMonth());
-      date.setFullYear(year);
-    }
-    return date;
-  });
-
   const [statusFilter, setStatusFilter] = useState("All");
 
-  // 1. Generate a row for EVERY day of the month
-  const allDaysInMonth = useMemo(() => {
-    const yearNum = currentDate.getFullYear();
-    const monthNum = currentDate.getMonth();
-    const daysInMonth = new Date(yearNum, monthNum + 1, 0).getDate();
+  const monthIndex = month
+    ? new Date(Date.parse(`${month} 1, 2000`)).getMonth()
+    : new Date().getMonth();
+  const yearNum = year || new Date().getFullYear();
+  const monthName =
+    month || new Date().toLocaleString("default", { month: "long" });
 
+  const allDaysInMonth = useMemo(() => {
+    const daysInMonth = new Date(yearNum, monthIndex + 1, 0).getDate();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const rows = [];
 
     for (let i = 1; i <= daysInMonth; i++) {
-      const dateObj = new Date(yearNum, monthNum, i);
-      const dateString = dateObj.toLocaleDateString("en-US", {
+      const dateObj = new Date(yearNum, monthIndex, i);
+      const displayDate = dateObj.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
         year: "numeric",
       });
 
-      const log = logs.find((l) => l.date === dateString);
-      const override = overrides.find((o) => o.date === dateString);
+      // ROBUST DATE MATCHING
+      const log = logs.find((l) => {
+        const d = new Date(l.date);
+        return (
+          d.getDate() === i &&
+          d.getMonth() === monthIndex &&
+          d.getFullYear() === yearNum
+        );
+      });
+
+      const override = overrides.find((o) => {
+        const d = new Date(o.date);
+        return (
+          d.getDate() === i &&
+          d.getMonth() === monthIndex &&
+          d.getFullYear() === yearNum
+        );
+      });
 
       let isWorkingDay = workingDays.includes(dateObj.getDay());
       let overrideBadge = null;
 
-      // 2. Check for Shift Swaps
       if (override) {
         isWorkingDay = override.isWorking;
         overrideBadge = override.isWorking ? "Swapped In" : "Swapped Out";
@@ -562,7 +577,6 @@ export function AttendanceLogTable({
       let badgeClass = "";
       let rawStatusForFilter = "";
 
-      // 3. Determine the correct label and color
       if (!isWorkingDay) {
         displayStatus = overrideBadge || "Off Day";
         badgeClass = "bg-slate-50 text-slate-400 border border-slate-200";
@@ -595,8 +609,8 @@ export function AttendanceLogTable({
       }
 
       rows.push({
-        id: log?.id || `generated-${dateString}`,
-        date: dateString,
+        id: log?.id || `generated-${displayDate}`,
+        date: displayDate,
         checkIn: log?.checkIn || "--:--",
         checkOut: log?.checkOut || "--:--",
         workHours: log?.workHours || "--",
@@ -610,7 +624,7 @@ export function AttendanceLogTable({
     }
 
     return rows.reverse();
-  }, [currentDate, logs, overrides, workingDays]);
+  }, [logs, overrides, workingDays, monthIndex, yearNum]);
 
   const filteredLogs = useMemo(() => {
     if (statusFilter === "All") return allDaysInMonth;
@@ -621,9 +635,6 @@ export function AttendanceLogTable({
     );
   }, [allDaysInMonth, statusFilter]);
 
-  const monthName = currentDate.toLocaleString("default", { month: "long" });
-  const yearNum = currentDate.getFullYear();
-
   return (
     <div className="bg-white border border-slate-100 rounded-2xl shadow-xs overflow-hidden text-left flex flex-col">
       <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
@@ -632,7 +643,7 @@ export function AttendanceLogTable({
             <Clock className="w-4 h-4" />
           </div>
           <h3 className="text-sm font-bold text-slate-900">
-            Monthly Timesheet
+            Monthly Timesheet: {monthName} {yearNum}
           </h3>
         </div>
 
@@ -651,40 +662,6 @@ export function AttendanceLogTable({
               <option value="scheduled">Scheduled</option>
               <option value="off">Off Day</option>
             </select>
-          </div>
-
-          <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5 shadow-xs">
-            <button
-              onClick={() =>
-                setCurrentDate(
-                  new Date(
-                    currentDate.getFullYear(),
-                    currentDate.getMonth() - 1,
-                    1,
-                  ),
-                )
-              }
-              className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500 cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="text-xs font-bold text-slate-700 w-24 text-center">
-              {monthName} {yearNum}
-            </span>
-            <button
-              onClick={() =>
-                setCurrentDate(
-                  new Date(
-                    currentDate.getFullYear(),
-                    currentDate.getMonth() + 1,
-                    1,
-                  ),
-                )
-              }
-              className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500 cursor-pointer"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
           </div>
         </div>
       </div>
@@ -757,6 +734,7 @@ export function AttendanceLogTable({
     </div>
   );
 }
+
 type RequestType = "wfh" | "timeoff" | "dayoff" | "exchange";
 type LeaveCategory = "annual" | "sick" | "unpaid";
 

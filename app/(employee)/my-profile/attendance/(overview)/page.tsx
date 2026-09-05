@@ -14,22 +14,28 @@ import {
   PendingExchangesWidget,
   PendingExchangeRequest,
   ExportButton,
+  DashboardControls,
 } from "@/app/ui/employee/my-attendance/my-attendance";
-import { 
+import {
   TodayStatusSkeleton,
   StatsGridSkeleton,
   CalendarSkeleton,
   LogTableSkeleton,
 } from "@/app/ui/employee/my-attendance/skeletons";
 
-async function AttendanceContent({ userId }: { userId: string }) {
-  const data = await getAttendanceData(userId);
+async function AttendanceContent({
+  userId,
+  targetMonth,
+}: {
+  userId: string;
+  targetMonth?: string;
+}) {
+  const data = await getAttendanceData(userId, targetMonth);
 
   const userProfile =
     await sql`SELECT department FROM users WHERE id = ${userId}`;
   const userDept = userProfile[0]?.department;
 
-  // UPDATED: Fetch working_days array for each colleague
   const colleaguesQuery = await sql`
     SELECT id, name, job_title, working_days 
     FROM users 
@@ -70,9 +76,12 @@ async function AttendanceContent({ userId }: { userId: string }) {
       <div className="grid gap-6 grid-cols-1 xl:grid-cols-3">
         <div className="xl:col-span-2">
           <AttendanceCalendar
+            key={targetMonth}
             logs={data.attendanceLog}
             workingDays={data.workingDays}
             overrides={data.overrides}
+            month={data.currentMonth}
+            year={data.currentYear}
           />
         </div>
         <div className="xl:col-span-1 space-y-4">
@@ -83,6 +92,7 @@ async function AttendanceContent({ userId }: { userId: string }) {
       </div>
 
       <AttendanceLogTable
+        key={targetMonth}
         logs={data.attendanceLog}
         overrides={data.overrides}
         workingDays={data.workingDays}
@@ -99,7 +109,15 @@ async function AttendanceContent({ userId }: { userId: string }) {
   );
 }
 
-export default async function EmployeeAttendancePage() {
+interface PageProps {
+  searchParams: Promise<{ month?: string }>;
+}
+
+export default async function EmployeeAttendancePage({
+  searchParams,
+}: PageProps) {
+  const resolvedParams = await searchParams;
+  const targetMonth = resolvedParams.month;
   const session = await auth();
 
   if (!session?.user?.email) {
@@ -130,7 +148,7 @@ export default async function EmployeeAttendancePage() {
       <SectionHeader
         title="My Attendance & Schedule"
         description="Track your daily check-ins, view attendance history, and manage your schedule."
-        action={<ExportButton />}
+        action={<DashboardControls />}
       />
 
       <Suspense
@@ -151,7 +169,7 @@ export default async function EmployeeAttendancePage() {
           </div>
         }
       >
-        <AttendanceContent userId={dbUserId} />
+        <AttendanceContent userId={dbUserId} targetMonth={targetMonth} />
       </Suspense>
     </main>
   );

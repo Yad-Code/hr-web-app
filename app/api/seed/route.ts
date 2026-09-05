@@ -33,6 +33,7 @@ export async function GET() {
     await db`DROP TABLE IF EXISTS attendance`;
     await db`DROP TABLE IF EXISTS requests`;
     await db`DROP TABLE IF EXISTS schedules`;
+    await db`DROP TABLE IF EXISTS schedule_overrides`;
 
     await db`DROP TABLE IF EXISTS users CASCADE`;
     await db`DROP TYPE IF EXISTS user_role`;
@@ -41,7 +42,6 @@ export async function GET() {
     await db`DROP TABLE IF EXISTS payment_methods`;
     await db`DROP TABLE IF EXISTS pay_stub_items`;
     await db`DROP TABLE IF EXISTS pay_stubs`;
-    await db`DROP TABLE IF EXISTS schedule_overrides`;
 
     //ADMIN Time and Attendance tables
     await db`DROP TABLE IF EXISTS leave_requests`;
@@ -628,23 +628,12 @@ CREATE TABLE self_assessments (
         `;
 
       await db`
-          INSERT INTO attendance (user_id, date, check_in, check_out, work_hours, status, work_location)
+         INSERT INTO attendance (user_id, date, check_in, check_out, work_hours, status, work_location)
           VALUES 
-            (${emp.id}, '2026-07-01', '08:50 AM', '05:00 PM', '8h 10m', 'Present', 'Office'),
-            (${emp.id}, '2026-07-02', '08:55 AM', '05:02 PM', '8h 07m', 'Present', 'Office'),
-            (${emp.id}, '2026-07-03', '09:15 AM', '05:10 PM', '7h 55m', 'Late', 'Office'),
-            (${emp.id}, '2026-07-06', '08:48 AM', '05:00 PM', '8h 12m', 'Present', 'Remote'),
-            (${emp.id}, '2026-07-07', '08:52 AM', '05:01 PM', '8h 09m', 'Present', 'Office'),
-            (${emp.id}, '2026-07-08', '09:05 AM', '05:00 PM', '7h 55m', 'Late', 'Office'),
-            (${emp.id}, '2026-07-09', '08:50 AM', '05:00 PM', '8h 10m', 'Present', 'Remote'),
-            (${emp.id}, '2026-07-10', '08:59 AM', '04:30 PM', '7h 31m', 'Present', 'Office'),
-            (${emp.id}, '2026-07-13', '08:54 AM', '05:05 PM', '8h 11m', 'Present', 'Office'),
-            (${emp.id}, '2026-07-14', '08:50 AM', '05:00 PM', '8h 10m', 'Present', 'Office'),
-            (${emp.id}, '2026-07-15', '08:45 AM', '05:00 PM', '8h 15m', 'Present', 'Office'),
-            (${emp.id}, '2026-07-16', '08:55 AM', '05:02 PM', '8h 07m', 'Present', 'Remote'),
-            (${emp.id}, '2026-07-17', '09:00 AM', '04:00 PM', '7h 00m', 'Present', 'Office'),
-            (${emp.id}, '2026-07-20', '08:52 AM', '05:05 PM', '8h 13m', 'Present', 'Office'),
-            (${emp.id}, '2026-07-21', '09:02 AM', '05:00 PM', '7h 58m', 'Present', 'Remote')
+            (${emp.id}, '2026-09-01', '08:50 AM', '05:00 PM', '8h 10m', 'Present', 'Office'),
+            (${emp.id}, '2026-09-02', '08:55 AM', '05:02 PM', '8h 07m', 'Present', 'Office'),
+            (${emp.id}, '2026-09-03', '09:15 AM', '05:10 PM', '7h 55m', 'Late', 'Office'),
+            (${emp.id}, '2026-09-04', '08:48 AM', '05:00 PM', '8h 12m', 'Present', 'Remote')
         `;
 
       await db`
