@@ -16,23 +16,27 @@ interface PageProps {
 }
 
 interface AttendanceDbRow {
-  id: string;
+  id: string | null;
+  user_id: string;
   employee_name: string;
   department: string;
   image_url: string | null;
-  status: "Present" | "Late" | "Absent" | "On Leave";
+  shift_type: string; // <-- Added to combine queries
+  status: "Present" | "Late" | "Absent" | "On Leave" | "Off Day" | null;
   check_in: string | null;
   check_out: string | null;
   work_hours: string | null;
   job_title: string | null;
-  created_at: string | Date;
+  working_days: number[];
+  created_at: string | Date | null;
 }
+
 interface LeaveRequestDbRow {
   id: string;
   employee_name: string;
   image_url: string | null;
   type: string;
-  leave_category: string | null; // Added
+  leave_category: string | null;
   start_date: string;
   end_date: string;
   total_days: number;
@@ -42,10 +46,12 @@ interface LeaveRequestDbRow {
   created_at: string | Date;
 }
 
-interface ShiftDbRow {
-  shift_type: string;
-  shift_start: string;
-  shift_end: string;
+interface ShiftRuleDbRow {
+  id: string;
+  shift_name: string;
+  start_time: string;
+  end_time: string;
+  grace_period_minutes: number;
 }
 
 export default async function AdminAttendancePage({ searchParams }: PageProps) {
@@ -53,37 +59,58 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
   const todayString = new Date().toISOString().split("T")[0];
 
   const targetDate = resolvedParams.date || todayString;
-
-  const [totalResult] = await db`
-    SELECT COUNT(*)::int as count FROM users WHERE role = 'employee'
-  `;
-  const totalEmployees = totalResult?.count || 0;
-
+ 
   const attendanceRows = (await db`
     SELECT 
       a.id,
+      u.id AS user_id,
       u.name AS employee_name,
       u.department,
       u.image_url,
+      u.working_days, 
+      u.shift_type,
       a.status,
       a.check_in,
       a.check_out,
       a.work_hours
-    FROM attendance a
-    JOIN users u ON a.user_id = u.id
-    WHERE a.date = ${targetDate}
+    FROM users u
+    LEFT JOIN attendance a ON u.id = a.user_id AND a.date = ${targetDate}
+    WHERE u.role = 'employee'
+    ORDER BY u.name ASC
   `) as unknown as AttendanceDbRow[];
+ 
+  const totalEmployees = attendanceRows.length;  
 
-  const dailyLogs: DailyAttendanceRow[] = attendanceRows.map((row) => ({
-    id: row.id,
-    employeeName: row.employee_name,
-    department: row.department,
-    imageUrl: row.image_url,
-    status: row.status,
-    checkInTime: row.check_in,
-    checkOutTime: row.check_out,
-    workHours: row.work_hours,
-  }));
+  const employeeList = attendanceRows.map((row) => ({
+    id: row.user_id,
+    name: row.employee_name,
+    department: row.department || "Unassigned",
+    shift_type: row.shift_type || "Standard",
+  })); 
+
+  const [year, month, day] = targetDate.split("-").map(Number);
+  const targetDayOfWeek = new Date(year, month - 1, day).getDay();
+
+  const dailyLogs: DailyAttendanceRow[] = attendanceRows.map((row) => {
+    let currentStatus = row.status;
+
+    if (!currentStatus) {
+      currentStatus = row.working_days.includes(targetDayOfWeek)
+        ? "Absent"
+        : "Off Day";
+    }
+
+    return {
+      id: row.id || `pending-${row.user_id}`,
+      employeeName: row.employee_name,
+      department: row.department || "Unassigned",
+      imageUrl: row.image_url,
+      status: currentStatus as DailyAttendanceRow["status"],
+      checkInTime: row.check_in || null,
+      checkOutTime: row.check_out || null,
+      workHours: row.work_hours || null,
+    };
+  });
 
   const presentToday = dailyLogs.filter((l) => l.status === "Present").length;
   const lateToday = dailyLogs.filter((l) => l.status === "Late").length;
@@ -134,7 +161,7 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
       startDate: row.start_date,
       endDate: row.end_date,
       days: row.total_days,
-      hours: row.hours, // Pass actual hours
+      hours: row.hours,
       jobTitle: row.job_title,
       createdAt: row.created_at,
       status: (row.status.charAt(0).toUpperCase() + row.status.slice(1)) as
@@ -145,17 +172,17 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
   }) as unknown as LeaveRequestRow[];
 
   const shiftRows = (await db`
-    SELECT DISTINCT shift_type, shift_start, shift_end 
-    FROM users 
-    WHERE role = 'employee'
-  `) as unknown as ShiftDbRow[];
+    SELECT id, shift_name, start_time, end_time, grace_period_minutes
+    FROM shift_rules
+    ORDER BY created_at ASC
+  `) as unknown as ShiftRuleDbRow[];
 
-  const shifts: ShiftRule[] = shiftRows.map((row, index) => ({
-    id: `s_${index + 1}`,
-    shiftName: row.shift_type,
-    startTime: row.shift_start,
-    endTime: row.shift_end,
-    gracePeriodMinutes: 15,
+  const shifts: ShiftRule[] = shiftRows.map((row) => ({
+    id: row.id,
+    shiftName: row.shift_name,
+    startTime: row.start_time,
+    endTime: row.end_time,
+    gracePeriodMinutes: row.grace_period_minutes,
   }));
 
   return (
@@ -171,7 +198,12 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
           </p>
         </div>
 
-        <AttendanceHeaderActions logs={dailyLogs} targetDate={targetDate} />
+        <AttendanceHeaderActions
+          logs={dailyLogs}
+          targetDate={targetDate}
+          employees={employeeList}
+          shifts={shifts}
+        />
       </div>
 
       <AttendanceKpiCards stats={kpis} />

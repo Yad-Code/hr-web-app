@@ -11,8 +11,8 @@ export interface DailyAttendanceRow {
   employeeName: string;
   department: string;
   imageUrl: string | null;
-  status: "Present" | "Late" | "Absent" | "On Leave";
-  checkInTime: string | null;
+  status: "Present" | "Late" | "Absent" | "On Leave" | "Off Day";
+  checkInTime: string | null; 
   checkOutTime: string | null;
   workHours: string | null;
   shiftName?: string;

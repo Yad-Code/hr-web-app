@@ -64,8 +64,11 @@ export async function getAttendanceData(
     if (!userId) {
       return getFallbackAttendanceData(currentMonthName, currentYearNum);
     }
+    const localY = now.getFullYear();
+    const localM = String(now.getMonth() + 1).padStart(2, "0");
+    const localD = String(now.getDate()).padStart(2, "0");
+    const todayStr = `${localY}-${localM}-${localD}`;
 
-    const todayStr = now.toISOString().split("T")[0];
     const todayLogs = await sql`
       SELECT check_in, check_out, status, work_location
       FROM attendance

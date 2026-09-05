@@ -7,10 +7,12 @@ import {
   MapPin,
   Loader2,
   X,
-  Plus, 
+  Plus,
   Clock,
   Filter,
   Download,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 import {
@@ -133,6 +135,7 @@ export function TodayStatusCard({
 }) {
   const [isPending, startTransition] = useTransition();
   const [location, setLocation] = useState<"Office" | "Remote">("Office");
+  const router = useRouter();
 
   const isCheckedIn = Boolean(data?.checkIn);
   const isCheckedOut = Boolean(data?.checkOut);
@@ -142,14 +145,17 @@ export function TodayStatusCard({
   const shiftType = data?.shiftType || "Standard (Mon - Fri)";
 
   const todayObj = new Date();
-  const todayStr = todayObj.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
   let isWorkingDay = workingDays.includes(todayObj.getDay());
 
-  const override = overrides.find((o) => o.date === todayStr);
+  const override = overrides.find((o) => {
+    const d = new Date(o.date);
+    return (
+      d.getDate() === todayObj.getDate() &&
+      d.getMonth() === todayObj.getMonth() &&
+      d.getFullYear() === todayObj.getFullYear()
+    );
+  });
+
   if (override) {
     isWorkingDay = override.isWorking;
   }
@@ -159,6 +165,8 @@ export function TodayStatusCard({
       const res = await toggleCheckInStatus(location);
       if (!res?.success) {
         alert(res?.error || "An error occurred while updating status.");
+      } else {
+        router.refresh();
       }
     });
   };
@@ -261,7 +269,6 @@ export function TodayStatusCard({
     </div>
   );
 }
-
 export function AttendanceStatsGrid({
   summary,
   leaveBalance,
@@ -314,13 +321,20 @@ export function AttendanceCalendar({
   month,
   year,
 }: AttendanceCalendarProps) {
-  // Sync strictly to the global month/year passed from the server
+  const router = useRouter();
+
   const monthIndex = month
     ? new Date(Date.parse(`${month} 1, 2000`)).getMonth()
     : new Date().getMonth();
   const yearNum = year || new Date().getFullYear();
   const monthName =
     month || new Date().toLocaleString("default", { month: "long" });
+
+  const navigateMonth = (offset: number) => {
+    const targetDate = new Date(yearNum, monthIndex + offset, 1);
+    const targetStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}`;
+    router.push(`?month=${targetStr}`);
+  };
 
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const daysInMonth = new Date(yearNum, monthIndex + 1, 0).getDate();
@@ -331,6 +345,9 @@ export function AttendanceCalendar({
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs text-left h-full flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
@@ -338,6 +355,22 @@ export function AttendanceCalendar({
           <h3 className="text-sm font-bold text-slate-900 w-32">
             {monthName} {yearNum}
           </h3>
+
+          <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5 shadow-xs">
+            <button
+              onClick={() => navigateMonth(-1)}
+              className="p-1 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-500 hover:text-slate-900 cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <div className="w-px h-4 bg-slate-200 mx-0.5" />
+            <button
+              onClick={() => navigateMonth(1)}
+              className="p-1 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-500 hover:text-slate-900 cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 text-[11px] text-slate-500 font-medium">
@@ -384,7 +417,6 @@ export function AttendanceCalendar({
           let isWorkingDay = workingDays.includes(dateObj.getDay());
           let overrideBadge = null;
 
-          // ROBUST DATE MATCHING: Ignores text formatting differences
           const override = overrides.find((o) => {
             const d = new Date(o.date);
             return (
@@ -408,9 +440,6 @@ export function AttendanceCalendar({
             );
           });
 
-          const status = logForDay?.status?.toLowerCase();
-
-          // Apply specialized styles based on working day and overrides
           let bgClass = "bg-white border-slate-200 text-slate-800 shadow-2xs";
           let statusText = "Scheduled";
 
@@ -422,22 +451,34 @@ export function AttendanceCalendar({
             bgClass =
               "bg-slate-50/50 border-slate-100 text-slate-400 opacity-70";
             statusText = "Off";
-          } else if (status === "present") {
-            bgClass = "bg-emerald-50 border-emerald-200 text-emerald-900";
-            statusText = overrideBadge ? "Present (Swap)" : "Present";
-          } else if (status === "late") {
-            bgClass = "bg-amber-50 border-amber-200 text-amber-900";
-            statusText = overrideBadge ? "Late (Swap)" : "Late";
-          } else if (status === "absent") {
-            bgClass = "bg-rose-50 border-rose-200 text-rose-900";
-            statusText = overrideBadge ? "Absent (Swap)" : "Absent";
-          } else if (status === "on leave") {
-            bgClass = "bg-purple-50 border-purple-200 text-purple-900";
-            statusText = "Leave";
-          } else if (overrideBadge === "Swapped In") {
-            bgClass =
-              "bg-indigo-50 border-indigo-200 text-indigo-900 shadow-sm";
-            statusText = "Swapped In";
+          } else if (logForDay) {
+            const status = logForDay.status?.toLowerCase();
+            if (status === "present") {
+              bgClass = "bg-emerald-50 border-emerald-200 text-emerald-900";
+              statusText = overrideBadge ? "Present (Swap)" : "Present";
+            } else if (status === "late") {
+              bgClass = "bg-amber-50 border-amber-200 text-amber-900";
+              statusText = overrideBadge ? "Late (Swap)" : "Late";
+            } else if (status === "absent") {
+              bgClass = "bg-rose-50 border-rose-200 text-rose-900";
+              statusText = overrideBadge ? "Absent (Swap)" : "Absent";
+            } else if (status === "on leave") {
+              bgClass = "bg-purple-50 border-purple-200 text-purple-900";
+              statusText = "Leave";
+            } else {
+              statusText = overrideBadge
+                ? `${logForDay.status} (Swap)`
+                : (logForDay.status as string);
+            }
+          } else {
+            if (dateObj < today) {
+              bgClass = "bg-rose-50 border-rose-200 text-rose-900";
+              statusText = overrideBadge ? "Absent (Swap)" : "Absent";
+            } else if (overrideBadge === "Swapped In") {
+              bgClass =
+                "bg-indigo-50 border-indigo-200 text-indigo-900 shadow-sm";
+              statusText = "Swapped In";
+            }
           }
 
           return (
@@ -522,6 +563,7 @@ export function AttendanceLogTable({
   month?: string;
   year?: number;
 }) {
+  const router = useRouter();
   const [statusFilter, setStatusFilter] = useState("All");
 
   const monthIndex = month
@@ -530,6 +572,12 @@ export function AttendanceLogTable({
   const yearNum = year || new Date().getFullYear();
   const monthName =
     month || new Date().toLocaleString("default", { month: "long" });
+
+  const navigateMonth = (offset: number) => {
+    const targetDate = new Date(yearNum, monthIndex + offset, 1);
+    const targetStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}`;
+    router.push(`?month=${targetStr}`);
+  };
 
   const allDaysInMonth = useMemo(() => {
     const daysInMonth = new Date(yearNum, monthIndex + 1, 0).getDate();
@@ -546,7 +594,6 @@ export function AttendanceLogTable({
         year: "numeric",
       });
 
-      // ROBUST DATE MATCHING
       const log = logs.find((l) => {
         const d = new Date(l.date);
         return (
@@ -662,6 +709,24 @@ export function AttendanceLogTable({
               <option value="scheduled">Scheduled</option>
               <option value="off">Off Day</option>
             </select>
+          </div>
+
+          <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5 shadow-xs">
+            <button
+              onClick={() => navigateMonth(-1)}
+              className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500 cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-xs font-bold text-slate-700 w-24 text-center">
+              {monthName} {yearNum}
+            </span>
+            <button
+              onClick={() => navigateMonth(1)}
+              className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500 cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>

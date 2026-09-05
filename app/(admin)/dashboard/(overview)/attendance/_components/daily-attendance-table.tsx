@@ -31,6 +31,8 @@ export function DailyAttendanceTable({ logs }: { logs: DailyAttendanceRow[] }) {
         return "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/50";
       case "On Leave":
         return "bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800/50";
+      case "Off Day":
+        return "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700";
       default:
         return "bg-slate-50 text-slate-700";
     }
@@ -68,6 +70,7 @@ export function DailyAttendanceTable({ logs }: { logs: DailyAttendanceRow[] }) {
                 <option value="Late">Late</option>
                 <option value="Absent">Absent</option>
                 <option value="On Leave">On Leave</option>
+                <option value="Off Day">Off Day</option>
               </select>
             </div>
           </div>

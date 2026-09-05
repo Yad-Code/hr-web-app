@@ -50,3 +50,63 @@ export async function overrideAttendanceRecord(formData: FormData) {
     return { success: false, error: "Failed to update attendance record." };
   }
 }
+
+export async function createShiftRule(formData: FormData) {
+  try {
+    const shiftName = formData.get("shiftName") as string;
+    const startTime = formData.get("startTime") as string;
+    const endTime = formData.get("endTime") as string;
+    const gracePeriod = Number(formData.get("gracePeriod")) || 15;
+
+    if (!shiftName || !startTime || !endTime) {
+      return { success: false, error: "All fields are required." };
+    }
+
+    await db`
+      INSERT INTO shift_rules (shift_name, start_time, end_time, grace_period_minutes)
+      VALUES (${shiftName}, ${startTime}, ${endTime}, ${gracePeriod})
+    `;
+
+    revalidatePath("/dashboard/attendance");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to create shift rule:", error);
+    return { success: false, error: "Failed to create shift rule." };
+  }
+}
+ 
+export async function assignEmployeeShift(formData: FormData) {
+  try {
+    const employeeId = formData.get("employeeId") as string;
+    const shiftRuleId = formData.get("shiftRuleId") as string;
+
+    if (!employeeId || !shiftRuleId) {
+      return { success: false, error: "Employee and Shift Rule are required." };
+    }
+
+    const shiftData = await db`
+      SELECT shift_name, start_time, end_time FROM shift_rules WHERE id = ${shiftRuleId}
+    `;
+
+    if (!shiftData || shiftData.length === 0) {
+      return { success: false, error: "Shift rule not found." };
+    }
+
+    const shift = shiftData[0];
+
+    await db`
+      UPDATE users 
+      SET 
+        shift_type = ${shift.shift_name},
+        shift_start = ${shift.start_time},
+        shift_end = ${shift.end_time}
+      WHERE id = ${employeeId}
+    `;
+
+    revalidatePath("/dashboard/attendance");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to assign shift:", error);
+    return { success: false, error: "Failed to assign shift to employee." };
+  }
+}

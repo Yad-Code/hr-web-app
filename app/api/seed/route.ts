@@ -640,7 +640,7 @@ CREATE TABLE self_assessments (
   INSERT INTO user_kpis (user_id, label, value, target, trend, is_up)
   VALUES
     (${emp.id}, 'Attendance Rate', '0.0%', '95.0%', '+0.0%', true),
-    (${emp.id}, 'Punctuality (On-Time)', '0.0%', '90.0%', '+0.0%', false),
+    (${emp.id}, 'On-Time', '0.0%', '90.0%', '+0.0%', false),
     (${emp.id}, 'Team Collaboration', '4.8/5', '4.5/5', '+0.3', true),
     (${emp.id}, 'Task Completion Rate', '92.0%', '90.0%', '+5.0%', true);
 `;
