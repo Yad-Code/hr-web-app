@@ -6,9 +6,6 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { ActionState } from "./definitions";
 import {
-  getTodayAttendance,
-  createCheckIn,
-  updateCheckOut,
   getFormattedTime,
   calculateWorkHours,
 } from "@/app/lib/employeeDashboard/employee/data";
@@ -191,59 +188,102 @@ export async function toggleCheckInStatus(
       };
     }
 
+    // 1. Fetch user data AND join with shift_rules for the grace period
     const userQuery = await sql`
-      SELECT id, working_days FROM users WHERE email = ${session.user.email}
+      SELECT 
+        u.id, 
+        u.working_days,
+        u.shift_start,
+        r.grace_period_minutes
+      FROM users u
+      LEFT JOIN shift_rules r ON u.shift_type = r.shift_name
+      WHERE u.email = ${session.user.email}
     `;
 
     if (!userQuery || userQuery.length === 0) {
       return { success: false, error: "User not found in the database." };
     }
 
-    const userId = userQuery[0].id;
-    const workingDays = userQuery[0].working_days || [1, 2, 3, 4, 5];
-    const today = getLocalDateString();
-    const nowTime = getFormattedTime();
+    const user = userQuery[0];
+    const userId = user.id;
+    const workingDays = user.working_days || [1, 2, 3, 4, 5];
 
-    const [y, m, d] = today.split("-");
+    // 2. Use your existing helpers for accurate local time
+    const todayStr = getLocalDateString();
+    const timeString12hr = getFormattedTime();
+    const now = new Date();
+
+    // 3. Determine if today is an actual working day (check overrides)
+    const [y, m, d] = todayStr.split("-");
     const dayOfWeek = new Date(Number(y), Number(m) - 1, Number(d)).getDay();
-
     let isWorkingDay = workingDays.includes(dayOfWeek);
 
     const overrideQuery = await sql`
       SELECT is_working FROM schedule_overrides 
-      WHERE user_id = ${userId} AND target_date = ${today}
+      WHERE user_id = ${userId} AND target_date = ${todayStr}
     `;
 
     if (overrideQuery && overrideQuery.length > 0) {
       isWorkingDay = overrideQuery[0].is_working;
     }
 
-    // Fetch existing attendance FIRST
-    const existingRecord = await getTodayAttendance(userId, today);
+    // 4. Check if they already have a log for today
+    const existingLog = await sql`
+      SELECT id, check_in, check_out 
+      FROM attendance 
+      WHERE user_id = ${userId} AND date = ${todayStr} 
+      LIMIT 1
+    `;
 
-    // Block NEW check-ins on off-days, but ALWAYS allow check-outs if a record exists!
-    if (!isWorkingDay && !existingRecord) {
+    // Block NEW check-ins on off-days, but ALWAYS allow check-outs if a record exists
+    if (!isWorkingDay && (!existingLog || existingLog.length === 0)) {
       return {
         success: false,
         error: "You are not scheduled to work today. Enjoy your day off!",
       };
     }
 
-    if (!existingRecord) {
-      await createCheckIn(userId, today, nowTime, location);
-    } else if (!existingRecord.check_out) {
-      const checkInTime = existingRecord.check_in || nowTime;
-      const workHours = calculateWorkHours(checkInTime, nowTime);
-      await updateCheckOut(existingRecord.id, nowTime, workHours);
+    if (existingLog && existingLog.length > 0) {
+      const log = existingLog[0];
+
+      if (log.check_out) {
+        return { success: false, error: "Shift already completed for today." };
+      }
+
+      // --- CHECK OUT LOGIC ---
+      const checkInTime = log.check_in || timeString12hr;
+      // Use your existing helper to calculate the hours!
+      const workHoursStr = calculateWorkHours(checkInTime, timeString12hr);
+
+      await sql`
+        UPDATE attendance 
+        SET check_out = ${timeString12hr}, work_hours = ${workHoursStr}
+        WHERE id = ${log.id}
+      `;
     } else {
-      return { success: false, error: "Shift already completed for today." };
+      // --- CHECK IN LOGIC ---
+      // Dynamically calculate "Late" vs "Present" based on Shift Rules
+      const shiftStart = user.shift_start || "09:00:00";
+      const gracePeriod = user.grace_period_minutes || 15;
+
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const [startHour, startMin] = shiftStart.split(":").map(Number);
+      const shiftStartMinutes = startHour * 60 + startMin;
+
+      const isLate = currentMinutes > shiftStartMinutes + gracePeriod;
+      const status = isLate ? "Late" : "Present";
+
+      await sql`
+        INSERT INTO attendance (user_id, date, check_in, status, work_location)
+        VALUES (${userId}, ${todayStr}, ${timeString12hr}, ${status}, ${location})
+      `;
     }
 
     revalidatePath("/my-profile/attendance");
     return { success: true };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("Error in toggleCheckInStatus:", error);
+    console.error("Check-In Error:", error);
     return { success: false, error: `Server error: ${message}` };
   }
 }
@@ -497,20 +537,20 @@ export async function approveLeaveRequest(requestId: string) {
     return { success: false, error: "Failed to approve request." };
   }
 }
- 
+
 export async function respondToExchangeRequest(
   requestId: string,
   status: "Accepted" | "Rejected",
 ) {
- try {
+  try {
     if (status === "Rejected") {
       await sql`
         UPDATE leave_requests 
         SET helper_status = 'Rejected', status = 'Rejected' 
         WHERE id = ${requestId}
       `;
-    } else { 
-     await sql`
+    } else {
+      await sql`
         UPDATE leave_requests 
         SET helper_status = 'Accepted' 
         WHERE id = ${requestId}

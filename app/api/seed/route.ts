@@ -561,8 +561,9 @@ CREATE TABLE self_assessments (
     await db`
       INSERT INTO shift_rules (shift_name, start_time, end_time, grace_period_minutes)
       VALUES 
-        ('Standard Shift (GMT+3)', '09:00:00', '17:00:00', 15),
-        ('Engineering Flex', '10:00:00', '18:00:00', 30)
+        ('Standard (Mon - Fri)', '09:00:00', '17:00:00', 15),
+        ('Weekend Flex', '10:00:00', '18:00:00', 30),
+        ('Mid-Week Core', '09:00:00', '17:00:00', 10)
     `;
 
     await db`

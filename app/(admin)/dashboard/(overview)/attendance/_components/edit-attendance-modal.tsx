@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Clock, X, Loader2, Save } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { DailyAttendanceRow } from "../types";
 import { overrideAttendanceRecord } from "../_actions/attendance-actions";
 
@@ -11,11 +12,10 @@ interface EditAttendanceModalProps {
   onClose: () => void;
 }
 
-// Helper to convert "09:00 AM" or "05:00 PM" to "09:00" or "17:00" for the time input
 function convertTo24Hour(timeStr: string | null): string {
   if (!timeStr) return "";
   const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-  if (!match) return timeStr; // Return as-is if it doesn't match standard AM/PM pattern
+  if (!match) return timeStr;
 
   let hours = parseInt(match[1], 10);
   const minutes = match[2];
@@ -35,12 +35,18 @@ export function EditAttendanceModal({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
+  // Grab the active date from the URL (or default to today)
+  const searchParams = useSearchParams();
+  const targetDate =
+    searchParams.get("date") || new Date().toISOString().split("T")[0];
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
     data.append("recordId", record.id);
+    data.append("targetDate", targetDate); // Pass date to backend for missing records
 
     startTransition(async () => {
       const res = await overrideAttendanceRecord(data);
@@ -58,7 +64,7 @@ export function EditAttendanceModal({
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
           <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <Clock className="w-4 h-4 text-[#009473]" />
-            Override Attendance: {record.employeeName}
+            Override: {record.employeeName}
           </h3>
           <button
             onClick={onClose}
@@ -88,6 +94,7 @@ export function EditAttendanceModal({
               <option value="Late">Late</option>
               <option value="Absent">Absent</option>
               <option value="On Leave">On Leave</option>
+              <option value="Off Day">Off Day</option>
             </select>
           </div>
 

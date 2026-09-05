@@ -7,43 +7,64 @@ import { revalidatePath } from "next/cache";
 export async function overrideAttendanceRecord(formData: FormData) {
   try {
     const recordId = formData.get("recordId") as string;
+    const targetDate = formData.get("targetDate") as string;
     const status = formData.get("status") as string;
-    const checkInTime = formData.get("checkInTime") as string;
-    const checkOutTime = formData.get("checkOutTime") as string;
+    const rawCheckIn = formData.get("checkInTime") as string;
+    const rawCheckOut = formData.get("checkOutTime") as string;
 
-    if (!recordId) {
-      return { success: false, error: "Record ID is missing." };
-    }
+    if (!recordId) return { success: false, error: "Record ID is missing." };
 
-    // Automatically calculate work hours if both times are present
+    // Format 24hr HTML time to 12hr AM/PM for the database
+    const formatTo12Hr = (time24: string) => {
+      if (!time24) return null;
+      const [h, m] = time24.split(":");
+      const hours = parseInt(h, 10);
+      const ampm = hours >= 12 ? "PM" : "AM";
+      const h12 = hours % 12 || 12;
+      return `${String(h12).padStart(2, "0")}:${m} ${ampm}`;
+    };
+
+    const checkInTime = formatTo12Hr(rawCheckIn);
+    const checkOutTime = formatTo12Hr(rawCheckOut);
+
+    // Automatically calculate work hours
     let workHours: string | null = null;
-    if (checkInTime && checkOutTime) {
-      const [inHours, inMinutes] = checkInTime.split(":").map(Number);
-      const [outHours, outMinutes] = checkOutTime.split(":").map(Number);
+    if (rawCheckIn && rawCheckOut) {
+      const [inHours, inMinutes] = rawCheckIn.split(":").map(Number);
+      const [outHours, outMinutes] = rawCheckOut.split(":").map(Number);
 
       const totalInMinutes = inHours * 60 + inMinutes;
       const totalOutMinutes = outHours * 60 + outMinutes;
 
       let diffMinutes = totalOutMinutes - totalInMinutes;
-      if (diffMinutes < 0) diffMinutes += 24 * 60; // Handle overnight shifts if applicable
+      if (diffMinutes < 0) diffMinutes += 24 * 60;
 
       const hours = Math.floor(diffMinutes / 60);
       const minutes = diffMinutes % 60;
       workHours = `${hours}h ${minutes > 0 ? `${minutes}m` : ""}`.trim();
     }
 
-    // Update the attendance table with new status, times, and calculated hours
-    await db`
-      UPDATE attendance
-      SET 
-        status = ${status},
-        check_in = ${checkInTime || null},
-        check_out = ${checkOutTime || null},
-        work_hours = ${workHours}
-      WHERE id = ${recordId}
-    `;
+    // Upsert Logic: If it's a pending ID, insert a new row. Otherwise, update.
+    if (recordId.startsWith("pending-")) {
+      const userId = recordId.replace("pending-", "");
+      await db`
+        INSERT INTO attendance (user_id, date, check_in, check_out, work_hours, status, work_location)
+        VALUES (${userId}, ${targetDate}, ${checkInTime}, ${checkOutTime}, ${workHours}, ${status}, 'Office')
+      `;
+    } else {
+      await db`
+        UPDATE attendance
+        SET 
+          status = ${status},
+          check_in = ${checkInTime},
+          check_out = ${checkOutTime},
+          work_hours = ${workHours}
+        WHERE id = ${recordId}
+      `;
+    }
 
     revalidatePath("/dashboard/attendance");
+    revalidatePath("/my-profile/attendance");
     return { success: true };
   } catch (error) {
     console.error("[ATTENDANCE_OVERRIDE_ERROR]", error);
@@ -74,7 +95,7 @@ export async function createShiftRule(formData: FormData) {
     return { success: false, error: "Failed to create shift rule." };
   }
 }
- 
+
 export async function assignEmployeeShift(formData: FormData) {
   try {
     const employeeId = formData.get("employeeId") as string;
