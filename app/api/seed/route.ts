@@ -51,7 +51,7 @@ export async function GET() {
     await db`DROP TABLE IF EXISTS employment_history`;
 
     // 2. Create Types & Tables
-    await db`CREATE TYPE user_role AS ENUM ('admin', 'employee')`;
+    await db`CREATE TYPE user_role AS ENUM ('admin', 'manager', 'employee')`;
 
     // --- Original Tables ---
     await db`
@@ -454,7 +454,7 @@ CREATE TABLE self_assessments (
           'Engineering', 'HQ - Sulaymaniyah',
           '1985-08-22', 40, 'Female', 'American', 'Married', 'A+',
           'sarah.j@company.com', 'sarah.j.personal@gmail.com', '+964 770 999 8877',
-          'Tech Park, Sulaymaniyah', ${adminPassword}, 'admin', 'Active',
+          'Tech Park, Sulaymaniyah', ${adminPassword}, 'manager', 'Active',  
           6000.00, NULL, NULL, 'Premium Health', NULL,
           'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
@@ -464,12 +464,11 @@ CREATE TABLE self_assessments (
           'Design', 'HQ - Sulaymaniyah',
           '1990-12-05', 35, 'Male', 'British', 'Single', 'B-',
           'alex.s@company.com', 'alex.s.personal@gmail.com', '+964 770 666 5544',
-          'Creative Hub, Sulaymaniyah', ${adminPassword}, 'admin', 'Active',
+          'Creative Hub, Sulaymaniyah', ${adminPassword}, 'manager', 'Active',  
           5500.00, NULL, NULL, 'Premium Health', 'Adobe CC',
           'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
         ),
-         
         (
           'EMP-1002', 'Yad Developer', 'Yad', 'Software Engineer', 'Engineering', 'Full-Time', 'Sarah Jenkins', '2022-03-01',
           'Engineering', 'HQ - Sulaymaniyah', -- CHANGED TO Engineering
@@ -577,11 +576,12 @@ CREATE TABLE self_assessments (
       );
     `;
 
-    // adding admin ID
     const adminId = seededUsers.find((user) => user.role === "admin")?.id;
     if (!adminId) throw new Error("Admin user not found");
 
-    const managers = seededUsers.filter((user) => user.role === "admin");
+    const managers = seededUsers.filter(
+      (user) => user.role === "admin" || user.role === "manager",
+    );
     const employees = seededUsers.filter((user) => user.role === "employee");
 
     for (const emp of employees) {

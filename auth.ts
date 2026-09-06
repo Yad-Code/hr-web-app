@@ -10,18 +10,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const { verifyUserCredentials } = await import("@/app/lib/employeeDashboard/employee/auth-actions");
-        
+        const { verifyUserCredentials } =
+          await import("@/app/lib/employeeDashboard/employee/auth-actions");
+
         return await verifyUserCredentials(
-          credentials.email as string, 
-          credentials.password as string
+          credentials.email as string,
+          credentials.password as string,
         );
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user, trigger, session }) {
-      // Initial sign-in
       if (user) {
         token.id = user.id;
         token.picture = user.image;
@@ -39,7 +39,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         session.user.image = token.picture as string;
-        session.user.role = token.role as "admin" | "employee";
+        session.user.role = token.role as "admin" | "manager" | "employee"; // <-- Added manager
       }
       return session;
     },

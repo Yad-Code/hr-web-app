@@ -13,8 +13,7 @@ export async function POST(request: Request) {
         { status: 401 },
       );
     }
-
-    // Update using your schema's exact column name: last_seen_at
+ 
     await db`
       UPDATE users 
       SET status = 'Active', last_seen_at = CURRENT_TIMESTAMP 

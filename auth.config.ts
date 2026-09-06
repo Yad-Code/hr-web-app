@@ -1,4 +1,3 @@
-// auth.config.ts
 import type { NextAuthConfig } from "next-auth";
 
 export const authConfig = {
@@ -15,7 +14,7 @@ export const authConfig = {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.role = token.role as "admin" | "employee";
+        session.user.role = token.role as "admin" | "manager" | "employee";
         session.user.id = token.id as string;
       }
       return session;
@@ -26,27 +25,29 @@ export const authConfig = {
       const path = nextUrl.pathname;
 
       const isOnAdminRoute = path.startsWith("/dashboard");
-      // Clean check: /my-profile covers both /my-profile and /my-profile/my-attendance
       const isOnEmployeePortal = path.startsWith("/my-profile");
       const isOnLoginPage = path.startsWith("/login");
 
       // 1. Unauthenticated users trying to access protected pages
       if ((isOnAdminRoute || isOnEmployeePortal) && !isLoggedIn) {
-        return false; // Automatically redirects to /login
+        return false;
       }
 
       // 2. Handle Logged-in users visiting /login or root /
       if (isLoggedIn && (isOnLoginPage || path === "/")) {
-        const target = userRole === "admin" ? "/dashboard" : "/my-profile";
+        const target =
+          userRole === "admin" || userRole === "manager"
+            ? "/dashboard"
+            : "/my-profile";
         return Response.redirect(new URL(target, nextUrl));
       }
 
-      // 3. Admin-only protection (Block employees from /dashboard and /employees)
+      // 3. Admin/Manager protection: Block standard employees from /dashboard
       if (isOnAdminRoute && userRole === "employee") {
         return Response.redirect(new URL("/my-profile", nextUrl));
       }
 
-      // 4. Employee-only protection (Block admins from /my-profile and nested routes)
+      // 4. Employee portal protection: Block ONLY Admins. Managers are allowed through!
       if (isOnEmployeePortal && userRole === "admin") {
         return Response.redirect(new URL("/dashboard", nextUrl));
       }

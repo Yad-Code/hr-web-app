@@ -1,3 +1,3 @@
-import { handlers } from "@/auth"; // Pulls the GET and POST from your main auth.ts setup
+import { handlers } from "@/auth";  
 
 export const { GET, POST } = handlers;

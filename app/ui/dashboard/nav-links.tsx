@@ -11,7 +11,6 @@ import {
   Settings,
   CreditCard,
   Briefcase,
-  
 } from "lucide-react";
 
 const links = {
@@ -72,12 +71,6 @@ const links = {
       href: "/my-profile/attendance",
       icon: Clock,
     },
-    // {
-    //   name: "My Requests",
-    //   sub: "Leave & WFH applications",
-    //   href: "/my-profile/requests",
-    //   icon: FileCheck2,
-    // },
     {
       name: "My Performance",
       sub: "KPIs & past reviews",
@@ -94,19 +87,26 @@ const links = {
 };
 
 interface NavLinksProps {
-  role: "admin" | "employee";
+  role: "admin" | "manager" | "employee";
 }
 
 export default function NavLinks({ role }: NavLinksProps) {
   const pathname = usePathname();
-  const activeLinks = links[role] || links.employee;
+  
+  let activeLinks = pathname.startsWith("/dashboard")
+    ? links.admin
+    : links.employee;
+ 
+  if (role === "manager" && pathname.startsWith("/dashboard")) {
+    activeLinks = activeLinks.filter(
+      (link) => link.name !== "Payroll" && link.name !== "Settings",
+    );
+  }
 
   return (
     <>
       {activeLinks.map((link) => {
         const LinkIcon = link.icon;
-
-        // Strict & nested active route detection
         const isRoot =
           link.href === "/dashboard" || link.href === "/my-profile";
         const isActive = isRoot
@@ -132,7 +132,6 @@ export default function NavLinks({ role }: NavLinksProps) {
                   !isActive,
               })}
             />
-
             <div className="flex flex-col leading-tight min-w-0">
               <span
                 className={clsx("text-sm font-bold tracking-tight", {

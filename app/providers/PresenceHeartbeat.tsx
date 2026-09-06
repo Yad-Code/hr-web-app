@@ -5,8 +5,7 @@ import { useEffect } from "react";
 export function PresenceHeartbeat({ userId }: { userId: string }) {
   useEffect(() => {
     if (!userId) return;
-
-    // Function to send heartbeat
+ 
     const sendHeartbeat = async () => {
       try {
         await fetch("/api/presence", {

@@ -1,37 +1,41 @@
+// @/app/(employee)/layout.tsx
 import SideNav from "../ui/dashboard/sidnav";
 import { TopNavbar } from "@/app/ui/employee/top-navbar";
-import { auth } from "@/auth"; // 👈 Pull sessions securely via Auth.js
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import { PresenceHeartbeat } from "@/app/providers/PresenceHeartbeat";
 
 export default async function Layout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // 1. Fetch the live user session server-side
   const session = await auth();
 
-  // 2. Map the active employee parameters directly from the token payload
+  if (!session?.user?.email) {
+    redirect("/login");
+  }
+
   const currentUser = {
-    id: session?.user?.id || "1", // 👈 Added missing id property required by TopNavbar
-    name: session?.user?.name || "Yad Developer",
-    email: session?.user?.email || "yad@company.com",
-    role: session?.user?.role || "employee",
-    image_url: session?.user?.image || null,
+    id: session.user.id as string,
+    name: session.user.name as string,
+    email: session.user.email as string,
+    role: session.user.role as "admin" | "manager" | "employee",
+    image_url: session.user.image || null,
   };
 
   return (
     <div className="flex h-screen flex-col md:flex-row md:overflow-hidden bg-slate-50/50">
-      {/* 3. Side Navigation Panel */}
+      {session.user.id && (
+        <PresenceHeartbeat userId={session.user.id as string} />
+      )}
+
       <div className="w-full flex-none md:w-64">
-        <SideNav role="employee" />
+        <SideNav role={currentUser.role} />
       </div>
 
-      {/* 4. Main Workspace Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* The interactive Top Navbar */}
         <TopNavbar user={currentUser} />
-
-        {/* Dynamic page contents block */}
         <div className="grow p-6 md:overflow-y-auto md:p-12 bg-white">
           {children}
         </div>
