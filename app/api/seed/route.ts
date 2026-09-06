@@ -3,22 +3,18 @@ import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import bcrypt from "bcrypt";
 
 export async function GET() {
-  try {
-    // Extensions & Clean Slate
+  try { 
     await db`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
-
-    // Drop profile tables
+ 
     await db`DROP TABLE IF EXISTS employee_languages`;
     await db`DROP TABLE IF EXISTS employee_documents`;
-
-    // Drop new performance tables
+ 
     await db`DROP TABLE IF EXISTS performance_history`;
     await db`DROP TABLE IF EXISTS career_development`;
     await db`DROP TABLE IF EXISTS performance_notifications`;
     await db`DROP TABLE IF EXISTS self_assessments`;
     await db`DROP TABLE IF EXISTS one_on_one_meetings`;
-
-    // new tables
+ 
     await db`DROP TABLE IF EXISTS user_feedback`;
     await db`DROP TABLE IF EXISTS user_skills`;
     await db`DROP TABLE IF EXISTS skills`;
@@ -26,8 +22,7 @@ export async function GET() {
     await db`DROP TABLE IF EXISTS user_kpis`;
     await db`DROP TABLE IF EXISTS user_performance`;
     await db`DROP TABLE IF EXISTS performance_reviews`;
-
-    // Drop existing tables
+ 
     await db`DROP TABLE IF EXISTS wfh_requests`;
     await db`DROP TABLE IF EXISTS leave_balances`;
     await db`DROP TABLE IF EXISTS attendance`;
@@ -42,15 +37,13 @@ export async function GET() {
     await db`DROP TABLE IF EXISTS payment_methods`;
     await db`DROP TABLE IF EXISTS pay_stub_items`;
     await db`DROP TABLE IF EXISTS pay_stubs`;
-
-    //ADMIN Time and Attendance tables
+ 
     await db`DROP TABLE IF EXISTS leave_requests`;
     await db`DROP TABLE IF EXISTS daily_attendance`;
     await db`DROP TABLE IF EXISTS shift_rules`;
     await db`DROP TABLE IF EXISTS education_history`;
     await db`DROP TABLE IF EXISTS employment_history`;
-
-    // 2. Create Types & Tables
+ 
     await db`CREATE TYPE user_role AS ENUM ('admin', 'manager', 'employee')`;
 
     // --- Original Tables ---

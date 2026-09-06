@@ -1,3 +1,5 @@
+// @/app/(admin)/dashboard/(overview)/attendance/_components/leave-requests-list.tsx
+
 "use client";
 
 import { useState, useTransition } from "react";

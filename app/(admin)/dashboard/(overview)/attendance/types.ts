@@ -1,3 +1,5 @@
+// @/app/(admin)/dashboard/(overview)/attendance/types.ts
+
 export interface AttendanceKpiData {
   presentToday: number;
   lateToday: number;

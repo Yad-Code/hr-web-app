@@ -1,3 +1,5 @@
+//@/app/(admin)/dashboard/(overview)/attendance/_components/shift-rules-card.tsx
+
 "use client";
 
 import { useState, useTransition } from "react";

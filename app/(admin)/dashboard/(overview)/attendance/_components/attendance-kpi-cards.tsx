@@ -1,3 +1,5 @@
+// @/app/(admin)/dashboard/(overview)/attendance/_components/attendance-kpi-cards.tsx
+
 import { UserCheck, Clock, UserX, CalendarOff } from "lucide-react";
 import { AttendanceKpiData } from "../types";
 

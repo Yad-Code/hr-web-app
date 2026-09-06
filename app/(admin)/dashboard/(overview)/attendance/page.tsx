@@ -1,4 +1,7 @@
+// @/app/(admin)/dashboard/(overview)/attendance/page.tsx
+
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
+import { auth } from "@/auth";
 import {
   AttendanceKpiData,
   DailyAttendanceRow,
@@ -21,7 +24,7 @@ interface AttendanceDbRow {
   employee_name: string;
   department: string;
   image_url: string | null;
-  shift_type: string; // <-- Added to combine queries
+  shift_type: string;
   status: "Present" | "Late" | "Absent" | "On Leave" | "Off Day" | null;
   check_in: string | null;
   check_out: string | null;
@@ -55,38 +58,50 @@ interface ShiftRuleDbRow {
 }
 
 export default async function AdminAttendancePage({ searchParams }: PageProps) {
+  const session = await auth();
+  if (!session?.user) return null;
+
+  const isAdmin = session.user.role === "admin";
+  const managerName = session.user.name as string;
+
   const resolvedParams = await searchParams;
   const todayString = new Date().toISOString().split("T")[0];
-
   const targetDate = resolvedParams.date || todayString;
- 
-  const attendanceRows = (await db`
-    SELECT 
-      a.id,
-      u.id AS user_id,
-      u.name AS employee_name,
-      u.department,
-      u.image_url,
-      u.working_days, 
-      u.shift_type,
-      a.status,
-      a.check_in,
-      a.check_out,
-      a.work_hours
-    FROM users u
-    LEFT JOIN attendance a ON u.id = a.user_id AND a.date = ${targetDate}
-    WHERE u.role = 'employee'
-    ORDER BY u.name ASC
-  `) as unknown as AttendanceDbRow[];
- 
-  const totalEmployees = attendanceRows.length;  
+
+  // 1. FORKED ATTENDANCE QUERY
+  let attendanceRows;
+  if (isAdmin) {
+    attendanceRows = (await db`
+      SELECT 
+        a.id, u.id AS user_id, u.name AS employee_name, u.department, 
+        u.image_url, u.working_days, u.shift_type, a.status, a.check_in, 
+        a.check_out, a.work_hours
+      FROM users u
+      LEFT JOIN attendance a ON u.id = a.user_id AND a.date = ${targetDate}
+      WHERE u.role = 'employee'
+      ORDER BY u.name ASC
+    `) as unknown as AttendanceDbRow[];
+  } else {
+    attendanceRows = (await db`
+      SELECT 
+        a.id, u.id AS user_id, u.name AS employee_name, u.department, 
+        u.image_url, u.working_days, u.shift_type, a.status, a.check_in, 
+        a.check_out, a.work_hours
+      FROM users u
+      LEFT JOIN attendance a ON u.id = a.user_id AND a.date = ${targetDate}
+      WHERE u.role = 'employee' AND u.manager_name = ${managerName}
+      ORDER BY u.name ASC
+    `) as unknown as AttendanceDbRow[];
+  }
+
+  const totalEmployees = attendanceRows.length;
 
   const employeeList = attendanceRows.map((row) => ({
     id: row.user_id,
     name: row.employee_name,
     department: row.department || "Unassigned",
     shift_type: row.shift_type || "Standard",
-  })); 
+  }));
 
   const [year, month, day] = targetDate.split("-").map(Number);
   const targetDayOfWeek = new Date(year, month - 1, day).getDay();
@@ -125,23 +140,28 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
     onLeaveToday,
   };
 
-  const requestRows = (await db`
-    SELECT 
-      r.id,
-      u.name AS employee_name,
-      u.image_url,
-      u.job_title,       
-      r.created_at,      
-      r.type, 
-      r.leave_category,       
-      r.start_date,
-      r.end_date,
-      r.total_days,     
-      r.hours,
-      r.status
-    FROM leave_requests r
-    JOIN users u ON r.user_id = u.id
-  `) as unknown as LeaveRequestDbRow[];
+  // 2. FORKED LEAVE REQUESTS QUERY
+  let requestRows;
+  if (isAdmin) {
+    requestRows = (await db`
+      SELECT 
+        r.id, u.name AS employee_name, u.image_url, u.job_title,       
+        r.created_at, r.type, r.leave_category, r.start_date, r.end_date,
+        r.total_days, r.hours, r.status
+      FROM leave_requests r
+      JOIN users u ON r.user_id = u.id
+    `) as unknown as LeaveRequestDbRow[];
+  } else {
+    requestRows = (await db`
+      SELECT 
+        r.id, u.name AS employee_name, u.image_url, u.job_title,       
+        r.created_at, r.type, r.leave_category, r.start_date, r.end_date,
+        r.total_days, r.hours, r.status
+      FROM leave_requests r
+      JOIN users u ON r.user_id = u.id
+      WHERE u.manager_name = ${managerName}
+    `) as unknown as LeaveRequestDbRow[];
+  }
 
   const leaveRequests: LeaveRequestRow[] = requestRows.map((row) => {
     let formattedType = row.type;
@@ -189,12 +209,14 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
     <div className="p-6 max-w-7xl mx-auto space-y-8 bg-slate-50/50 dark:bg-transparent min-h-screen">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
+          {/* 3. DYNAMIC HEADER TITLES */}
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            Time & Attendance
+            {isAdmin ? "Time & Attendance" : "Team Attendance"}
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
-            Enterprise workforce availability, shift policies, and time
-            tracking.
+            {isAdmin
+              ? "Enterprise workforce availability, shift policies, and time tracking."
+              : "Team availability, shift policies, and time tracking for your direct reports."}
           </p>
         </div>
 
