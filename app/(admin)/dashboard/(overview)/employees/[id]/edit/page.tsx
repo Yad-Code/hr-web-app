@@ -19,15 +19,19 @@ import {
 import { getEmployeeSelfAssessment } from "@/app/lib/admin/performance/data";
 import { getEmployeeSkills } from "@/app/lib/admin/profile/skills/data";
 
-export default async function AdminEmployeeEditPage({
+export default async function AdminEmployeeEditPage({ 
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const session = await auth();
-  if (session?.user?.role !== "admin") {
+
+  // FIXED: Allow both admins and managers to access the profile edit view
+  if (session?.user?.role !== "admin" && session?.user?.role !== "manager") {
     redirect("/my-profile");
   }
+
+  const isManager = session.user.role === "manager";
 
   const { id } = await params;
   const profile = await getProfileById(id);
@@ -52,10 +56,8 @@ export default async function AdminEmployeeEditPage({
     );
   }
 
-  // 2. Determine the current review cycle (you might make this dynamic later)
   const currentCycle = "Q3 2026";
 
-  // 3. Add the assessment fetch to your parallel Promise.all array
   const [educationHistory, languageHistory, documents, assessment, skills] =
     await Promise.all([
       getEducationData(profile.id),
@@ -67,7 +69,6 @@ export default async function AdminEmployeeEditPage({
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 p-2 sm:p-4 text-left select-none animate-fadeIn">
-      {/* Admin Navigation Banner */}
       <div className="flex items-center justify-between bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-2xl shadow-xs">
         <Link
           href="/dashboard/employees"
@@ -75,8 +76,16 @@ export default async function AdminEmployeeEditPage({
         >
           ← Back to Team Presence
         </Link>
-        <span className="px-2.5 py-1 text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200 rounded-full">
-          Admin Editing Mode
+
+        {/* FIXED: Dynamic badge for the current user's role */}
+        <span
+          className={`px-2.5 py-1 text-[11px] font-bold rounded-full ${
+            isManager
+              ? "bg-indigo-100 text-indigo-800 border border-indigo-200"
+              : "bg-amber-100 text-amber-800 border border-amber-200"
+          }`}
+        >
+          {isManager ? "Manager View" : "Admin Editing Mode"}
         </span>
       </div>
 

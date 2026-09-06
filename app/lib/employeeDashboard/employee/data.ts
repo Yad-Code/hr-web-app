@@ -68,11 +68,30 @@ export async function getProfileData(email: string) {
 
 export async function fetchEmployeeStatusList(): Promise<Employee[]> {
   try {
-    const rows = await sql`
-      SELECT id, name, email, role, image_url, last_seen_at, department
-      FROM users
-      ORDER BY name ASC
-    `;
+    const session = await auth();
+    if (!session?.user) return [];
+
+    const isAdmin = session.user.role === "admin";
+    const managerName = session.user.name as string;
+
+    let rows;
+
+    if (isAdmin) {
+      // HR Admin sees the entire directory
+      rows = await sql`
+        SELECT id, name, email, role, image_url, last_seen_at, department
+        FROM users
+        ORDER BY name ASC
+      `;
+    } else {
+      // Managers only see their direct reports
+      rows = await sql`
+        SELECT id, name, email, role, image_url, last_seen_at, department
+        FROM users
+        WHERE manager_name = ${managerName}
+        ORDER BY name ASC
+      `;
+    }
 
     const NOW = new Date();
     const FIVE_MINUTES_IN_MS = 5 * 60 * 1000;
@@ -90,7 +109,7 @@ export async function fetchEmployeeStatusList(): Promise<Employee[]> {
         email: row.email,
         role: row.role,
         image_url: row.image_url,
-        department: row.department || "General", // 👈 Added department mapping
+        department: row.department || "General",
         status: isActiveNow ? "active" : "offline",
         last_seen_text: isActiveNow
           ? "Active now"

@@ -1,4 +1,4 @@
-// @/app/(admin)/dashboard/(overview)/employees/EmployeeSearchList.tsx
+//@/app/(admin)/dashboard/(overview)/employees/EmployeeSearchList.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -11,13 +11,12 @@ interface EmployeeSearchListClientProps {
   initialEmployees: Employee[];
 }
 
-export function EmployeeSearchListClient({
+export function EmployeeSearchListClient({ 
   initialEmployees,
 }: EmployeeSearchListClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const router = useRouter(); // 👈
+  const router = useRouter();
 
-  // Auto-refresh server data every 30 seconds to sync real-time presence
   useEffect(() => {
     const interval = setInterval(() => {
       router.refresh();
@@ -26,7 +25,6 @@ export function EmployeeSearchListClient({
     return () => clearInterval(interval);
   }, [router]);
 
-  // Instantaneous case-insensitive client-side filter (Name, Email, or Department)
   const filteredEmployees = initialEmployees.filter((employee) => {
     const query = searchQuery.toLowerCase();
     return (
@@ -36,14 +34,12 @@ export function EmployeeSearchListClient({
     );
   });
 
-  // Case-insensitive status match to handle 'Active' vs 'active' from PostgreSQL[cite: 1]
   const activeCount = initialEmployees.filter(
     (e) => e.status?.toLowerCase() === "active",
   ).length;
 
   return (
     <div className="w-full">
-      {/* Header Panel */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 pb-6 border-b border-slate-100">
         <div className="text-left">
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
@@ -64,7 +60,6 @@ export function EmployeeSearchListClient({
         </div>
       </div>
 
-      {/* Search Input Container */}
       <div className="relative mb-6">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <svg
@@ -112,7 +107,6 @@ export function EmployeeSearchListClient({
         )}
       </div>
 
-      {/* Conditional List Render */}
       {filteredEmployees.length === 0 ? (
         <div className="text-center py-12 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
           <p className="text-sm text-slate-500 font-medium">
@@ -149,9 +143,16 @@ export function EmployeeSearchListClient({
                       <h2 className="text-sm font-bold text-slate-900 tracking-tight truncate">
                         {employee.name}
                       </h2>
+
+                      {/* FIXED: Distinct UI Badges for Admins AND Managers */}
                       {employee.role?.toLowerCase() === "admin" && (
                         <span className="px-1.5 py-0.5 text-[9px] font-extrabold tracking-wider uppercase bg-rose-50 text-rose-600 rounded border border-rose-100 shrink-0">
                           Admin
+                        </span>
+                      )}
+                      {employee.role?.toLowerCase() === "manager" && (
+                        <span className="px-1.5 py-0.5 text-[9px] font-extrabold tracking-wider uppercase bg-indigo-50 text-indigo-600 rounded border border-indigo-100 shrink-0">
+                          Manager
                         </span>
                       )}
                     </div>
@@ -161,7 +162,6 @@ export function EmployeeSearchListClient({
                   </div>
                 </div>
 
-                {/* Action Area: Last Seen Text + Admin Edit Link */}
                 <div className="flex items-center gap-3 shrink-0 pl-2">
                   <span
                     className={`text-xs font-semibold hidden sm:inline ${
