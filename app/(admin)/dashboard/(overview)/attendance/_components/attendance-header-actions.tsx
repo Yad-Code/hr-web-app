@@ -2,6 +2,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
+
 import {
   Download,
   Calendar as CalendarIcon,
@@ -72,8 +74,12 @@ export function AttendanceHeaderActions({
     const formData = new FormData(e.currentTarget);
     startTransition(async () => {
       const res = await assignEmployeeShift(formData);
-      if (res.success) setIsModalOpen(false);
-      else alert(res.error);
+      if (res.success) {
+        setIsModalOpen(false);
+        toast.success("Shift assigned successfully!");
+      } else {
+        toast.error(res.error || "Failed to assign shift.");
+      }
     });
   };
 

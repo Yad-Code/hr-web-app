@@ -49,9 +49,7 @@ export function ShiftRulesCard({ shifts }: { shifts: ShiftRule[] }) {
                   {shift.gracePeriodMinutes}m)
                 </p>
               </div>
-              <span className="text-[10px] bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-2 py-0.5 rounded-md font-bold">
-                Enforced
-              </span>
+               
             </div>
           ))}
           {shifts.length === 0 && (
