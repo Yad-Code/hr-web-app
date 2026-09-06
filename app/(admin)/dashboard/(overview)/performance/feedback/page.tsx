@@ -1,23 +1,38 @@
+// @/app/(admin)/dashboard/(overview)/performance/feedback/page.tsx
+
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { MessageSquare, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image"; // 1. Added Next.js Image import
+import Image from "next/image";
 import { FeedbackRow } from "../types";
+import { auth } from "@/auth";
 
 export const revalidate = 0;
 
 export default async function FullFeedbackPage() {
-  // Fetch all feedback without the LIMIT 5 restriction
-  const allFeedback = (await db`
-    SELECT 
-      uf.id, uf.type, uf.text, uf.sender, uf.role, uf.date, 
-      u.name as recipient_name, u.image_url as recipient_image
-    FROM user_feedback uf
-    JOIN users u ON uf.user_id = u.id
-    ORDER BY uf.date DESC 
-  `) as unknown as FeedbackRow[];
+  const session = await auth();
+  if (!session?.user) return null;
 
-  // Reusing existing badge logic for visual consistency
+  const isAdmin = session.user.role === "admin";
+  const managerName = session.user.name as string;
+
+  let allFeedback;
+
+  if (isAdmin) {
+    allFeedback = (await db`
+      SELECT uf.id, uf.type, uf.text, uf.sender, uf.role, uf.date, u.name as recipient_name, u.image_url as recipient_image
+      FROM user_feedback uf JOIN users u ON uf.user_id = u.id
+      ORDER BY uf.date DESC 
+    `) as unknown as FeedbackRow[];
+  } else {
+    allFeedback = (await db`
+      SELECT uf.id, uf.type, uf.text, uf.sender, uf.role, uf.date, u.name as recipient_name, u.image_url as recipient_image
+      FROM user_feedback uf JOIN users u ON uf.user_id = u.id
+      WHERE u.manager_name = ${managerName}
+      ORDER BY uf.date DESC 
+    `) as unknown as FeedbackRow[];
+  }
+
   const getTypeBadge = (type: string) => {
     switch (type?.toLowerCase()) {
       case "positive":

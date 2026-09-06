@@ -4,6 +4,7 @@ import { createNewGoal } from "@/app/lib/admin/performance/actions";
 import { SubmitButton } from "./submit-button";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { auth } from "@/auth";
 
 interface EmployeeRow {
   id: string;
@@ -12,12 +13,23 @@ interface EmployeeRow {
 }
 
 export default async function NewGoalPage() {
-  const employees = (await db`
-    SELECT id, name, department 
-    FROM users 
-    WHERE status = 'Active' 
-    ORDER BY name ASC
-  `) as unknown as EmployeeRow[];
+
+  const session = await auth();
+  if (!session?.user) return null;
+
+  const isAdmin = session.user.role === "admin";
+  const managerName = session.user.name as string;
+  let employees;
+
+  if (isAdmin) {
+    employees = (await db`
+      SELECT id, name, department FROM users WHERE status = 'Active' ORDER BY name ASC
+    `) as unknown as EmployeeRow[];
+  } else {
+    employees = (await db`
+      SELECT id, name, department FROM users WHERE status = 'Active' AND manager_name = ${managerName} ORDER BY name ASC
+    `) as unknown as EmployeeRow[];
+  }
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">

@@ -11,9 +11,14 @@ import ProvideFeedbackModal from "../modals/provide-feedback-modal";
 interface FeedbackWidgetProps {
   feedback: FeedbackRow[];
   requests: FeedbackRequestRow[];
+  isAdmin?: boolean;
 }
-
-export function FeedbackWidget({ feedback, requests }: FeedbackWidgetProps) {
+export function FeedbackWidget({
+  feedback,
+  requests,
+  isAdmin = true,
+}: FeedbackWidgetProps) {
+  
   const [activeTab, setActiveTab] = useState<"feed" | "requests">(
     requests.length > 0 ? "requests" : "feed",
   );
@@ -54,7 +59,7 @@ export function FeedbackWidget({ feedback, requests }: FeedbackWidgetProps) {
                 }`}
               >
                 <MessageSquare className="w-4 h-4" />
-                Company Feed
+                {isAdmin ? "Company Feed" : "Team Feed"}
               </button>
               <button
                 onClick={() => setActiveTab("requests")}

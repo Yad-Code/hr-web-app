@@ -3,8 +3,8 @@
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import Link from "next/link";
 import { ArrowLeft, Target, Calendar, Plus } from "lucide-react";
+import { auth } from "@/auth";
 
-// 1. Define the TypeScript interface for our query
 interface FullGoalRow {
   id: string;
   title: string;
@@ -17,25 +17,27 @@ interface FullGoalRow {
 }
 
 export default async function FullGoalsPage() {
-  // 2. Fetch all goals (no LIMIT)
-  const allGoals = (await db`
-    SELECT 
-      ug.id, 
-      ug.title, 
-      ug.progress, 
-      ug.priority, 
-      ug.due_date, 
-      ug.status, 
-      u.name as employee_name,
-      u.department
-    FROM user_goals ug
-    JOIN users u ON ug.user_id = u.id
-    ORDER BY 
-      CASE WHEN ug.status = 'In Progress' THEN 1
-           WHEN ug.status = 'Pending' THEN 2
-           ELSE 3 END,
-      ug.due_date ASC
-  `) as unknown as FullGoalRow[];
+  const session = await auth();
+  if (!session?.user) return null;
+
+  const isAdmin = session.user.role === "admin";
+  const managerName = session.user.name as string;
+  let allGoals;
+
+  if (isAdmin) {
+    allGoals = (await db`
+      SELECT ug.id, ug.title, ug.progress, ug.priority, ug.due_date, ug.status, u.name as employee_name, u.department
+      FROM user_goals ug JOIN users u ON ug.user_id = u.id
+      ORDER BY CASE WHEN ug.status = 'In Progress' THEN 1 WHEN ug.status = 'Pending' THEN 2 ELSE 3 END, ug.due_date ASC
+    `) as unknown as FullGoalRow[];
+  } else {
+    allGoals = (await db`
+      SELECT ug.id, ug.title, ug.progress, ug.priority, ug.due_date, ug.status, u.name as employee_name, u.department
+      FROM user_goals ug JOIN users u ON ug.user_id = u.id
+      WHERE u.manager_name = ${managerName}
+      ORDER BY CASE WHEN ug.status = 'In Progress' THEN 1 WHEN ug.status = 'Pending' THEN 2 ELSE 3 END, ug.due_date ASC
+    `) as unknown as FullGoalRow[];
+  }
 
   // Helper to color-code the priority badge
   const getPriorityColor = (priority: string) => {

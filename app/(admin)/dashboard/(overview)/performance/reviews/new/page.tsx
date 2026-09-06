@@ -5,6 +5,7 @@ import { createNewReview } from "@/app/lib/admin/performance/actions";
 import { SubmitButton } from "./submit-button";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { auth } from "@/auth";
 
 interface EmployeeRow {
   id: string;
@@ -13,12 +14,24 @@ interface EmployeeRow {
 }
 
 export default async function NewReviewPage() {
-  const employees = (await db`
-    SELECT id, name, department 
-    FROM users 
-    WHERE status = 'Active' 
-    ORDER BY name ASC
-  `) as unknown as EmployeeRow[];
+  const session = await auth();
+  if (!session?.user) return null;
+
+  const isAdmin = session.user.role === "admin";
+  const managerName = session.user.name as string;
+
+  let employees;
+
+  // FIXED: Removed "WHERE status = 'Active'" so offline employees are included
+  if (isAdmin) {
+    employees = (await db`
+      SELECT id, name, department FROM users ORDER BY name ASC
+    `) as unknown as EmployeeRow[];
+  } else {
+    employees = (await db`
+      SELECT id, name, department FROM users WHERE manager_name = ${managerName} ORDER BY name ASC
+    `) as unknown as EmployeeRow[];
+  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -43,7 +56,6 @@ export default async function NewReviewPage() {
         action={createNewReview}
         className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs space-y-8"
       >
-        {/* --- Top Section: Metadata Grid --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label
@@ -145,7 +157,6 @@ export default async function NewReviewPage() {
 
         <hr className="border-slate-100" />
 
-        {/* --- Bottom Section: Detailed Feedback --- */}
         <div className="space-y-6">
           <div className="space-y-2">
             <label

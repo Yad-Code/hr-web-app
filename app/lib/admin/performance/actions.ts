@@ -5,8 +5,21 @@ import { z } from "zod";
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-
-// 1. Define the validation schema
+import { auth } from "@/auth";
+ 
+async function authorizeManagerAction(targetUserId: string) {
+  const session = await auth();
+  if (!session?.user) return false;
+  if (session.user.role === "admin") return true;
+  if (session.user.role === "manager") {
+    const managerName = session.user.name as string; // STRICT TYPING
+    const check =
+      await db`SELECT id FROM users WHERE id = ${targetUserId} AND manager_name = ${managerName}`;
+    return check.length > 0;
+  }
+  return false;
+}
+ 
 const GoalSchema = z.object({
   userId: z.string().min(1, "Please select an employee."),
   title: z.string().min(3, "Title must be at least 3 characters."),
@@ -25,10 +38,8 @@ export type GoalFormState = {
   };
   message?: string | null;
 };
-
-// 2. The Server Action
+ 
 export async function createNewGoal(formData: FormData): Promise<void> {
-  // Validate form fields using Zod
   const validatedFields = GoalSchema.safeParse({
     userId: formData.get("userId"),
     title: formData.get("title"),
@@ -46,6 +57,13 @@ export async function createNewGoal(formData: FormData): Promise<void> {
 
   const { userId, title, priority, dueDate } = validatedFields.data;
 
+  // SECURITY CHECK
+  const isAuthorized = await authorizeManagerAction(userId);
+  if (!isAuthorized) {
+    console.error("Unauthorized to assign goal to this employee.");
+    return;
+  }
+
   try {
     await db`
       INSERT INTO user_goals (user_id, title, priority, due_date, progress, status)
@@ -55,7 +73,7 @@ export async function createNewGoal(formData: FormData): Promise<void> {
     console.error("Database Error:", error);
     return;
   }
- 
+
   revalidatePath("/dashboard/performance");
   redirect("/dashboard/performance");
 }
@@ -65,7 +83,7 @@ const ReviewSchema = z.object({
   period: z.string().min(1, "Review period is required."),
   date: z.string().min(1, "Date is required."),
   reviewer: z.string().min(1, "Reviewer name is required."),
-  rating: z.coerce.number().min(1).max(5), // coerces string to number
+  rating: z.coerce.number().min(1).max(5),
   strengths: z.string().optional(),
   improvements: z.string().optional(),
   managerComments: z.string().optional(),
@@ -108,17 +126,21 @@ export async function createNewReview(formData: FormData): Promise<void> {
     goalsForNextCycle,
   } = validatedFields.data;
 
-  // Derive status based on rating score
+  // SECURITY CHECK
+  const isAuthorized = await authorizeManagerAction(userId);
+  if (!isAuthorized) {
+    console.error("Unauthorized to review this employee.");
+    return;
+  }
+
   const status =
     rating >= 4.5 ? "Excellent" : rating >= 3.5 ? "Good" : "Needs Improvement";
-
-  // Calculate next review date (defaulting to 6 months after current review date)
   const evalDate = new Date(date);
   evalDate.setMonth(evalDate.getMonth() + 6);
   const nextReviewDate = evalDate.toISOString().split("T")[0];
 
   try {
-    // 1. Insert the detailed performance review record
+    // STRICT TYPING: || null guarantees undefined is stripped for the SQL driver
     await db`
       INSERT INTO performance_reviews (
         user_id, period, date, reviewer, rating, 
@@ -131,7 +153,6 @@ export async function createNewReview(formData: FormData): Promise<void> {
       )
     `;
 
-    // 2. Sync / Upsert the top-level user_performance summary for the header
     await db`
       INSERT INTO user_performance (user_id, rating, cycle, next_review, status)
       VALUES (${userId}, ${rating}, ${period}, ${nextReviewDate}, ${status})
@@ -142,28 +163,36 @@ export async function createNewReview(formData: FormData): Promise<void> {
         status = EXCLUDED.status
     `;
 
-    // 3. Notify the employee
     const notificationDesc = `A new performance review for ${period} has been published by ${reviewer}.`;
     await db`
-      INSERT INTO performance_notifications (
-        user_id, title, description, type, is_read
-      )
-      VALUES (
-        ${userId}, 'New Performance Review', ${notificationDesc}, 'Review', false
-      )
+      INSERT INTO performance_notifications (user_id, title, description, type, is_read)
+      VALUES (${userId}, 'New Performance Review', ${notificationDesc}, 'Review', false)
     `;
   } catch (error) {
     console.error("Database Error:", error);
     return;
   }
 
-  // 4. Invalidate cache globally so header & tab refresh instantly
   revalidatePath("/", "layout");
   redirect("/dashboard/performance/reviews");
 }
 
 export async function updateMeetingStatus(meetingId: string, status: string) {
   try {
+    const meetingData =
+      await db`SELECT employee_id FROM one_on_one_meetings WHERE id = ${meetingId}`;
+    if (meetingData.length === 0)
+      return { success: false, message: "Meeting not found." };
+
+    // SECURITY CHECK
+    const employeeId = meetingData[0].employee_id as string;
+    const isAuthorized = await authorizeManagerAction(employeeId);
+    if (!isAuthorized)
+      return {
+        success: false,
+        message: "Unauthorized to update this meeting.",
+      };
+
     await db`
       UPDATE one_on_one_meetings 
       SET status = ${status} 
@@ -188,30 +217,24 @@ export async function scheduleOneOnOneMeeting(
   const meeting_date = formData.get("meeting_date") as string;
   const topic = formData.get("topic") as string;
   const notes = formData.get("notes") as string;
-  const action_items = formData.get("action_items") as string; // <-- Extract action items
+  const action_items = formData.get("action_items") as string;
 
-  if (!employee_id || !manager_id || !meeting_date) {
+  if (!employee_id || !manager_id || !meeting_date) return;
+
+  // SECURITY CHECK
+  const isAuthorized = await authorizeManagerAction(employee_id);
+  if (!isAuthorized) {
+    console.error("Unauthorized to schedule a meeting with this employee.");
     return;
   }
 
   try {
     await db`
       INSERT INTO one_on_one_meetings (
-        employee_id,
-        manager_id,
-        meeting_date,
-        topic,
-        notes,
-        action_items,    
-        status
+        employee_id, manager_id, meeting_date, topic, notes, action_items, status
       ) VALUES (
-        ${employee_id},
-        ${manager_id},
-        ${meeting_date},
-        ${topic || "1-on-1 Sync"},
-        ${notes || null},
-        ${action_items || null}, 
-        'Scheduled'
+        ${employee_id}, ${manager_id}, ${meeting_date}, 
+        ${topic || "1-on-1 Sync"}, ${notes || null}, ${action_items || null}, 'Scheduled'
       )
     `;
 
@@ -226,29 +249,40 @@ export async function scheduleOneOnOneMeeting(
 }
 
 export async function approveLeaveRequest(requestId: string) {
-  try { 
-    const requestResult = await db`SELECT * FROM leave_requests WHERE id = ${requestId}`;
-    const request = requestResult[0];
+  try {
+    const requestResult =
+      await db`SELECT * FROM leave_requests WHERE id = ${requestId}`;
+    if (requestResult.length === 0)
+      return { success: false, error: "Request not found." };
 
-    if (!request) return { success: false, error: "Request not found." };
- 
+    const request = requestResult[0];
+    const userId = request.user_id as string;
+
+    // SECURITY CHECK
+    const isAuthorized = await authorizeManagerAction(userId);
+    if (!isAuthorized)
+      return { success: false, error: "Unauthorized to approve this request." };
+
     await db`UPDATE leave_requests SET status = 'Approved' WHERE id = ${requestId}`;
- 
-    if (request.type === 'exchange' && request.helper_id) {
-       
+
+    if (request.type === "exchange" && request.helper_id) {
+      const helperId = request.helper_id as string;
+      const originalDate = request.original_date;
+      const exchangeDate = request.exchange_date;
+
       await db`
         INSERT INTO schedule_overrides (user_id, target_date, is_working, notes)
         VALUES 
-          (${request.user_id}, ${request.original_date}, false, 'Shift given to helper'),
-          (${request.user_id}, ${request.exchange_date}, true, 'Shift taken from helper')
+          (${userId}, ${originalDate}, false, 'Shift given to helper'),
+          (${userId}, ${exchangeDate}, true, 'Shift taken from helper')
         ON CONFLICT (user_id, target_date) DO UPDATE SET is_working = EXCLUDED.is_working
       `;
- 
+
       await db`
         INSERT INTO schedule_overrides (user_id, target_date, is_working, notes)
         VALUES 
-          (${request.helper_id}, ${request.original_date}, true, 'Covering requester shift'),
-          (${request.helper_id}, ${request.exchange_date}, false, 'Shift given to requester')
+          (${helperId}, ${originalDate}, true, 'Covering requester shift'),
+          (${helperId}, ${exchangeDate}, false, 'Shift given to requester')
         ON CONFLICT (user_id, target_date) DO UPDATE SET is_working = EXCLUDED.is_working
       `;
     }

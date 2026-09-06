@@ -1,5 +1,4 @@
 // @/app/(admin)/dashboard/(overview)/performance/reviews/[id]/page.tsx
-
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import Link from "next/link";
 import Image from "next/image";
@@ -13,6 +12,7 @@ import {
   FileText,
   CheckCircle,
 } from "lucide-react";
+import { auth } from "@/auth";
 
 interface ReviewDetailRow {
   id: string;
@@ -20,7 +20,7 @@ interface ReviewDetailRow {
   period: string;
   date: string | Date;
   reviewer: string;
-  rating: string | number; // SQL might return numeric as string
+  rating: string | number;
   strengths: string | null;
   improvements: string | null;
   manager_comments: string | null;
@@ -41,20 +41,28 @@ export default async function ReviewDetailsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const session = await auth();
+  if (!session?.user) return null;
 
-  const result = await db`
-    SELECT 
-      pr.*,
-      u.name as employee_name,
-      u.department,
-      u.job_title,
-      u.image_url
-    FROM performance_reviews pr
-    JOIN users u ON pr.user_id = u.id
-    WHERE pr.id = ${id}
-  `;
+  const isAdmin = session.user.role === "admin";
+  const managerName = session.user.name as string;
 
-  // If the ID is invalid or doesn't exist, trigger a 404
+  let result;
+
+  if (isAdmin) {
+    result = await db`
+      SELECT pr.*, u.name as employee_name, u.department, u.job_title, u.image_url
+      FROM performance_reviews pr JOIN users u ON pr.user_id = u.id
+      WHERE pr.id = ${id}
+    `;
+  } else {
+    result = await db`
+      SELECT pr.*, u.name as employee_name, u.department, u.job_title, u.image_url
+      FROM performance_reviews pr JOIN users u ON pr.user_id = u.id
+      WHERE pr.id = ${id} AND u.manager_name = ${managerName}
+    `;
+  }
+
   if (result.length === 0) {
     notFound();
   }
@@ -77,7 +85,6 @@ export default async function ReviewDetailsPage({
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
-      {/* Header & Back Button */}
       <div className="flex items-center justify-between border-b border-slate-200 pb-6">
         <div className="flex items-center gap-4">
           <Link
@@ -99,9 +106,7 @@ export default async function ReviewDetailsPage({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Employee & Metadata */}
         <div className="space-y-6 lg:col-span-1">
-          {/* Employee Card */}
           <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col items-center text-center space-y-4">
             <Image
               src={
@@ -127,12 +132,10 @@ export default async function ReviewDetailsPage({
             </div>
           </div>
 
-          {/* Review Details Card */}
           <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs space-y-5">
             <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
               Evaluation Details
             </h3>
-
             <div className="space-y-4 text-sm">
               <div>
                 <span className="block text-xs font-semibold text-slate-500 mb-1">
@@ -145,7 +148,6 @@ export default async function ReviewDetailsPage({
                   {Number(review.rating).toFixed(1)} / 5.0
                 </span>
               </div>
-
               <div>
                 <span className=" text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5" /> Date & Period
@@ -153,7 +155,6 @@ export default async function ReviewDetailsPage({
                 <p className="font-medium text-slate-800">{formattedDate}</p>
                 <p className="text-xs text-slate-500">{review.period}</p>
               </div>
-
               <div>
                 <span className=" text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1.5">
                   <UserCheck className="w-3.5 h-3.5" /> Reviewed By
@@ -164,17 +165,12 @@ export default async function ReviewDetailsPage({
                 <span className="text-xs font-semibold text-slate-500 mb-2 flex items-center gap-1.5">
                   <CheckCircle className="w-3.5 h-3.5" /> Employee Sign-Off
                 </span>
-
                 {review.acknowledged ? (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold border bg-emerald-50 text-emerald-700 border-emerald-200/80 w-full justify-center">
                     ✓ Signed on{" "}
                     {new Date(review.acknowledged_at!).toLocaleDateString(
                       "en-US",
-                      {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      },
+                      { month: "short", day: "numeric", year: "numeric" },
                     )}
                   </span>
                 ) : (
@@ -187,7 +183,6 @@ export default async function ReviewDetailsPage({
           </div>
         </div>
 
-        {/* Right Column: Text Feedback */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs space-y-6">
             <div>
@@ -200,7 +195,6 @@ export default async function ReviewDetailsPage({
                 </p>
               </div>
             </div>
-
             <div>
               <h3 className="text-sm font-bold text-slate-900 mb-2">
                 Areas for Improvement
@@ -212,7 +206,6 @@ export default async function ReviewDetailsPage({
                 </p>
               </div>
             </div>
-
             <div>
               <h3 className="text-sm font-bold text-slate-900 mb-2">
                 Managers Comments
@@ -224,7 +217,6 @@ export default async function ReviewDetailsPage({
                 </p>
               </div>
             </div>
-
             <div>
               <h3 className="text-sm font-bold text-slate-900 mb-2">
                 Employees Comments
@@ -236,7 +228,6 @@ export default async function ReviewDetailsPage({
                 </p>
               </div>
             </div>
-
             <div>
               <h3 className="text-sm font-bold text-slate-900 mb-2">
                 Goals for Next Cycle

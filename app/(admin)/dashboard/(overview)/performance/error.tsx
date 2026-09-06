@@ -11,8 +11,7 @@ export default function PerformanceError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    // Log the error to an error reporting service if you have one
+  useEffect(() => {  
     console.error("Performance Module Error:", error);
   }, [error]);
 

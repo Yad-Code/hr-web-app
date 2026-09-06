@@ -10,13 +10,15 @@ import {
 } from "lucide-react";
 import { getEmployeesList } from "@/app/lib/admin/performance/data";
 import { scheduleOneOnOneMeeting } from "@/app/lib/admin/performance/actions";
+import { auth } from "@/auth";
 
 export default async function ScheduleMeetingPage() {
+  const session = await auth();
+  const isAdmin = session?.user?.role === "admin";
   const employees = await getEmployeesList();
 
   return (
     <main className="max-w-3xl mx-auto w-full p-4 sm:p-6 lg:p-8 space-y-6">
-      {/* Navigation */}
       <Link
         href="/dashboard/performance/meetings"
         className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
@@ -31,11 +33,12 @@ export default async function ScheduleMeetingPage() {
           Schedule a 1-on-1 Sync
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Set up a new performance review or check-in session with an employee.
+          {isAdmin
+            ? "Set up a new performance review or check-in session with any employee."
+            : "Set up a new performance review or check-in session with your direct reports."}
         </p>
       </div>
 
-      {/* Form Card */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
         <form action={scheduleOneOnOneMeeting} className="space-y-5">
           <div className="space-y-1.5">
@@ -56,7 +59,6 @@ export default async function ScheduleMeetingPage() {
               ))}
             </select>
           </div>
-          {/* Employee Dropdown */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
               <User className="w-3.5 h-3.5 text-slate-400" /> Select Employee
@@ -75,7 +77,6 @@ export default async function ScheduleMeetingPage() {
             </select>
           </div>
 
-          {/* Date & Time Input */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-slate-400" /> Date & Time
@@ -88,7 +89,6 @@ export default async function ScheduleMeetingPage() {
             />
           </div>
 
-          {/* Topic */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-700">
               Meeting Topic
@@ -101,7 +101,6 @@ export default async function ScheduleMeetingPage() {
             />
           </div>
 
-          {/* Agenda / Initial Notes */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
               <FileText className="w-3.5 h-3.5 text-slate-400" /> Agenda &

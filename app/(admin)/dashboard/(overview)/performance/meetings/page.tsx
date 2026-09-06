@@ -3,8 +3,12 @@ import Link from "next/link";
 import { ArrowLeft, Calendar, Plus } from "lucide-react";
 import { getAllAdminMeetings } from "@/app/lib/admin/performance/data";
 import { AdminMeetingsTable } from "./_components/AdminMeetingsTable";
+import { auth } from "@/auth";
 
 export default async function AdminMeetingsPage() {
+  const session = await auth();
+  const isAdmin = session?.user?.role === "admin";
+
   const meetings = await getAllAdminMeetings();
 
   return (
@@ -24,8 +28,9 @@ export default async function AdminMeetingsPage() {
               1-on-1 Sync Meetings
             </h1>
             <p className="text-sm text-slate-500 mt-1">
-              Manage and track all scheduled 1-on-1 performance syncs across all
-              employees.
+              {isAdmin
+                ? "Manage and track all scheduled 1-on-1 performance syncs across all employees."
+                : "Manage and track scheduled 1-on-1 performance syncs for your direct reports."}
             </p>
           </div>
           <Link

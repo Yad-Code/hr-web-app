@@ -1,5 +1,4 @@
 // @/app/(admin)/dashboard/(overview)/performance/reviews/page.tsx
-
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import Link from "next/link";
 import Image from "next/image";
@@ -11,6 +10,7 @@ import {
   Calendar,
   UserCheck,
 } from "lucide-react";
+import { auth } from "@/auth";
 
 interface ReviewRow {
   id: string;
@@ -27,24 +27,28 @@ interface ReviewRow {
 }
 
 export default async function PerformanceReviewsPage() {
-  // Fetch reviews joined with user metadata
-  const reviews = (await db`
-    SELECT 
-      pr.id,
-      pr.user_id,
-      pr.period,
-      pr.date,
-      pr.reviewer,
-      pr.rating,
-      pr.status,
-      u.name as employee_name,
-      u.department,
-      u.job_title,
-      u.image_url
-    FROM performance_reviews pr
-    JOIN users u ON pr.user_id = u.id
-    ORDER BY pr.date DESC
-  `) as unknown as ReviewRow[];
+  const session = await auth();
+  if (!session?.user) return null;
+
+  const isAdmin = session.user.role === "admin";
+  const managerName = session.user.name as string;
+
+  let reviews;
+
+  if (isAdmin) {
+    reviews = (await db`
+      SELECT pr.id, pr.user_id, pr.period, pr.date, pr.reviewer, pr.rating, pr.status, u.name as employee_name, u.department, u.job_title, u.image_url
+      FROM performance_reviews pr JOIN users u ON pr.user_id = u.id
+      ORDER BY pr.date DESC
+    `) as unknown as ReviewRow[];
+  } else {
+    reviews = (await db`
+      SELECT pr.id, pr.user_id, pr.period, pr.date, pr.reviewer, pr.rating, pr.status, u.name as employee_name, u.department, u.job_title, u.image_url
+      FROM performance_reviews pr JOIN users u ON pr.user_id = u.id
+      WHERE u.manager_name = ${managerName}
+      ORDER BY pr.date DESC
+    `) as unknown as ReviewRow[];
+  }
 
   const getRatingBadge = (rating: number) => {
     if (rating >= 4.5)
@@ -56,7 +60,6 @@ export default async function PerformanceReviewsPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
         <div className="flex items-center gap-4">
           <Link
@@ -71,21 +74,20 @@ export default async function PerformanceReviewsPage() {
               Performance Reviews
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              View and manage formal evaluations across the organization.
+              {isAdmin
+                ? "View and manage formal evaluations across the organization."
+                : "View and manage formal evaluations for your direct reports."}
             </p>
           </div>
         </div>
-
         <Link
           href="/dashboard/performance/reviews/new"
           className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors shadow-xs"
         >
-          <Plus className="w-4 h-4" />
-          Create New Review
+          <Plus className="w-4 h-4" /> Create New Review
         </Link>
       </div>
 
-      {/* Data Table */}
       <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -150,9 +152,7 @@ export default async function PerformanceReviewsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border ${getRatingBadge(
-                          Number(review.rating),
-                        )}`}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border ${getRatingBadge(Number(review.rating))}`}
                       >
                         <Star className="w-3 h-3 fill-current" />
                         {Number(review.rating).toFixed(1)}
@@ -160,11 +160,7 @@ export default async function PerformanceReviewsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span
-                        className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border ${
-                          review.status === "Completed"
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-                            : "bg-amber-50 text-amber-700 border-amber-100"
-                        }`}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border ${review.status === "Completed" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-amber-50 text-amber-700 border-amber-100"}`}
                       >
                         {review.status}
                       </span>
