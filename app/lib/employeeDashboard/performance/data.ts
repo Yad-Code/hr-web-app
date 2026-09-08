@@ -44,8 +44,7 @@ export async function getUserKPIs(userId: string) {
       SELECT *
       FROM user_kpis
       WHERE user_id = ${userId}
-    `,
-
+    `, 
     sql<{ total_days: number; present_days: number; on_time_days: number }[]>`
       WITH target_user AS (
         SELECT id, COALESCE(working_days, '{1,2,3,4,5}'::int[]) as working_days 
@@ -74,9 +73,11 @@ export async function getUserKPIs(userId: string) {
         WHERE user_id = ${userId} AND date >= DATE_TRUNC('month', CURRENT_DATE)
       )
       SELECT 
-        (SELECT COUNT(*) FROM scheduled_days)::int AS total_days,
-        (SELECT COUNT(*) FROM actual_attendance WHERE status IN ('Present', 'Late'))::int AS present_days,
-        (SELECT COUNT(*) FROM actual_attendance WHERE status = 'Present')::int AS on_time_days
+        COUNT(s.date)::int AS total_days,
+        COUNT(a.status) FILTER (WHERE a.status IN ('Present', 'Late'))::int AS present_days,
+        COUNT(a.status) FILTER (WHERE a.status = 'Present')::int AS on_time_days
+      FROM scheduled_days s
+      LEFT JOIN actual_attendance a ON s.date = a.date
     `,
   ]);
 
@@ -85,23 +86,36 @@ export async function getUserKPIs(userId: string) {
   const presentDays = stats?.present_days || 0;
   const onTimeDays = stats?.on_time_days || 0;
 
-  const dynamicAttendanceRate =
-    totalDays > 0 ? `${((presentDays / totalDays) * 100).toFixed(1)}%` : "0.0%";
-
-  const dynamicPunctualityRate =
-    presentDays > 0
-      ? `${((onTimeDays / presentDays) * 100).toFixed(1)}%`
-      : "0.0%";
-
   return kpiRows.map((kpi) => {
     const label = kpi.label.toLowerCase();
 
+    // 2. Fixed Logic: Dynamically calculate Trend and IsUp based on target discrepancy
     if (label.includes("attendance")) {
-      return { ...kpi, value: dynamicAttendanceRate };
-    } 
-    if (label.includes("on-time")) {
-      return { ...kpi, value: dynamicPunctualityRate };
+      const rate = totalDays > 0 ? (presentDays / totalDays) * 100 : 0;
+      const target = parseFloat(kpi.target) || 95;
+      const diff = rate - target;
+
+      return {
+        ...kpi,
+        value: `${rate.toFixed(1)}%`,
+        trend: `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}%`,
+        is_up: diff >= 0,
+      };
     }
+
+    if (label.includes("on-time")) {
+      const rate = presentDays > 0 ? (onTimeDays / presentDays) * 100 : 0;
+      const target = parseFloat(kpi.target) || 90;
+      const diff = rate - target;
+
+      return {
+        ...kpi,
+        value: `${rate.toFixed(1)}%`,
+        trend: `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}%`,
+        is_up: diff >= 0,
+      };
+    }
+
     return kpi;
   });
 }

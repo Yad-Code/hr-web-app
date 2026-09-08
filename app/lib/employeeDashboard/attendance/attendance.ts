@@ -47,55 +47,50 @@ export interface AttendanceData {
   }>;
 }
 
+interface GeneratedLeaveLog {
+  id: string;
+  date: string;
+  checkIn: string;
+  checkOut: string;
+  workHours: string;
+  status: string;
+  location: string;
+}
+
 export async function getAttendanceData(
   userId?: string,
   targetMonth?: string,
 ): Promise<AttendanceData> {
   const now = new Date();
-
   const currentMonthName = now.toLocaleString("default", { month: "long" });
   const currentYearNum = now.getFullYear();
-
   const targetDate = targetMonth ? new Date(`${targetMonth}-01T12:00:00`) : now;
   const targetY = targetDate.getFullYear();
   const targetM = targetDate.getMonth();
 
   try {
-    if (!userId) {
+    if (!userId)
       return getFallbackAttendanceData(currentMonthName, currentYearNum);
-    }
+
     const localY = now.getFullYear();
     const localM = String(now.getMonth() + 1).padStart(2, "0");
     const localD = String(now.getDate()).padStart(2, "0");
     const todayStr = `${localY}-${localM}-${localD}`;
 
-    const todayLogs = await sql`
-      SELECT check_in, check_out, status, work_location
-      FROM attendance
-      WHERE user_id = ${userId} AND date = ${todayStr}
-      LIMIT 1
-    `;
-
-    const monthlyLogs = await sql`
-      SELECT id, date, check_in, check_out, work_hours, status, work_location
-      FROM attendance
-      WHERE user_id = ${userId}
-      ORDER BY date DESC
-    `;
-
-    const balanceLogs = await sql`
-      SELECT annual_total, annual_remaining, sick_total, sick_remaining, monthly_total_hours, monthly_remaining_hours
-      FROM leave_balances
-      WHERE user_id = ${userId}
-      LIMIT 1
-    `;
-
+    const todayLogs =
+      await sql`SELECT check_in, check_out, status, work_location FROM attendance WHERE user_id = ${userId} AND date = ${todayStr} LIMIT 1`;
+    const monthlyLogs =
+      await sql`SELECT id, date, check_in, check_out, work_hours, status, work_location FROM attendance WHERE user_id = ${userId} ORDER BY date DESC`;
+    const balanceLogs =
+      await sql`SELECT annual_total, annual_remaining, sick_total, sick_remaining, monthly_total_hours, monthly_remaining_hours FROM leave_balances WHERE user_id = ${userId} LIMIT 1`;
     const profile =
       await sql`SELECT working_days FROM users WHERE id = ${userId} LIMIT 1`;
-    const workingDays = profile[0]?.working_days || [1, 2, 3, 4, 5];
-
     const overridesLog =
       await sql`SELECT target_date, is_working FROM schedule_overrides WHERE user_id = ${userId}`;
+    const approvedLeavesLog =
+      await sql`SELECT id, start_date, end_date FROM leave_requests WHERE user_id = ${userId} AND type = 'dayoff' AND status = 'Approved'`;
+
+    const workingDays = profile[0]?.working_days || [1, 2, 3, 4, 5];
     const todayRecord = todayLogs[0];
     const balanceRecord = balanceLogs[0];
 
@@ -105,60 +100,108 @@ export async function getAttendanceData(
       ? now.getDate()
       : new Date(targetY, targetM + 1, 0).getDate();
 
-    const thisMonthLogs = monthlyLogs.filter((log) => {
-      const dateStr =
-        typeof log.date === "string" ? log.date : log.date.toISOString();
-      return dateStr.startsWith(
-        `${targetY}-${String(targetM + 1).padStart(2, "0")}`,
-      );
+    let expectedWorkingDays = 0;
+    let scheduledDaysPresent = 0; // For exact KPI matching
+    let totalDaysPresent = 0; // For the UI stat block
+    let lateArrivals = 0;
+    let totalMinutes = 0;
+
+    // 1. Calculate matching schedule vs actual attendance for the rate
+    for (let i = 1; i <= limitDate; i++) {
+      const dObj = new Date(targetY, targetM, i);
+
+      let isWorkingDay = workingDays.includes(dObj.getDay());
+
+      const override = overridesLog.find((o) => {
+        const oDate = new Date(o.target_date);
+        return (
+          oDate.getFullYear() === targetY &&
+          oDate.getMonth() === targetM &&
+          oDate.getDate() === i
+        );
+      });
+      if (override) isWorkingDay = override.is_working;
+
+      const isOnLeave = approvedLeavesLog.some((leave) => {
+        const s = new Date(leave.start_date);
+        const e = new Date(leave.end_date);
+        s.setHours(0, 0, 0, 0);
+        e.setHours(0, 0, 0, 0);
+        return dObj >= s && dObj <= e;
+      });
+
+      const logForDay = monthlyLogs.find((l) => {
+        const lDate = new Date(l.date);
+        return (
+          lDate.getFullYear() === targetY &&
+          lDate.getMonth() === targetM &&
+          lDate.getDate() === i
+        );
+      });
+
+      if (isWorkingDay && !isOnLeave) {
+        expectedWorkingDays++;
+        if (
+          logForDay &&
+          ["present", "late"].includes(
+            (logForDay.status || "").trim().toLowerCase(),
+          )
+        ) {
+          scheduledDaysPresent++;
+        }
+      }
+    }
+
+    // 2. Safely calculate total hours and overall days present for the month
+    const allMonthLogs = monthlyLogs.filter((l) => {
+      const lDate = new Date(l.date);
+      return lDate.getFullYear() === targetY && lDate.getMonth() === targetM;
     });
 
-    const daysPresent = thisMonthLogs.filter((l) => {
-      const status = (l.status || "").trim().toLowerCase();
-      return status === "present" || status === "late";
-    }).length;
-
-    const lateArrivals = thisMonthLogs.filter((l) => {
-      const status = (l.status || "").trim().toLowerCase();
-      return status === "late";
-    }).length;
-
-    let totalMinutes = 0;
-    thisMonthLogs.forEach((log) => {
+    allMonthLogs.forEach((log) => {
       const status = (log.status || "").trim().toLowerCase();
+      if (status === "present" || status === "late") totalDaysPresent++;
+      if (status === "late") lateArrivals++;
+
       if (status === "present" || status === "late") {
         if (log.work_hours) {
           const match = log.work_hours.match(/(\d+)\s*h\s*(\d*)\s*m?/i);
-          if (match) {
+          if (match)
             totalMinutes +=
               (parseInt(match[1]) || 0) * 60 + (parseInt(match[2]) || 0);
-          }
         }
       }
     });
+
     const totalHoursLogged = Math.floor(totalMinutes / 60);
-    let expectedWorkingDays = 0;
-    for (let i = 1; i <= limitDate; i++) {
-      const dObj = new Date(targetY, targetM, i);
-      const dbDateStr = `${targetY}-${String(targetM + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
-
-      let isWorkingDay = workingDays.includes(dObj.getDay());
-      const override = overridesLog.find((o) => {
-        const oDate =
-          typeof o.target_date === "string"
-            ? o.target_date
-            : o.target_date.toISOString();
-        return oDate.startsWith(dbDateStr);
-      });
-
-      if (override) isWorkingDay = override.is_working;
-      if (isWorkingDay) expectedWorkingDays++;
-    }
 
     const attendanceRate =
       expectedWorkingDays > 0
-        ? Math.min(100, Math.round((daysPresent / expectedWorkingDays) * 100))
+        ? Math.round((scheduledDaysPresent / expectedWorkingDays) * 100)
         : 100;
+
+    const generatedLeaveLogs: GeneratedLeaveLog[] = [];
+    approvedLeavesLog.forEach((leave) => {
+      const s = new Date(leave.start_date);
+      const e = new Date(leave.end_date);
+      for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
+        if (d.getMonth() === targetM && d.getFullYear() === targetY) {
+          generatedLeaveLogs.push({
+            id: `leave-${leave.id}-${d.getTime()}`,
+            date: d.toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }),
+            checkIn: "--:--",
+            checkOut: "--:--",
+            workHours: "--",
+            status: "On Leave",
+            location: "Approved PTO",
+          });
+        }
+      }
+    });
 
     return {
       today: {
@@ -169,7 +212,12 @@ export async function getAttendanceData(
         shiftEnd: "05:00 PM",
         workLocation: todayRecord?.work_location || "Office",
       },
-      summary: { attendanceRate, daysPresent, lateArrivals, totalHoursLogged },
+      summary: {
+        attendanceRate,
+        daysPresent: totalDaysPresent,
+        lateArrivals,
+        totalHoursLogged,
+      },
       leaveBalance: {
         annualRemaining: balanceRecord?.annual_remaining ?? 0,
         annualTotal: balanceRecord?.annual_total ?? 20,
@@ -183,16 +231,9 @@ export async function getAttendanceData(
       currentMonth: targetDate.toLocaleString("en-US", { month: "long" }),
       currentYear: targetY,
       overrides: overridesLog.map((o) => {
-        const dateStr =
-          typeof o.target_date === "string"
-            ? o.target_date
-            : o.target_date.toISOString();
-
-        const [y, m, d] = dateStr.split("T")[0].split("-");
-        const safeDate = new Date(Number(y), Number(m) - 1, Number(d));
-
+        const oDate = new Date(o.target_date);
         return {
-          date: safeDate.toLocaleDateString("en-US", {
+          date: oDate.toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
             year: "numeric",
@@ -200,34 +241,31 @@ export async function getAttendanceData(
           isWorking: o.is_working,
         };
       }),
-      attendanceLog: monthlyLogs.map((log) => {
-        const dateStr =
-          typeof log.date === "string" ? log.date : log.date.toISOString();
-
-        const [y, m, d] = dateStr.split("T")[0].split("-");
-        const safeDate = new Date(Number(y), Number(m) - 1, Number(d));
-
-        return {
-          id: log.id,
-          date: safeDate.toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          }),
-          checkIn: log.check_in || "--:--",
-          checkOut: log.check_out || "--:--",
-          workHours: log.work_hours || "0h 0m",
-          status: log.status || "Present",
-          location: log.work_location || "Office",
-        };
-      }),
+      attendanceLog: [
+        ...monthlyLogs.map((log) => {
+          const lDate = new Date(log.date);
+          return {
+            id: log.id,
+            date: lDate.toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }),
+            checkIn: log.check_in || "--:--",
+            checkOut: log.check_out || "--:--",
+            workHours: log.work_hours || "0h 0m",
+            status: log.status || "Present",
+            location: log.work_location || "Office",
+          };
+        }),
+        ...generatedLeaveLogs,
+      ],
     };
   } catch (error) {
     console.error("Failed to fetch attendance data:", error);
     return getFallbackAttendanceData(currentMonthName, currentYearNum);
   }
 }
-
 function getFallbackAttendanceData(
   month: string,
   year: number,

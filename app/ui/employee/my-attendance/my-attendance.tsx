@@ -637,7 +637,10 @@ export function AttendanceLogTable({
             ? "bg-emerald-50 text-emerald-700 border border-emerald-100/50"
             : log.status === "Late"
               ? "bg-amber-50 text-amber-700 border border-amber-100/50"
-              : "bg-rose-50 text-rose-700 border border-rose-100/50";
+              : log.status === "On Leave"
+                ? "bg-purple-50 text-purple-700 border border-purple-100/50"
+                : "bg-rose-50 text-rose-700 border border-rose-100/50";
+
         rawStatusForFilter =
           typeof log.status === "string" ? log.status.toLowerCase() : "";
       } else {

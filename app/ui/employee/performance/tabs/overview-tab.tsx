@@ -41,8 +41,7 @@ export default function OverviewTab({
     : { tab: "feedback", label: "View Feedback →" };
 
   return (
-    <div className="space-y-8 max-w-5xl">
-      {/* 1. Dynamic Notification Banner */}
+    <div className="space-y-8 max-w-5xl"> 
       {unreadNotifications.length > 0 && (
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-3">
@@ -73,8 +72,7 @@ export default function OverviewTab({
           )}
         </div>
       )}
-
-      {/* 2. Key Performance Indicators Grid */}
+ 
       <section>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold text-slate-800">

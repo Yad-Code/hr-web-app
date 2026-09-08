@@ -98,16 +98,16 @@ export async function GET() {
       );
     `;
 
-    await db`
-      CREATE TABLE schedules (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        employee_id UUID REFERENCES users(id) ON DELETE CASCADE,
-        work_date DATE NOT NULL,
-        shift_start TIME NOT NULL,
-        shift_end TIME NOT NULL,
-        notes TEXT
-      )
-    `;
+    // await db`
+    //   CREATE TABLE schedules (
+    //     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    //     employee_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    //     work_date DATE NOT NULL,
+    //     shift_start TIME NOT NULL,
+    //     shift_end TIME NOT NULL,
+    //     notes TEXT
+    //   )
+    // `;
 
     // await db`
     //   CREATE TABLE requests (
@@ -135,16 +135,16 @@ export async function GET() {
       )
     `;
 
-    await db`
-      CREATE TABLE wfh_requests (
-        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        request_date DATE NOT NULL,
-        reason TEXT NOT NULL,
-        status VARCHAR(20) DEFAULT 'Pending' NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
-      )
-    `;
+    // await db`
+    //   CREATE TABLE wfh_requests (
+    //     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    //     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    //     request_date DATE NOT NULL,
+    //     reason TEXT NOT NULL,
+    //     status VARCHAR(20) DEFAULT 'Pending' NOT NULL,
+    //     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+    //   )
+    // `;
 
     await db`
       CREATE TABLE leave_balances (
@@ -606,15 +606,15 @@ CREATE TABLE self_assessments (
       // Specific Data just for your test user
 
       // --- Original HR Dummy Data ---
-      await db`
-          INSERT INTO schedules (employee_id, work_date, shift_start, shift_end, notes)
-          VALUES 
-            (${emp.id}, '2026-07-20', '09:00:00', '17:00:00', 'Frontend Sprint Alignment'),
-            (${emp.id}, '2026-07-21', '09:00:00', '17:00:00', 'UI Component Refactoring'),
-            (${emp.id}, '2026-07-22', '10:00:00', '18:00:00', 'Database Seeding & Setup'),
-            (${emp.id}, '2026-07-23', '09:00:00', '17:00:00', 'Core Dashboard Review'),
-            (${emp.id}, '2026-07-24', '09:00:00', '16:00:00', 'Weekly Sync & Retro')
-        `;
+      // await db`
+      //     INSERT INTO schedules (employee_id, work_date, shift_start, shift_end, notes)
+      //     VALUES 
+      //       (${emp.id}, '2026-07-20', '09:00:00', '17:00:00', 'Frontend Sprint Alignment'),
+      //       (${emp.id}, '2026-07-21', '09:00:00', '17:00:00', 'UI Component Refactoring'),
+      //       (${emp.id}, '2026-07-22', '10:00:00', '18:00:00', 'Database Seeding & Setup'),
+      //       (${emp.id}, '2026-07-23', '09:00:00', '17:00:00', 'Core Dashboard Review'),
+      //       (${emp.id}, '2026-07-24', '09:00:00', '16:00:00', 'Weekly Sync & Retro')
+      //   `;
 
       // await db`
       //     INSERT INTO requests (employee_id, type, description, status)
@@ -644,10 +644,10 @@ CREATE TABLE self_assessments (
           (${emp.id}, 'Task Completion Rate', '92.0%', '90.0%', '+5.0%', true);
       `;
 
-      await db`
-          INSERT INTO wfh_requests (user_id, request_date, reason, status)
-          VALUES (${emp.id}, '2026-07-28', 'Working on server optimization and require quiet space.', 'Pending')
-      `;
+      // await db`
+      //     INSERT INTO wfh_requests (user_id, request_date, reason, status)
+      //     VALUES (${emp.id}, '2026-07-28', 'Working on server optimization and require quiet space.', 'Pending')
+      // `;
 
       await db`
         INSERT INTO user_performance (
