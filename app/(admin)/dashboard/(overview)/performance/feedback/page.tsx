@@ -1,6 +1,6 @@
 // @/app/(admin)/dashboard/(overview)/performance/feedback/page.tsx
 
-import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
+import { getCompanyFeedback } from "@/app/lib/admin/performance/data";
 import { MessageSquare, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -12,26 +12,7 @@ export const revalidate = 0;
 export default async function FullFeedbackPage() {
   const session = await auth();
   if (!session?.user) return null;
-
-  const isAdmin = session.user.role === "admin";
-  const managerName = session.user.name as string;
-
-  let allFeedback;
-
-  if (isAdmin) {
-    allFeedback = (await db`
-      SELECT uf.id, uf.type, uf.text, uf.sender, uf.role, uf.date, u.name as recipient_name, u.image_url as recipient_image
-      FROM user_feedback uf JOIN users u ON uf.user_id = u.id
-      ORDER BY uf.date DESC 
-    `) as unknown as FeedbackRow[];
-  } else {
-    allFeedback = (await db`
-      SELECT uf.id, uf.type, uf.text, uf.sender, uf.role, uf.date, u.name as recipient_name, u.image_url as recipient_image
-      FROM user_feedback uf JOIN users u ON uf.user_id = u.id
-      WHERE u.manager_name = ${managerName}
-      ORDER BY uf.date DESC 
-    `) as unknown as FeedbackRow[];
-  }
+  const allFeedback = (await getCompanyFeedback()) as unknown as FeedbackRow[];
 
   const getTypeBadge = (type: string) => {
     switch (type?.toLowerCase()) {
@@ -63,10 +44,13 @@ export default async function FullFeedbackPage() {
           </p>
         </div>
 
-        <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-all shadow-sm ring-1 ring-inset ring-indigo-500/20">
+        <Link
+          href="/dashboard/performance/feedback/new"
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-all shadow-sm ring-1 ring-inset ring-indigo-500/20"
+        >
           <MessageSquare className="w-4 h-4" />
           Log New Feedback
-        </button>
+        </Link>
       </div>
 
       <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">

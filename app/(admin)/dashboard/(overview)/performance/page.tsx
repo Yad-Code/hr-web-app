@@ -2,6 +2,7 @@
 import { Suspense } from "react";
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { auth } from "@/auth";
+import { getCompanyFeedback } from "@/app/lib/admin/performance/data";
 
 import { PerformanceKpiCards } from "./_components/performance-kpi-cards";
 import { RecentReviewsList } from "./_components/recent-reviews-list";
@@ -22,8 +23,6 @@ import {
 
 export const revalidate = 0;
 
-// --- SECURED SECTIONS ---
-
 async function FeedbackSection({
   isAdmin,
   managerName,
@@ -31,16 +30,13 @@ async function FeedbackSection({
   isAdmin: boolean;
   managerName: string;
 }) {
-  let recentFeedback;
+  const allFeedback = (await getCompanyFeedback()) as unknown as FeedbackRow[];
+  const recentFeedback = allFeedback.slice(0, 5);
+
   let pendingRequests;
 
+  // 2. Keep the pending requests query as it targets a completely different table
   if (isAdmin) {
-    recentFeedback = (await db`
-      SELECT uf.id, uf.type, uf.text, uf.sender, uf.role, uf.date, u.name as recipient_name, u.image_url as recipient_image
-      FROM user_feedback uf JOIN users u ON uf.user_id = u.id
-      ORDER BY uf.date DESC LIMIT 5
-    `) as unknown as FeedbackRow[];
-
     pendingRequests = (await db`
       SELECT id, title, description, created_at 
       FROM performance_notifications 
@@ -48,17 +44,11 @@ async function FeedbackSection({
       ORDER BY created_at DESC LIMIT 5
     `) as unknown as FeedbackRequestRow[];
   } else {
-    recentFeedback = (await db`
-      SELECT uf.id, uf.type, uf.text, uf.sender, uf.role, uf.date, u.name as recipient_name, u.image_url as recipient_image
-      FROM user_feedback uf JOIN users u ON uf.user_id = u.id
-      WHERE u.manager_name = ${managerName}
-      ORDER BY uf.date DESC LIMIT 5
-    `) as unknown as FeedbackRow[];
-
     pendingRequests = (await db`
       SELECT pn.id, pn.title, pn.description, pn.created_at 
       FROM performance_notifications pn JOIN users u ON pn.user_id = u.id
-      WHERE pn.type = 'Feedback Request' AND pn.is_read = false AND u.manager_name = ${managerName}
+      WHERE pn.type = 'Feedback Request' AND pn.is_read = false 
+      AND (u.name = ${managerName} OR u.manager_name = ${managerName})
       ORDER BY pn.created_at DESC LIMIT 5
     `) as unknown as FeedbackRequestRow[];
   }
@@ -263,10 +253,13 @@ export default async function AdminPerformancePage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-xs">
+          <Link
+            href="/dashboard/performance/feedback/new"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-xs"
+          >
             <MessageSquarePlus className="w-4 h-4 text-slate-400" />
             Log Feedback
-          </button>
+          </Link>
           <Link
             href="/dashboard/performance/goals/new"
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-xs"

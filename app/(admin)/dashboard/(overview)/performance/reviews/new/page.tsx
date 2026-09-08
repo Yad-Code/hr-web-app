@@ -1,38 +1,13 @@
 // @/app/(admin)/dashboard/(overview)/performance/reviews/new/page.tsx
 
-import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { createNewReview } from "@/app/lib/admin/performance/actions";
 import { SubmitButton } from "./submit-button";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { auth } from "@/auth";
-
-interface EmployeeRow {
-  id: string;
-  name: string;
-  department: string;
-}
+import { getEmployeesList } from "@/app/lib/admin/performance/data";
 
 export default async function NewReviewPage() {
-  const session = await auth();
-  if (!session?.user) return null;
-
-  const isAdmin = session.user.role === "admin";
-  const managerName = session.user.name as string;
-
-  let employees;
-
-  // FIXED: Removed "WHERE status = 'Active'" so offline employees are included
-  if (isAdmin) {
-    employees = (await db`
-      SELECT id, name, department FROM users ORDER BY name ASC
-    `) as unknown as EmployeeRow[];
-  } else {
-    employees = (await db`
-      SELECT id, name, department FROM users WHERE manager_name = ${managerName} ORDER BY name ASC
-    `) as unknown as EmployeeRow[];
-  }
-
+  const employees = await getEmployeesList();
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-4">

@@ -12,8 +12,7 @@ export default async function PerformancePage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">My Performance Dashboard</h1>
-      {/* 3. Pass the fetched data to the Client Component */}
+      <h1 className="text-2xl font-bold mb-6">My Performance Dashboard</h1> 
       <PerformanceDashboard initialData={dashboardData} />
     </div>
   );

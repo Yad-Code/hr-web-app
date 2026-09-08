@@ -6,7 +6,7 @@ import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
- 
+
 async function authorizeManagerAction(targetUserId: string) {
   const session = await auth();
   if (!session?.user) return false;
@@ -19,7 +19,7 @@ async function authorizeManagerAction(targetUserId: string) {
   }
   return false;
 }
- 
+
 const GoalSchema = z.object({
   userId: z.string().min(1, "Please select an employee."),
   title: z.string().min(3, "Title must be at least 3 characters."),
@@ -38,7 +38,7 @@ export type GoalFormState = {
   };
   message?: string | null;
 };
- 
+
 export async function createNewGoal(formData: FormData): Promise<void> {
   const validatedFields = GoalSchema.safeParse({
     userId: formData.get("userId"),
@@ -293,4 +293,63 @@ export async function approveLeaveRequest(requestId: string) {
     console.error("Failed to approve request:", error);
     return { success: false, error: "Database transaction failed." };
   }
+}
+
+const FeedbackSchema = z.object({
+  userId: z.string().min(1, "Please select an employee."),
+  type: z.enum(["Positive", "Constructive", "Recognition", "Other"]),
+  text: z.string().min(3, "Feedback text must be at least 3 characters."),
+});
+
+export async function createNewFeedback(formData: FormData): Promise<void> {
+  const validatedFields = FeedbackSchema.safeParse({
+    userId: formData.get("userId"),
+    type: formData.get("type"),
+    text: formData.get("text"),
+  });
+
+  if (!validatedFields.success) {
+    console.error(
+      "Validation Error:",
+      validatedFields.error.flatten().fieldErrors,
+    );
+    return;
+  }
+
+  const { userId, type, text } = validatedFields.data;
+ 
+  const isAuthorized = await authorizeManagerAction(userId);
+  if (!isAuthorized) {
+    console.error("Unauthorized to log feedback for this employee.");
+    return;
+  }
+
+  const session = await auth();
+  const senderName = session?.user?.name as string;
+ 
+  let senderRole = "Manager";
+  if (session?.user?.role === "admin") senderRole = "HR Admin";
+
+  const todayDate = new Date().toISOString().split("T")[0];
+
+  try {
+    await db`
+      INSERT INTO user_feedback (user_id, sender, role, date, type, text, is_read)
+      VALUES (${userId}, ${senderName}, ${senderRole}, ${todayDate}, ${type}, ${text}, false)
+    `;
+
+    // Optional: Send a notification to the employee
+    const notificationDesc = `You received new ${type.toLowerCase()} feedback from ${senderName}.`;
+    await db`
+      INSERT INTO performance_notifications (user_id, title, description, type, is_read)
+      VALUES (${userId}, 'New Feedback Received', ${notificationDesc}, 'Feedback', false)
+    `;
+  } catch (error) {
+    console.error("Database Error logging feedback:", error);
+    return;
+  }
+
+  revalidatePath("/dashboard/performance");
+  revalidatePath("/dashboard/performance/feedback");
+  redirect("/dashboard/performance/feedback");
 }

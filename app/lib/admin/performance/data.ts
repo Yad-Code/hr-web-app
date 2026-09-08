@@ -3,7 +3,7 @@
 import { sql } from "@/app/lib/employeeDashboard/employee/db";
 import { MeetingRow } from "@/app/(admin)/dashboard/(overview)/performance/types";
 import { SelfAssessment } from "@/app/lib/employeeDashboard/performance/definitions";
-import { auth } from "@/auth"; // 👈 Import auth
+import { auth } from "@/auth";
 
 export interface AdminMeetingDetail {
   id: string;
@@ -138,14 +138,13 @@ export async function getEmployeesList(): Promise<EmployeeOption[]> {
       return await sql<EmployeeOption[]>`
         SELECT id, name, COALESCE(department, 'General') AS department 
         FROM users 
-        WHERE status = 'Active'
         ORDER BY name ASC
       `;
     } else {
       return await sql<EmployeeOption[]>`
         SELECT id, name, COALESCE(department, 'General') AS department 
         FROM users 
-        WHERE status = 'Active' AND manager_name = ${managerName}
+        WHERE manager_name = ${managerName}
         ORDER BY name ASC
       `;
     }
@@ -186,5 +185,18 @@ export async function getEmployeeSelfAssessment(
   } catch (error) {
     console.error("Failed to fetch employee self-assessment:", error);
     return null;
+  }
+}
+
+export async function getCompanyFeedback() {
+  const session = await auth();
+  if (!session?.user) return [];
+  const isAdmin = session.user.role === "admin";
+  const managerName = session.user.name as string;
+
+  if (isAdmin) {
+    return await sql`SELECT uf.*, u.name as recipient_name, u.image_url as recipient_image FROM user_feedback uf JOIN users u ON uf.user_id = u.id ORDER BY uf.date DESC`;
+  } else {
+    return await sql`SELECT uf.*, u.name as recipient_name, u.image_url as recipient_image FROM user_feedback uf JOIN users u ON uf.user_id = u.id WHERE u.manager_name = ${managerName} ORDER BY uf.date DESC`;
   }
 }
