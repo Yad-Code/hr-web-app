@@ -1,4 +1,5 @@
 // app/employee/profile/loading.tsx
+
 import {
   ProfileHeaderSkeleton,
   OfficialInfoCardSkeleton,

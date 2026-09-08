@@ -1,5 +1,4 @@
 // @/app/(admin)/dashboard/error.tsx
-
 "use client";
 
 import { useEffect } from "react";
