@@ -18,7 +18,7 @@ export default function PerformanceChart({
 }: {
   history: PerformanceHistory[];
 }) {
-  const chartData = [...history].reverse().map((item) => ({
+  const chartData = history.map((item) => ({
     month: formatDate(item.month),
     Productivity: item.productivity,
     Quality: item.quality,

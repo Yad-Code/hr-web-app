@@ -12,6 +12,7 @@ import {
 } from "@/app/lib/employeeDashboard/performance/actions/feedback";
 import { formatDate } from "@/app/lib/utils";
 import RequestFeedbackModal from "../modals/request-feedback-modal";
+import { FeedbackTypeBadge } from "@/app/ui/utils/badge";
 
 export default function FeedbackTab({
   feedbackList,
@@ -43,19 +44,6 @@ export default function FeedbackTab({
     if (activeFilter === "all") return true;
     return item.type.toLowerCase() === activeFilter.toLowerCase();
   });
-
-  const getTypeBadge = (type: string) => {
-    switch (type.toLowerCase()) {
-      case "positive":
-        return "bg-emerald-100 text-emerald-800 border-emerald-200";
-      case "recognition":
-        return "bg-purple-100 text-purple-800 border-purple-200";
-      case "constructive":
-        return "bg-amber-100 text-amber-800 border-amber-200";
-      default:
-        return "bg-slate-100 text-slate-700 border-slate-200";
-    }
-  };
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -148,13 +136,7 @@ export default function FeedbackTab({
               <div className="flex justify-between items-start gap-4">
                 <div className="space-y-2 flex-1">
                   <div className="flex items-center gap-2">
-                    <span
-                      className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${getTypeBadge(
-                        feedback.type,
-                      )}`}
-                    >
-                      {feedback.type}
-                    </span>
+                    <FeedbackTypeBadge type={feedback.type} />
                     {!feedback.is_read && (
                       <span
                         className="h-2 w-2 rounded-full bg-blue-600"

@@ -8,6 +8,7 @@ import {
   acknowledgeReview,
 } from "@/app/lib/employeeDashboard/performance/actions/reviews";
 import { formatDate } from "@/app/lib/utils";
+import { ReviewRatingBadge } from "@/app/ui/utils/badge";
 
 export default function ReviewsTab({
   reviews,
@@ -69,18 +70,8 @@ export default function ReviewsTab({
       }
     });
   };
-
-  // Helper for dynamic rating styling
-  const getRatingBadgeStyle = (rating: string | number) => {
-    const numRating = typeof rating === "number" ? rating : parseFloat(rating);
-    if (numRating >= 4.5 || rating === "Exceeds Expectations") {
-      return "bg-emerald-100 text-emerald-800 border-emerald-200";
-    }
-    if (numRating >= 3.0 || rating === "Meets Expectations") {
-      return "bg-blue-100 text-blue-800 border-blue-200";
-    }
-    return "bg-amber-100 text-amber-800 border-amber-200";
-  };
+ 
+   
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -128,11 +119,7 @@ export default function ReviewsTab({
                 </p>
               </div>
 
-              <span
-                className={`px-3 py-1 font-semibold rounded-full text-xs border ${getRatingBadgeStyle(review.rating)}`}
-              >
-                Rating: {review.rating}
-              </span>
+             <ReviewRatingBadge rating={review.rating} />
             </div>
 
             {/* Notification Banner */}

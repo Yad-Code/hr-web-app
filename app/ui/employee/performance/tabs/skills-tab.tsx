@@ -20,12 +20,8 @@ const LEVEL_LABELS: Record<number, string> = {
   5: "Expert",
 };
 
-
-
 export default function SkillsTab({ skills }: { skills: Skill[] }) {
   const [isPending, startTransition] = useTransition();
-
-  // Optimistic list for zero-latency state rendering
 
   const [optimisticSkills, setOptimisticSkills] = useOptimistic(
     skills,
