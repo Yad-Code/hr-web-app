@@ -1,3 +1,5 @@
+// @/app/lib/employeeDashboard/performance/data.ts
+
 import { sql } from "@/app/lib/employeeDashboard/employee/db";
 
 import {
@@ -43,14 +45,38 @@ export async function getUserKPIs(userId: string) {
       FROM user_kpis
       WHERE user_id = ${userId}
     `,
+
     sql<{ total_days: number; present_days: number; on_time_days: number }[]>`
+      WITH target_user AS (
+        SELECT id, COALESCE(working_days, '{1,2,3,4,5}'::int[]) as working_days 
+        FROM users WHERE id = ${userId}
+      ),
+      past_days AS (
+        SELECT date::date FROM generate_series(DATE_TRUNC('month', CURRENT_DATE), CURRENT_DATE, '1 day'::interval) AS date
+      ),
+      expected_shifts AS (
+        SELECT u.id as user_id, p.date
+        FROM target_user u CROSS JOIN past_days p
+        WHERE EXTRACT(DOW FROM p.date)::int = ANY(u.working_days)
+      ),
+      scheduled_days AS (
+        SELECT e.user_id, e.date
+        FROM expected_shifts e
+        LEFT JOIN leave_requests lr 
+          ON lr.user_id = e.user_id 
+          AND lr.type = 'dayoff' 
+          AND lr.status = 'Approved' 
+          AND e.date BETWEEN lr.start_date AND lr.end_date
+        WHERE lr.id IS NULL
+      ),
+      actual_attendance AS (
+        SELECT date, status FROM attendance 
+        WHERE user_id = ${userId} AND date >= DATE_TRUNC('month', CURRENT_DATE)
+      )
       SELECT 
-        COUNT(*)::int AS total_days,
-        COUNT(CASE WHEN status IN ('Present', 'Late') THEN 1 END)::int AS present_days,
-        COUNT(CASE WHEN status = 'Present' THEN 1 END)::int AS on_time_days
-      FROM attendance
-      WHERE user_id = ${userId}
-        AND date_trunc('month', date) = date_trunc('month', CURRENT_DATE)
+        (SELECT COUNT(*) FROM scheduled_days)::int AS total_days,
+        (SELECT COUNT(*) FROM actual_attendance WHERE status IN ('Present', 'Late'))::int AS present_days,
+        (SELECT COUNT(*) FROM actual_attendance WHERE status = 'Present')::int AS on_time_days
     `,
   ]);
 
@@ -59,7 +85,6 @@ export async function getUserKPIs(userId: string) {
   const presentDays = stats?.present_days || 0;
   const onTimeDays = stats?.on_time_days || 0;
 
-  // Calculates current month rates dynamically (defaults to '0.0%' if no records exist for the month)
   const dynamicAttendanceRate =
     totalDays > 0 ? `${((presentDays / totalDays) * 100).toFixed(1)}%` : "0.0%";
 
@@ -69,10 +94,12 @@ export async function getUserKPIs(userId: string) {
       : "0.0%";
 
   return kpiRows.map((kpi) => {
-    if (kpi.label.toLowerCase().includes("attendance")) {
+    const label = kpi.label.toLowerCase();
+
+    if (label.includes("attendance")) {
       return { ...kpi, value: dynamicAttendanceRate };
-    }
-    if (kpi.label.toLowerCase().includes("punctuality")) {
+    } 
+    if (label.includes("on-time")) {
       return { ...kpi, value: dynamicPunctualityRate };
     }
     return kpi;

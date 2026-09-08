@@ -3,11 +3,9 @@ import { getCurrentUserId } from "@/app/lib/employeeDashboard/performance/action
 import { getPerformanceDashboard } from "@/app/lib/employeeDashboard/performance/data";
 import PerformanceDashboard from "@/app/ui/employee/performance/performance-dashboard";
 
-export default async function PerformancePage() {
-  // 1. Get the current authenticated user[cite: 10]
+export default async function PerformancePage() { 
   const userId = await getCurrentUserId();
-
-  // 2. Fetch all performance data in parallel[cite: 1]
+ 
   const dashboardData = await getPerformanceDashboard(userId);
 
   return (
@@ -16,4 +14,4 @@ export default async function PerformancePage() {
       <PerformanceDashboard initialData={dashboardData} />
     </div>
   );
-}
+} 

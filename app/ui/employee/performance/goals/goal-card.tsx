@@ -1,6 +1,7 @@
 // app/ui/employee/performance/components/goal-card.tsx
 "use client";
 
+import { PriorityBadge } from "@/app/ui/utils/badge";
 import { DisplayGoal } from "../tabs/goals-tab";
 import { formatDate } from "@/app/lib/utils";
 
@@ -33,20 +34,9 @@ export default function GoalCard({ goal, onSliderChange }: GoalCardProps) {
           )}
         </div>
 
-        <span
-          className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
-            goal.priority === "High"
-              ? "bg-red-100 text-red-700"
-              : goal.priority === "Medium"
-                ? "bg-amber-100 text-amber-700"
-                : "bg-slate-100 text-slate-700"
-          }`}
-        >
-          {goal.priority} Priority
-        </span>
+        <PriorityBadge priority={goal.priority} />
       </div>
 
-      {/* Slider */}
       <div className="mt-4 space-y-2">
         <div className="flex justify-between text-xs font-semibold text-slate-700">
           <span>Progress</span>
@@ -65,7 +55,7 @@ export default function GoalCard({ goal, onSliderChange }: GoalCardProps) {
       </div>
 
       <div className="flex justify-between items-center mt-3 text-[11px] text-slate-500">
-        <span>Due: {formatDate(goal.due_date).split("T")[0]}</span>
+        <span>Due: {formatDate(goal.due_date)}</span>
         <span>Status: {goal.status}</span>
       </div>
     </div>
