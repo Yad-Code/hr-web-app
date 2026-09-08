@@ -4,19 +4,25 @@
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+
+// --- STRICT SECURITY GATE ---
+async function verifyAdminAction() {
+  const session = await auth();
+  return session?.user?.role === "admin";
+}
 
 export async function generateMonthlyPayroll() {
+  if (!(await verifyAdminAction()))
+    return {
+      success: false,
+      message: "Unauthorized. Only HR Admins can generate company payroll.",
+    };
+
   try {
     const users = await db`
-      SELECT 
-        id, 
-        base_salary,
-        public_org,    
-        private_org,   
-        insurance,     
-        subscription   
-      FROM users 
-      WHERE status = 'Active'
+      SELECT id, base_salary, public_org, private_org, insurance, subscription   
+      FROM users WHERE status = 'Active'
     `;
 
     if (users.length === 0)
@@ -25,36 +31,22 @@ export async function generateMonthlyPayroll() {
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, "0");
-
     const startOfMonth = `${year}-${month}-01`;
-
     const lastDay = new Date(year, today.getMonth() + 1, 0).getDate();
-
     const endOfMonth = `${year}-${month}-${lastDay}`;
-    const payDate = `${year}-${String(today.getMonth() + 2).padStart(2, "0")}-05`; // Come back here and change the payment day according to the user
+    const payDate = `${year}-${String(today.getMonth() + 2).padStart(2, "0")}-05`;
 
-    // 1. Idempotency Check (Moved OUTSIDE the loop)
-    const existingStubs = await db`
-      SELECT id FROM pay_stubs 
-      WHERE pay_period_start = ${startOfMonth} 
-      LIMIT 1
-    `;
-
-    if (existingStubs.length > 0) {
+    const existingStubs =
+      await db`SELECT id FROM pay_stubs WHERE pay_period_start = ${startOfMonth} LIMIT 1`;
+    if (existingStubs.length > 0)
       return {
         success: false,
         message: "Payroll for this month has already been generated.",
       };
-    }
 
-    // 2. Wrap all insertions in a transaction block
-    // Note: If your specific db wrapper doesn't use `.begin`, you would execute
-    // await db`BEGIN` before the loop, and await db`COMMIT` after it.
     await db.begin(async (tx) => {
       for (const user of users) {
         const grossPay = Number(user.base_salary);
-
-        // Dynamic Tax Calculation
         let taxRate = 0.1;
         let taxDescription = "Standard Income Tax (10%)";
 
@@ -70,8 +62,6 @@ export async function generateMonthlyPayroll() {
         }
 
         const tax = grossPay * taxRate;
-
-        // Dynamic Insurance Deduction
         let insuranceDeduction = 0;
         let insuranceDescription = "No Insurance Enrolled";
 
@@ -93,7 +83,6 @@ export async function generateMonthlyPayroll() {
 
         const netPay = grossPay - tax - insuranceDeduction;
 
-        // Note we are using `tx` here instead of `db` to keep it in the transaction
         const [stub] = await tx`
           INSERT INTO pay_stubs (user_id, pay_period_start, pay_period_end, pay_date, gross_pay, net_pay, status) 
           VALUES (${user.id}, ${startOfMonth}, ${endOfMonth}, ${payDate}, ${grossPay}, ${netPay}, 'processing')
@@ -120,13 +109,12 @@ export async function generateMonthlyPayroll() {
     return { success: true, message: "Payroll generated successfully." };
   } catch (error) {
     console.error("Payroll Generation Error:", error);
-    // If an error happens inside the db.begin block, the database automatically rolls back everything!
     return { success: false, message: "Failed to generate payroll." };
   }
 }
 
-// NEW: Action to mark a pay stub as paid
 export async function markAsPaid(payStubId: string) {
+  if (!(await verifyAdminAction())) throw new Error("Unauthorized");
   try {
     await db`UPDATE pay_stubs SET status = 'paid' WHERE id = ${payStubId}`;
     revalidatePath("/dashboard/payroll");
@@ -137,27 +125,13 @@ export async function markAsPaid(payStubId: string) {
   }
 }
 
-export async function fetchEmployeePaymentMethods(userId: string) {
-  const methods = await db`
-    SELECT pm.*, u.name as account_holder 
-    FROM payment_methods pm
-    JOIN users u ON pm.user_id = u.id
-    WHERE pm.user_id = ${userId}
-  `;
-  return methods;
-}
-
 export async function verifyPaymentMethod(
   paymentMethodId: string,
   payStubId: string,
 ) {
+  if (!(await verifyAdminAction())) throw new Error("Unauthorized");
   try {
-    await db`
-      UPDATE payment_methods 
-      SET status = 'verified' 
-      WHERE id = ${paymentMethodId}
-    `;
-
+    await db`UPDATE payment_methods SET status = 'verified' WHERE id = ${paymentMethodId}`;
     revalidatePath(`/dashboard/payroll/${payStubId}`);
   } catch (error) {
     console.error("Failed to verify payment method:", error);
@@ -166,40 +140,28 @@ export async function verifyPaymentMethod(
 }
 
 export async function deletePayStub(payStubId: string) {
+  if (!(await verifyAdminAction())) throw new Error("Unauthorized");
   try {
-    await db`
-      DELETE FROM pay_stubs 
-      WHERE id = ${payStubId}
-    `;
-
+    await db`DELETE FROM pay_stubs WHERE id = ${payStubId}`;
     revalidatePath("/dashboard/payroll");
   } catch (error) {
     console.error("Failed to delete pay stub:", error);
     throw new Error("Database deletion failed.");
   }
-
-  // 2. Actually redirect the user to the table
   redirect("/dashboard/payroll");
 }
 
 export async function rollbackProcessingPayroll() {
-  try { 
+  if (!(await verifyAdminAction()))
+    return {
+      success: false,
+      message: "Unauthorized. Only HR Admins can rollback payroll.",
+    };
+  try {
     await db.begin(async (tx) => {
-      // 1. Delete associated line items first to prevent foreign key errors
-      await tx`
-        DELETE FROM pay_stub_items 
-        WHERE pay_stub_id IN (
-          SELECT id FROM pay_stubs WHERE status = 'processing'
-        );
-      `;
-
-      // 2. Now safely delete the processing pay stubs
-      await tx`
-        DELETE FROM pay_stubs 
-        WHERE status = 'processing';
-      `;
+      await tx`DELETE FROM pay_stub_items WHERE pay_stub_id IN (SELECT id FROM pay_stubs WHERE status = 'processing')`;
+      await tx`DELETE FROM pay_stubs WHERE status = 'processing'`;
     });
-
     revalidatePath("/dashboard/payroll");
     return {
       success: true,
@@ -211,23 +173,19 @@ export async function rollbackProcessingPayroll() {
   }
 }
 
-// Add to @/app/lib/admin/payroll/actions.ts
-
 export async function updateEmployeeSalary(userId: string, newSalary: number) {
+  if (!(await verifyAdminAction()))
+    return {
+      success: false,
+      message: "Unauthorized. Only HR Admins can modify salaries.",
+    };
   try {
-    if (!newSalary || newSalary < 0) {
+    if (!newSalary || newSalary < 0)
       return {
         success: false,
         message: "Please provide a valid positive salary amount.",
       };
-    }
-
-    await db`
-      UPDATE users 
-      SET base_salary = ${newSalary} 
-      WHERE id = ${userId}
-    `;
-
+    await db`UPDATE users SET base_salary = ${newSalary} WHERE id = ${userId}`;
     revalidatePath("/dashboard/payroll");
     revalidatePath("/dashboard/employees");
     return { success: true, message: "Base salary updated successfully." };

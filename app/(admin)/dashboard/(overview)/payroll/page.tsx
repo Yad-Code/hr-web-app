@@ -5,14 +5,22 @@ import {
   generateMonthlyPayroll,
   rollbackProcessingPayroll,
 } from "@/app/lib/admin/payroll/actions";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
 export default async function AdminPayrollPage() {
+  const session = await auth();
+
+  // SECURITY: Strictly restrict this entire page to HR/Admins
+  if (session?.user?.role !== "admin") {
+    redirect("/dashboard");
+  }
+
   const payStubs = await fetchAllPayStubs();
 
   const totalProcessing = payStubs.filter(
     (p) => p.status === "processing",
   ).length;
-
   const totalNetPayout = payStubs
     .filter((p) => p.status === "processing")
     .reduce((sum, record) => sum + Number(record.net_pay), 0);
@@ -22,10 +30,10 @@ export default async function AdminPayrollPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-            Payroll Management
+            Company Payroll
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Review and process employee salaries and pay stubs.
+            Review and process enterprise salaries and pay stubs.
           </p>
         </div>
 
@@ -42,15 +50,11 @@ export default async function AdminPayrollPage() {
             </p>
           </div>
 
-          {/* Rollback Server Action Form - Only shows if there is processing payroll */}
           {totalProcessing > 0 && (
             <form
               action={async () => {
                 "use server";
-                const result = await rollbackProcessingPayroll();
-                if (!result.success) {
-                  console.log("ROLLBACK FAILED:", result.message);
-                }
+                await rollbackProcessingPayroll();
               }}
             >
               <button
@@ -75,14 +79,10 @@ export default async function AdminPayrollPage() {
             </form>
           )}
 
-          {/* Generate Server Action Form */}
           <form
             action={async () => {
               "use server";
-              const result = await generateMonthlyPayroll();
-              if (!result.success) {
-                console.log("PAYROLL GENERATION FAILED:", result.message);
-              }
+              await generateMonthlyPayroll();
             }}
           >
             <button

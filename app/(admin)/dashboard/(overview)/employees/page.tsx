@@ -13,15 +13,16 @@ export default async function EmployeesStatusPage() {
   const isAdmin = session?.user?.role === "admin";
 
   return (
-    <main className="p-4 sm:p-6 max-w-3xl mx-auto w-full space-y-6"> 
-      <div className="border-b border-slate-100 pb-4">
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
+    <main className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto w-full space-y-8">
+      {/* Softened Header Layout */}
+      <div className="flex flex-col gap-1.5">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
           {isAdmin ? "Company Directory" : "My Team's Presence"}
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1">
+        <p className="text-sm text-slate-500 font-medium max-w-2xl">
           {isAdmin
-            ? "Real-time status, location, and schedule visibility across the entire company."
-            : "Real-time status, location, and schedule visibility for your direct reports."}
+            ? "Monitor real-time availability, schedule visibility, and active locations across the entire enterprise."
+            : "Monitor real-time availability, schedule visibility, and active locations for your direct reports."}
         </p>
       </div>
 

@@ -9,12 +9,20 @@ import {
   verifyPaymentMethod,
   deletePayStub,
 } from "@/app/lib/admin/payroll/actions";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
 export default async function PayStubDetailsPage({ params }: PageProps) {
+  const session = await auth();
+
+  if (session?.user?.role !== "admin") {
+    redirect("/dashboard");
+  }
+
   const resolvedParams = await params;
   const payStub = await fetchPayStubDetails(resolvedParams.id);
   const items = await fetchPayStubItems(resolvedParams.id);
@@ -27,7 +35,6 @@ export default async function PayStubDetailsPage({ params }: PageProps) {
 
   return (
     <main className="max-w-4xl mx-auto w-full p-4 sm:p-6 lg:p-8">
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <Link
@@ -41,44 +48,45 @@ export default async function PayStubDetailsPage({ params }: PageProps) {
           </h1>
         </div>
 
-        {/* Process Payment Form */}
-        {payStub.status === "processing" && (
-          <form
-            action={async () => {
-              "use server";
-              await markAsPaid(payStub.id);
-            }}
-          >
-            <button
-              type="submit"
-              className="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 shadow-xs transition-all"
+        <div className="flex items-center gap-3">
+          { payStub.status === "processing" && (
+            <form
+              action={async () => {
+                "use server";
+                await markAsPaid(payStub.id);
+              }}
             >
-              Mark as Paid
-            </button>
-          </form>
-        )}
-        {payStub.status === "paid" && (
-          <span className="px-4 py-2 text-sm font-bold bg-emerald-100 text-emerald-800 rounded-lg uppercase tracking-wider">
-            ✓ Payment Cleared
-          </span>
-        )}
-        {/* Delete Pay Stub Button */}
-        <form
-          action={async () => {
-            "use server";
-            await deletePayStub(payStub.id);
-          }}
-        >
-          <button
-            type="submit"
-            className="px-4 py-2 text-sm font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-lg hover:bg-rose-100 transition-all shadow-xs"
-          >
-            Delete
-          </button>
-        </form>
+              <button
+                type="submit"
+                className="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 shadow-xs transition-all"
+              >
+                Mark as Paid
+              </button>
+            </form>
+          )}
+          {payStub.status === "paid" && (
+            <span className="px-4 py-2 text-sm font-bold bg-emerald-100 text-emerald-800 rounded-lg uppercase tracking-wider">
+              ✓ Payment Cleared
+            </span>
+          )}
+          {(
+            <form
+              action={async () => {
+                "use server";
+                await deletePayStub(payStub.id);
+              }}
+            >
+              <button
+                type="submit"
+                className="px-4 py-2 text-sm font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-lg hover:bg-rose-100 transition-all shadow-xs"
+              >
+                Delete
+              </button>
+            </form>
+          )}
+        </div>
       </div>
 
-      {/* Invoice Card */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sm:p-8">
         <div className="flex flex-col sm:flex-row justify-between border-b border-slate-100 pb-6 mb-6 gap-6">
           <div>
@@ -102,7 +110,6 @@ export default async function PayStubDetailsPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Direct Deposit & Verification Banner */}
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
@@ -116,18 +123,15 @@ export default async function PayStubDetailsPage({ params }: PageProps) {
             <p className="text-xs text-slate-500 mt-0.5">
               Account Status:{" "}
               <span
-                className={`font-semibold capitalize ${
-                  payStub.payment_status === "verified"
-                    ? "text-emerald-600"
-                    : "text-amber-600"
-                }`}
+                className={`font-semibold capitalize ${payStub.payment_status === "verified" ? "text-emerald-600" : "text-amber-600"}`}
               >
                 {payStub.payment_status || "pending"}
               </span>
             </p>
           </div>
 
-          {payStub.payment_method_id &&
+          { 
+            payStub.payment_method_id &&
             payStub.payment_status !== "verified" && (
               <form
                 action={async () => {
@@ -148,7 +152,6 @@ export default async function PayStubDetailsPage({ params }: PageProps) {
             )}
         </div>
 
-        {/* Itemized Table */}
         <div className="mb-8">
           <h3 className="text-base font-bold text-slate-900 mb-4">Earnings</h3>
           <div className="border border-slate-200 rounded-xl overflow-hidden mb-6">
@@ -187,7 +190,6 @@ export default async function PayStubDetailsPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Totals */}
         <div className="border-t border-slate-200 pt-6 flex justify-end">
           <div className="w-full sm:w-1/2 space-y-3">
             <div className="flex justify-between text-sm">
