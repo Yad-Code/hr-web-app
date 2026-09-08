@@ -6,7 +6,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 
-// --- STRICT SECURITY GATE ---
 async function verifyAdminAction() {
   const session = await auth();
   return session?.user?.role === "admin";
@@ -34,7 +33,7 @@ export async function generateMonthlyPayroll() {
     const startOfMonth = `${year}-${month}-01`;
     const lastDay = new Date(year, today.getMonth() + 1, 0).getDate();
     const endOfMonth = `${year}-${month}-${lastDay}`;
-    const payDate = `${year}-${String(today.getMonth() + 2).padStart(2, "0")}-05`;
+    const payDate = endOfMonth;
 
     const existingStubs =
       await db`SELECT id FROM pay_stubs WHERE pay_period_start = ${startOfMonth} LIMIT 1`;
