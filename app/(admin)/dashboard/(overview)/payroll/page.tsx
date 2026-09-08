@@ -1,19 +1,41 @@
 // @/app/(admin)/dashboard/(overview)/payroll/page.tsx
 import { fetchAllPayStubs } from "@/app/lib/admin/payroll/data";
-import { AdminPayrollTable } from "./AdminPayrollTable";
 import {
   generateMonthlyPayroll,
   rollbackProcessingPayroll,
 } from "@/app/lib/admin/payroll/actions";
+
 import { auth } from "@/auth";
-import { redirect } from "next/navigation";
+import Link from "next/link";
+import { ShieldAlert, ArrowLeft } from "lucide-react";
+
+import { AdminPayrollTable } from "./AdminPayrollTable";
 
 export default async function AdminPayrollPage() {
   const session = await auth();
 
-  // SECURITY: Strictly restrict this entire page to HR/Admins
   if (session?.user?.role !== "admin") {
-    redirect("/dashboard");
+    return (
+      <main className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-6 ring-8 ring-slate-50">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight mb-2">
+          Access Restricted
+        </h1>
+        <p className="text-sm text-slate-500 font-medium max-w-sm mx-auto mb-8">
+          You do not have the required permissions to view the payroll module.
+          This area is restricted to HR Administrators.
+        </p>
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-all shadow-xs"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Return to Dashboard
+        </Link>
+      </main>
+    );
   }
 
   const payStubs = await fetchAllPayStubs();

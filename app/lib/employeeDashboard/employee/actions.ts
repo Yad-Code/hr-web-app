@@ -499,10 +499,8 @@ export async function approveLeaveRequest(requestId: string) {
       }
       await sql`UPDATE leave_balances SET monthly_remaining_hours = monthly_remaining_hours - ${hours} WHERE user_id = ${user_id}`;
     }
-
-    // --- NEW: SCHEDULE OVERRIDE LOGIC ---
-    if (type === "exchange" && request.helper_id) {
-      // 1. Requester Overrides
+ 
+    if (type === "exchange" && request.helper_id) { 
       await sql`
         INSERT INTO schedule_overrides (user_id, target_date, is_working, notes)
         VALUES 
@@ -510,8 +508,7 @@ export async function approveLeaveRequest(requestId: string) {
           (${user_id}, ${request.exchange_date}, true, 'Shift taken from helper')
         ON CONFLICT (user_id, target_date) DO UPDATE SET is_working = EXCLUDED.is_working
       `;
-
-      // 2. Helper Overrides
+ 
       await sql`
         INSERT INTO schedule_overrides (user_id, target_date, is_working, notes)
         VALUES 
@@ -520,8 +517,7 @@ export async function approveLeaveRequest(requestId: string) {
         ON CONFLICT (user_id, target_date) DO UPDATE SET is_working = EXCLUDED.is_working
       `;
     }
-
-    // --- FINALIZE STATUS ---
+ 
     await sql`
       UPDATE leave_requests 
       SET status = 'Approved', updated_at = CURRENT_TIMESTAMP
@@ -529,7 +525,7 @@ export async function approveLeaveRequest(requestId: string) {
     `;
 
     revalidatePath("/dashboard");
-    revalidatePath("/my-profile/attendance"); // Ensure calendars refresh immediately
+    revalidatePath("/my-profile/attendance"); 
 
     return { success: true };
   } catch (error) {

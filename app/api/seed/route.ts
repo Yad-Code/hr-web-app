@@ -3,18 +3,18 @@ import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import bcrypt from "bcrypt";
 
 export async function GET() {
-  try { 
+  try {
     await db`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
- 
+
     await db`DROP TABLE IF EXISTS employee_languages`;
     await db`DROP TABLE IF EXISTS employee_documents`;
- 
+
     await db`DROP TABLE IF EXISTS performance_history`;
     await db`DROP TABLE IF EXISTS career_development`;
     await db`DROP TABLE IF EXISTS performance_notifications`;
     await db`DROP TABLE IF EXISTS self_assessments`;
     await db`DROP TABLE IF EXISTS one_on_one_meetings`;
- 
+
     await db`DROP TABLE IF EXISTS user_feedback`;
     await db`DROP TABLE IF EXISTS user_skills`;
     await db`DROP TABLE IF EXISTS skills`;
@@ -22,7 +22,7 @@ export async function GET() {
     await db`DROP TABLE IF EXISTS user_kpis`;
     await db`DROP TABLE IF EXISTS user_performance`;
     await db`DROP TABLE IF EXISTS performance_reviews`;
- 
+
     await db`DROP TABLE IF EXISTS wfh_requests`;
     await db`DROP TABLE IF EXISTS leave_balances`;
     await db`DROP TABLE IF EXISTS attendance`;
@@ -37,13 +37,13 @@ export async function GET() {
     await db`DROP TABLE IF EXISTS payment_methods`;
     await db`DROP TABLE IF EXISTS pay_stub_items`;
     await db`DROP TABLE IF EXISTS pay_stubs`;
- 
+
     await db`DROP TABLE IF EXISTS leave_requests`;
     await db`DROP TABLE IF EXISTS daily_attendance`;
     await db`DROP TABLE IF EXISTS shift_rules`;
     await db`DROP TABLE IF EXISTS education_history`;
     await db`DROP TABLE IF EXISTS employment_history`;
- 
+
     await db`CREATE TYPE user_role AS ENUM ('admin', 'manager', 'employee')`;
 
     // --- Original Tables ---
@@ -109,16 +109,16 @@ export async function GET() {
       )
     `;
 
-    await db`
-      CREATE TABLE requests (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        employee_id UUID REFERENCES users(id) ON DELETE CASCADE,
-        type VARCHAR(50) NOT NULL,
-        description TEXT NOT NULL,
-        status VARCHAR(50) DEFAULT 'pending' NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
-      )
-    `;
+    // await db`
+    //   CREATE TABLE requests (
+    //     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    //     employee_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    //     type VARCHAR(50) NOT NULL,
+    //     description TEXT NOT NULL,
+    //     status VARCHAR(50) DEFAULT 'pending' NOT NULL,
+    //     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+    //   )
+    // `;
 
     await db`
       CREATE TABLE attendance (
@@ -616,9 +616,14 @@ CREATE TABLE self_assessments (
             (${emp.id}, '2026-07-24', '09:00:00', '16:00:00', 'Weekly Sync & Retro')
         `;
 
+      // await db`
+      //     INSERT INTO requests (employee_id, type, description, status)
+      //     VALUES (${emp.id}, 'time-off', 'Requesting 2 days off for a local engineering hackathon event.', 'pending')
+      //   `;
+
       await db`
-          INSERT INTO requests (employee_id, type, description, status)
-          VALUES (${emp.id}, 'time-off', 'Requesting 2 days off for a local engineering hackathon event.', 'pending')
+          INSERT INTO leave_requests (user_id, type, leave_category, start_date, end_date, total_days, reason, status)
+          VALUES (${emp.id}, 'dayoff', 'annual', '2026-10-15', '2026-10-16', 2, 'Requesting 2 days off for a local engineering hackathon event.', 'Pending')
         `;
 
       await db`
@@ -631,110 +636,105 @@ CREATE TABLE self_assessments (
         `;
 
       await db`
-  INSERT INTO user_kpis (user_id, label, value, target, trend, is_up)
-  VALUES
-    (${emp.id}, 'Attendance Rate', '0.0%', '95.0%', '+0.0%', true),
-    (${emp.id}, 'On-Time', '0.0%', '90.0%', '+0.0%', false),
-    (${emp.id}, 'Team Collaboration', '4.8/5', '4.5/5', '+0.3', true),
-    (${emp.id}, 'Task Completion Rate', '92.0%', '90.0%', '+5.0%', true);
-`;
+        INSERT INTO user_kpis (user_id, label, value, target, trend, is_up)
+        VALUES
+          (${emp.id}, 'Attendance Rate', '97.8%', '95.0%', '+2.8%', true),
+          (${emp.id}, 'On-Time', '94.2%', '90.0%', '+4.2%', true),
+          (${emp.id}, 'Team Collaboration', '4.8/5', '4.5/5', '+0.3', true),
+          (${emp.id}, 'Task Completion Rate', '92.0%', '90.0%', '+5.0%', true);
+      `;
+
       await db`
           INSERT INTO wfh_requests (user_id, request_date, reason, status)
           VALUES (${emp.id}, '2026-07-28', 'Working on server optimization and require quiet space.', 'Pending')
-        `;
+      `;
 
       await db`
-INSERT INTO user_performance (
-    user_id,
-    rating,
-    cycle,
-    next_review,
-    status
-)
-VALUES (
-    ${emp.id},
-    4.8,
-    'Q3 2026 Review',
-    '2026-12-15',
-    'Excellent'
-)
-ON CONFLICT (user_id) DO NOTHING;
-`;
+        INSERT INTO user_performance (
+            user_id,
+            rating,
+            cycle,
+            next_review,
+            status
+        )
+        VALUES (
+            ${emp.id},
+            4.8,
+            'Q3 2026 Review',
+            '2026-12-15',
+            'Excellent'
+        )
+        ON CONFLICT (user_id) DO NOTHING;
+      `;
 
-      // ----------------------------------------------------
-      // GOALS
-      // ----------------------------------------------------
       await db`
-INSERT INTO user_goals (
-    user_id,
-    title,
-    description,
-    progress,
-    due_date,
-    priority,
-    status
-)
-VALUES
-(
-    ${emp.id},
-    'React Sprint Course Architecture',
-    'Design and compress the intro curriculum.',
-    100,
-    '2026-02-28',
-    'High',
-    'Completed'
-),
-(
-    ${emp.id},
-    'Next.js & PostgreSQL Migration',
-    'Move legacy endpoints to Server Actions.',
-    75,
-    '2026-08-30',
-    'High',
-    'In Progress'
-),
-(
-    ${emp.id},
-    'Unreal Engine 5 UI Integration',
-    'Prototype rendering environment prompts.',
-    30,
-    '2026-10-15',
-    'Medium',
-    'In Progress'
-);
-`;
+        INSERT INTO user_goals (
+            user_id,
+            title,
+            description,
+            progress,
+            due_date,
+            priority,
+            status
+        )
+        VALUES
+        (
+            ${emp.id},
+            'React Sprint Course Architecture',
+            'Design and compress the intro curriculum.',
+            100,
+            '2026-02-28',
+            'High',
+            'Completed'
+        ),
+        (
+            ${emp.id},
+            'Next.js & PostgreSQL Migration',
+            'Move legacy endpoints to Server Actions.',
+            75,
+            '2026-08-30',
+            'High',
+            'In Progress'
+        ),
+        (
+            ${emp.id},
+            'Unreal Engine 5 UI Integration',
+            'Prototype rendering environment prompts.',
+            30,
+            '2026-10-15',
+            'Medium',
+            'In Progress'
+        );
+      `;
 
-      // ----------------------------------------------------
-      // PERFORMANCE REVIEW
-      // ----------------------------------------------------
       await db`
-INSERT INTO performance_reviews (
-    user_id,
-    period,
-    date,
-    reviewer,
-    rating,
-    strengths,
-    improvements,
-    manager_comments,
-    employee_comments,
-    goals_for_next_cycle,
-    status
-)
-VALUES
-(
-    ${emp.id},
-    'Q1-Q2 2026',
-    '2026-06-15',
-    'Sarah Jenkins',
-    4.8,
-    'Excellent ownership, strong React architecture, mentors junior developers.',
-    'Improve enterprise system design documentation.',
-    'Consistently exceeds expectations and demonstrates leadership.',
-    'I would like to contribute more to backend architecture.',
-    'Lead one enterprise project and mentor two junior developers.',
-    'Completed'
-);
+        INSERT INTO performance_reviews (
+            user_id,
+            period,
+            date,
+            reviewer,
+            rating,
+            strengths,
+            improvements,
+            manager_comments,
+            employee_comments,
+            goals_for_next_cycle,
+            status
+        )
+        VALUES
+        (
+            ${emp.id},
+            'Q1-Q2 2026',
+            '2026-06-15',
+            'Sarah Jenkins',
+            4.8,
+            'Excellent ownership, strong React architecture, mentors junior developers.',
+            'Improve enterprise system design documentation.',
+            'Consistently exceeds expectations and demonstrates leadership.',
+            'I would like to contribute more to backend architecture.',
+            'Lead one enterprise project and mentor two junior developers.',
+            'Completed'
+        );
 `;
 
       // ----------------------------------------------------
@@ -835,49 +835,44 @@ VALUES
       // ----------------------------------------------------
       // PERFORMANCE HISTORY (for chart)
       // ----------------------------------------------------
-      await db`
-INSERT INTO performance_history (
-    user_id,
-    month,
-    productivity,
-    quality,
-    teamwork,
-    attendance
-    )
-    VALUES
-    (${emp.id}, '2026-02-01', 72, 75, 70, 96),
-    (${emp.id}, '2026-03-01', 76, 78, 74, 97),
-    (${emp.id}, '2026-04-01', 82, 84, 80, 98),
-    (${emp.id}, '2026-05-01', 86, 87, 84, 98),
-    (${emp.id}, '2026-06-01', 91, 92, 90, 99),
-    (${emp.id}, '2026-07-01', 95, 96, 94, 99)
-    ON CONFLICT (user_id, month) DO NOTHING;
-`;
 
-      // ----------------------------------------------------
-      // SELF ASSESSMENT
-      // ----------------------------------------------------
+      const variance = Math.floor(Math.random() * 5) - 2;
+
+      await db`
+        INSERT INTO performance_history (
+            user_id, month, productivity, quality, teamwork, attendance
+        )
+        VALUES
+        (${emp.id}, '2026-02-01', ${72 + variance}, 75, 70, 96),
+        (${emp.id}, '2026-03-01', ${76 + variance}, 78, 74, 97),
+        (${emp.id}, '2026-04-01', ${82 + variance}, 84, 80, 98),
+        (${emp.id}, '2026-05-01', ${86 + variance}, 87, 84, 98),
+        (${emp.id}, '2026-06-01', ${91 + variance}, 92, 90, 99),
+        (${emp.id}, '2026-07-01', ${95 + variance}, 96, 94, 99)
+        ON CONFLICT (user_id, month) DO NOTHING;
+      `;
+
       await db`
           INSERT INTO self_assessments (
-    user_id,
-    cycle,
-    achievements,
-    challenges,
-    future_goals,
-    submitted,
-    submitted_at
-)
-VALUES
-(
-    ${emp.id},
-    'Q3 2026',
-    'Completed major migration to Next.js Server Actions and improved application performance.',
-    'Balancing feature development with documentation.',
-    'Lead architecture initiatives and mentor junior developers.',
-    true,
-    NOW()
-)
-ON CONFLICT (user_id, cycle) DO NOTHING;
+            user_id,
+            cycle,
+            achievements,
+            challenges,
+            future_goals,
+            submitted,
+            submitted_at
+            )
+            VALUES
+            (
+                ${emp.id},
+                'Q3 2026',
+                'Completed major migration to Next.js Server Actions and improved application performance.',
+                'Balancing feature development with documentation.',
+                'Lead architecture initiatives and mentor junior developers.',
+                true,
+                NOW()
+            )
+            ON CONFLICT (user_id, cycle) DO NOTHING;
 `;
 
       // ----------------------------------------------------
@@ -933,13 +928,6 @@ VALUES
     'Consider documenting architectural decisions earlier so the rest of the team can follow implementation more easily.',
     false
 );
-`;
-
-      await db`
-        INSERT INTO job_postings (title, department, type, location, status)
-        VALUES
-          ('Senior Frontend Engineer', 'Software Engineering', 'Full-time', 'Remote', 'Open'),
-          ('Product Designer', 'UI/UX Design', 'Full-time', 'HQ - Sulaymaniyah', 'Open')
 `;
 
       // ----------------------------------------------------
@@ -1074,6 +1062,13 @@ VALUES
 
       //----------------------------------
     }
+
+    await db`
+        INSERT INTO job_postings (title, department, type, location, status)
+        VALUES
+          ('Senior Frontend Engineer', 'Software Engineering', 'Full-time', 'Remote', 'Open'),
+          ('Product Designer', 'UI/UX Design', 'Full-time', 'HQ - Sulaymaniyah', 'Open')
+    `;
 
     return NextResponse.json(
       {
