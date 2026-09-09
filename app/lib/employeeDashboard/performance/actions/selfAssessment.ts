@@ -5,10 +5,9 @@ import { revalidatePath } from "next/cache";
 import { SelfAssessmentSchema } from "../validations";
 import { getCurrentUserId } from "./utils";
 
-export async function submitSelfAssessment(
-  formData: FormData
-) {
+export async function submitSelfAssessment(formData: FormData) {
   const userId = await getCurrentUserId();
+  const cycle = formData.get("cycle") as string;
 
   const parsed = SelfAssessmentSchema.safeParse({
     achievements: formData.get("achievements"),
@@ -23,28 +22,50 @@ export async function submitSelfAssessment(
     };
   }
 
-  const {
-    achievements,
-    challenges,
-    future_goals,
-  } = parsed.data;
+  const { achievements, challenges, future_goals } = parsed.data;
 
-  await sql`
-    UPDATE self_assessments
-    SET
-      achievements = ${achievements},
-      challenges = ${challenges},
-      future_goals = ${future_goals},
-      submitted = TRUE,
-      submitted_at = NOW()
-    WHERE user_id = ${userId}
-  `;
+  try {
+    const userQuery =
+      await sql`SELECT manager_name FROM users WHERE id = ${userId}`;
+    const managerName = userQuery[0]?.manager_name;
+ 
+    await sql`
+      UPDATE self_assessments
+      SET
+        achievements = ${achievements},
+        challenges = ${challenges},
+        future_goals = ${future_goals},
+        submitted = TRUE,
+        submitted_at = NOW()
+      WHERE user_id = ${userId} AND cycle = ${cycle}
+    `;
+ 
+    await sql`
+      UPDATE performance_notifications 
+      SET is_read = true 
+      WHERE user_id = ${userId} AND type = 'Assessment' AND is_read = false
+    `;
+ 
+    if (managerName) {
+      const managerQuery =
+        await sql`SELECT id FROM users WHERE name = ${managerName} LIMIT 1`;
+      if (managerQuery.length > 0) {
+        await sql`
+          INSERT INTO performance_notifications (user_id, requester_id, title, description, type, is_read)
+          VALUES (${managerQuery[0].id}, ${userId}, 'Assessment Submitted', 'An employee has submitted their self-assessment for review.', 'Review', false)
+        `;
+      }
+    }
 
-  revalidatePath("/my-profile/performance");
+    revalidatePath("/my-profile/performance");
 
-  return {
-    success: true,
-  };
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error("Submit Error:", error);
+    return { success: false };
+  }
 }
 
 export async function reopenSelfAssessment() {
@@ -67,8 +88,8 @@ export async function reopenSelfAssessment() {
 
 export async function saveSelfAssessmentDraft(formData: FormData) {
   try {
-    const userId = await getCurrentUserId(); 
-    
+    const userId = await getCurrentUserId();
+
     // Extract fields from the form
     const cycle = formData.get("cycle") as string;
     const achievements = formData.get("achievements") as string;

@@ -355,11 +355,11 @@ export async function createNewFeedback(formData: FormData): Promise<void> {
 }
 
 export async function initiateSelfAssessmentCycle(formData: FormData) {
-  const session = await auth(); 
+  const session = await auth();
   if (!session?.user || session.user.role === "employee") {
     return { success: false, error: "Unauthorized" };
   }
- 
+
   const cycleName = formData.get("cycleName") as string;
   if (!cycleName || cycleName.trim() === "") {
     return { success: false, error: "Cycle name is required." };
@@ -368,20 +368,19 @@ export async function initiateSelfAssessmentCycle(formData: FormData) {
   try {
     const employees = await db`
       SELECT id FROM users 
-      WHERE role = 'employee' AND status = 'Active'
+      WHERE role IN ('employee', 'manager') AND status = 'Active'
     `;
 
     if (employees.length === 0)
       return { success: false, error: "No active employees found." };
 
-    for (const emp of employees) {
-      
+    for (const emp of employees) { 
       await db`
         INSERT INTO self_assessments (user_id, cycle, submitted)
         VALUES (${emp.id}, ${cycleName}, false)
         ON CONFLICT (user_id, cycle) DO NOTHING
       `;
- 
+
       await db`
         INSERT INTO performance_notifications (user_id, title, description, type, is_read)
         VALUES (
@@ -393,7 +392,7 @@ export async function initiateSelfAssessmentCycle(formData: FormData) {
         )
       `;
     }
- 
+
     revalidatePath("/dashboard/performance");
     return { success: true };
   } catch (error) {
