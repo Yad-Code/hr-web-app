@@ -4,14 +4,13 @@ import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { auth } from "@/auth";
 import { getCompanyFeedback } from "@/app/lib/admin/performance/data";
 
+import { AdminPerformanceControls } from "./_components/admin-performance-controls";
 import { PerformanceKpiCards } from "./_components/performance-kpi-cards";
 import { RecentReviewsList } from "./_components/recent-reviews-list";
 import { GoalTrackerList } from "./_components/goal-tracker-list";
 import { UpcomingSyncsList } from "./_components/upcoming-syncs-list";
 import { FeedbackWidget } from "./_components/feedback-widget";
-
-import Link from "next/link";
-import { Plus, MessageSquarePlus } from "lucide-react";
+ 
 import {
   ReviewRow,
   GoalRow,
@@ -19,7 +18,7 @@ import {
   FeedbackRequestRow,
   MeetingRow,
 } from "./types";
-import { getPerformanceKPIs } from "@/app/lib/performance/data";
+import { getPerformanceKPIs } from "@/app/lib/performance/data"; 
 
 export const revalidate = 0;
 
@@ -154,8 +153,6 @@ async function MeetingsSection({
   return <UpcomingSyncsList meetings={upcomingSyncs} />;
 }
 
-// --- SKELETON LOADERS ---
-
 function KpiSkeleton() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -221,29 +218,7 @@ export default async function AdminPerformancePage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard/performance/feedback/new"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-xs"
-          >
-            <MessageSquarePlus className="w-4 h-4 text-slate-400" />
-            Log Feedback
-          </Link>
-          <Link
-            href="/dashboard/performance/goals/new"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-xs"
-          >
-            <Plus className="w-4 h-4 text-slate-400" />
-            New Goal
-          </Link>
-          <Link
-            href="/dashboard/performance/reviews/new"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-all shadow-sm ring-1 ring-inset ring-indigo-500/20"
-          >
-            <Plus className="w-4 h-4" />
-            Start Review Cycle
-          </Link>
-        </div>
+        <AdminPerformanceControls />
       </div>
 
       <Suspense fallback={<KpiSkeleton />}>

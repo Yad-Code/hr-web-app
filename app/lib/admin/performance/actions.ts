@@ -317,7 +317,7 @@ export async function createNewFeedback(formData: FormData): Promise<void> {
   }
 
   const { userId, type, text } = validatedFields.data;
- 
+
   const isAuthorized = await authorizeManagerAction(userId);
   if (!isAuthorized) {
     console.error("Unauthorized to log feedback for this employee.");
@@ -326,7 +326,7 @@ export async function createNewFeedback(formData: FormData): Promise<void> {
 
   const session = await auth();
   const senderName = session?.user?.name as string;
- 
+
   let senderRole = "Manager";
   if (session?.user?.role === "admin") senderRole = "HR Admin";
 
@@ -352,4 +352,52 @@ export async function createNewFeedback(formData: FormData): Promise<void> {
   revalidatePath("/dashboard/performance");
   revalidatePath("/dashboard/performance/feedback");
   redirect("/dashboard/performance/feedback");
+}
+
+export async function initiateSelfAssessmentCycle(formData: FormData) {
+  const session = await auth(); 
+  if (!session?.user || session.user.role === "employee") {
+    return { success: false, error: "Unauthorized" };
+  }
+ 
+  const cycleName = formData.get("cycleName") as string;
+  if (!cycleName || cycleName.trim() === "") {
+    return { success: false, error: "Cycle name is required." };
+  }
+
+  try {
+    const employees = await db`
+      SELECT id FROM users 
+      WHERE role = 'employee' AND status = 'Active'
+    `;
+
+    if (employees.length === 0)
+      return { success: false, error: "No active employees found." };
+
+    for (const emp of employees) {
+      
+      await db`
+        INSERT INTO self_assessments (user_id, cycle, submitted)
+        VALUES (${emp.id}, ${cycleName}, false)
+        ON CONFLICT (user_id, cycle) DO NOTHING
+      `;
+ 
+      await db`
+        INSERT INTO performance_notifications (user_id, title, description, type, is_read)
+        VALUES (
+          ${emp.id}, 
+          'New Self-Assessment Cycle', 
+          ${`The ${cycleName} self-assessment cycle is now open. Please complete your evaluation.`}, 
+          'Assessment', 
+          false
+        )
+      `;
+    }
+ 
+    revalidatePath("/dashboard/performance");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to initiate assessment cycle:", error);
+    return { success: false, error: "Failed to initiate the cycle." };
+  }
 }

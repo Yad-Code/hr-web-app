@@ -17,8 +17,7 @@ export default function ProvideFeedbackModal({ request, onClose }: ModalProps) {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
-    const formData = new FormData(e.currentTarget);
-    // Add the original request ID so we can mark it as read/completed on the backend
+    const formData = new FormData(e.currentTarget); 
     formData.append("requestId", request.id);
 
     startTransition(async () => {
