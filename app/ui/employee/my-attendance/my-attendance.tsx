@@ -33,14 +33,13 @@ export function DashboardControls() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Read current month from URL, or default to right now
   const currentMonth =
     searchParams.get("month") || new Date().toISOString().slice(0, 7);
 
   const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const params = new URLSearchParams(searchParams);
     params.set("month", e.target.value);
-    router.push(`?${params.toString()}`); // Update URL to trigger server refresh
+    router.push(`?${params.toString()}`);
   };
 
   return (
@@ -269,6 +268,7 @@ export function TodayStatusCard({
     </div>
   );
 }
+
 export function AttendanceStatsGrid({
   summary,
   leaveBalance,
@@ -734,7 +734,7 @@ export function AttendanceLogTable({
         </div>
       </div>
 
-      <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+      <div className="overflow-x-auto max-h-125 overflow-y-auto">
         <table className="w-full text-left text-xs text-slate-600">
           <thead className="bg-slate-50 text-slate-400 font-semibold uppercase tracking-wider text-[10px] sticky top-0 z-10 shadow-xs">
             <tr>
@@ -820,6 +820,7 @@ export function AbsenceRequestModal({
   }[];
   workingDays?: number[];
 }) {
+  const router = useRouter(); // <--- ADDED: To refresh page after submission
   const [isOpen, setIsOpen] = useState(false);
   const [requestType, setRequestType] = useState<RequestType>("wfh");
   const [leaveCategory, setLeaveCategory] = useState<LeaveCategory>("annual");
@@ -828,9 +829,14 @@ export function AbsenceRequestModal({
   const [helperId, setHelperId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-
   const [originalDate, setOriginalDate] = useState("");
   const [exchangeDate, setExchangeDate] = useState("");
+
+  // <--- ADDED: Block past dates dynamically
+  const minDateStr = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }, []);
 
   const getDayOfWeek = (dateStr: string) => {
     if (!dateStr) return -1;
@@ -838,12 +844,16 @@ export function AbsenceRequestModal({
     return new Date(Number(y), Number(m) - 1, Number(d)).getDay();
   };
 
+  // <--- FIXED: Replaced flawed timezone calculation with local Y/M/D parsing
   const calculateTotalDays = () => {
     if (!startDate || !endDate) return 0;
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = end.getTime() - start.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    const [sY, sM, sD] = startDate.split("-").map(Number);
+    const [eY, eM, eD] = endDate.split("-").map(Number);
+    const start = new Date(sY, sM - 1, sD).getTime();
+    const end = new Date(eY, eM - 1, eD).getTime();
+
+    // Using Math.round instead of ceil safely bypasses Daylight Saving anomalies
+    const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
     return diffDays > 0 ? diffDays : 0;
   };
 
@@ -922,6 +932,14 @@ export function AbsenceRequestModal({
       const result = await submitWFHRequest(formData);
       if (result.success) {
         setIsOpen(false);
+
+        setStartDate("");
+        setEndDate("");
+        setOriginalDate("");
+        setExchangeDate("");
+        setHours("");
+
+        router.refresh();
       } else {
         alert(result.error);
       }
@@ -1008,6 +1026,7 @@ export function AbsenceRequestModal({
                       <input
                         type="date"
                         name="startDate"
+                        min={minDateStr}
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
                         required
@@ -1021,7 +1040,7 @@ export function AbsenceRequestModal({
                       <input
                         type="date"
                         name="endDate"
-                        min={startDate}
+                        min={startDate || minDateStr}
                         value={endDate}
                         onChange={(e) => setEndDate(e.target.value)}
                         required
@@ -1077,10 +1096,10 @@ export function AbsenceRequestModal({
                     <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
                       Original Day Off / Shift Date
                     </label>
-                    {/* FIXED 3: Added value and onChange binding */}
                     <input
                       type="date"
                       name="originalDate"
+                      min={minDateStr}
                       value={originalDate}
                       onChange={(e) => setOriginalDate(e.target.value)}
                       required
@@ -1091,10 +1110,10 @@ export function AbsenceRequestModal({
                     <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
                       Target Exchange Date
                     </label>
-                    {/* FIXED 4: Added value and onChange binding */}
                     <input
                       type="date"
                       name="exchangeDate"
+                      min={minDateStr}
                       value={exchangeDate}
                       onChange={(e) => setExchangeDate(e.target.value)}
                       required
@@ -1113,6 +1132,7 @@ export function AbsenceRequestModal({
                     <input
                       type="date"
                       name="date"
+                      min={minDateStr}
                       required
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-indigo-600"
                     />
@@ -1154,6 +1174,7 @@ export function AbsenceRequestModal({
                   <input
                     type="date"
                     name="date"
+                    min={minDateStr}
                     required
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-indigo-600"
                   />
@@ -1219,6 +1240,7 @@ export function PendingExchangesWidget({
 }: {
   requests: PendingExchangeRequest[];
 }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   if (!requests || requests.length === 0) return null;
@@ -1226,11 +1248,14 @@ export function PendingExchangesWidget({
   const handleResponse = (id: string, status: "Accepted" | "Rejected") => {
     startTransition(async () => {
       const res = await respondToExchangeRequest(id, status);
-      if (!res.success) alert(res.error);
+      if (!res.success) {
+        alert(res.error);
+      } else {
+        router.refresh();
+      }
     });
   };
 
-  // FIXED 5: Added the Date Formatter back to prevent timezone day-shifting
   const formatSafeDate = (dateVal: string | Date) => {
     if (typeof dateVal === "string" && dateVal.includes("-")) {
       const [y, m, d] = dateVal.split("T")[0].split("-");

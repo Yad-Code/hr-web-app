@@ -101,12 +101,12 @@ export async function getAttendanceData(
       : new Date(targetY, targetM + 1, 0).getDate();
 
     let expectedWorkingDays = 0;
-    let scheduledDaysPresent = 0; // For exact KPI matching
-    let totalDaysPresent = 0; // For the UI stat block
+    let scheduledDaysPresent = 0; 
+    let totalDaysPresent = 0;  
     let lateArrivals = 0;
     let totalMinutes = 0;
 
-    // 1. Calculate matching schedule vs actual attendance for the rate
+    // Calculate matching schedule vs actual attendance for the rate
     for (let i = 1; i <= limitDate; i++) {
       const dObj = new Date(targetY, targetM, i);
 
@@ -266,6 +266,7 @@ export async function getAttendanceData(
     return getFallbackAttendanceData(currentMonthName, currentYearNum);
   }
 }
+
 function getFallbackAttendanceData(
   month: string,
   year: number,

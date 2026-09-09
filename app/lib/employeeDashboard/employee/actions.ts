@@ -304,8 +304,9 @@ export async function submitWFHRequest(formData: FormData) {
   }
 
   try {
+    // 1. Fetch the user AND their manager's name
     const userQuery = await sql`
-      SELECT id FROM users WHERE email = ${session.user.email}
+      SELECT id, manager_name FROM users WHERE email = ${session.user.email}
     `;
 
     if (!userQuery || userQuery.length === 0) {
@@ -313,6 +314,7 @@ export async function submitWFHRequest(formData: FormData) {
     }
 
     const userId = userQuery[0].id;
+    const managerName = userQuery[0].manager_name;
 
     const [balance] = await sql`
       SELECT annual_remaining, sick_remaining, monthly_remaining_hours
@@ -422,11 +424,22 @@ export async function submitWFHRequest(formData: FormData) {
         'Pending'
       )
     `;
+ 
+    let managerId = null;
+    if (managerName) {
+      const managerQuery = await sql`SELECT id FROM users WHERE name = ${managerName} LIMIT 1`;
+      managerId = managerQuery[0]?.id;
+    }
 
     if (type === "exchange" && helperId) {
       await sql`
         INSERT INTO performance_notifications (user_id, requester_id, title, description, type)
         VALUES (${helperId}, ${userId}, 'Shift Exchange Request', 'Someone wants to trade shifts with you.', 'Exchange')
+      `;
+    } else if (managerId) {
+      await sql`
+        INSERT INTO performance_notifications (user_id, requester_id, title, description, type)
+        VALUES (${managerId}, ${userId}, 'New Leave Request', 'An employee has requested time off pending your approval.', 'Leave')
       `;
     }
 
@@ -499,8 +512,8 @@ export async function approveLeaveRequest(requestId: string) {
       }
       await sql`UPDATE leave_balances SET monthly_remaining_hours = monthly_remaining_hours - ${hours} WHERE user_id = ${user_id}`;
     }
- 
-    if (type === "exchange" && request.helper_id) { 
+
+    if (type === "exchange" && request.helper_id) {
       await sql`
         INSERT INTO schedule_overrides (user_id, target_date, is_working, notes)
         VALUES 
@@ -508,7 +521,7 @@ export async function approveLeaveRequest(requestId: string) {
           (${user_id}, ${request.exchange_date}, true, 'Shift taken from helper')
         ON CONFLICT (user_id, target_date) DO UPDATE SET is_working = EXCLUDED.is_working
       `;
- 
+
       await sql`
         INSERT INTO schedule_overrides (user_id, target_date, is_working, notes)
         VALUES 
@@ -517,7 +530,7 @@ export async function approveLeaveRequest(requestId: string) {
         ON CONFLICT (user_id, target_date) DO UPDATE SET is_working = EXCLUDED.is_working
       `;
     }
- 
+
     await sql`
       UPDATE leave_requests 
       SET status = 'Approved', updated_at = CURRENT_TIMESTAMP
@@ -525,7 +538,7 @@ export async function approveLeaveRequest(requestId: string) {
     `;
 
     revalidatePath("/dashboard");
-    revalidatePath("/my-profile/attendance"); 
+    revalidatePath("/my-profile/attendance");
 
     return { success: true };
   } catch (error) {
@@ -551,6 +564,26 @@ export async function respondToExchangeRequest(
         SET helper_status = 'Accepted' 
         WHERE id = ${requestId}
       `;
+ 
+      const reqQuery = await sql`
+        SELECT r.user_id, u.manager_name 
+        FROM leave_requests r 
+        JOIN users u ON r.user_id = u.id 
+        WHERE r.id = ${requestId}
+      `;
+
+      if (reqQuery && reqQuery.length > 0) {
+        const req = reqQuery[0];
+        if (req.manager_name) {
+          const managerQuery = await sql`SELECT id FROM users WHERE name = ${req.manager_name} LIMIT 1`;
+          if (managerQuery && managerQuery.length > 0) { 
+            await sql`
+              INSERT INTO performance_notifications (user_id, requester_id, title, description, type)
+              VALUES (${managerQuery[0].id}, ${req.user_id}, 'Shift Swap Ready', 'A shift swap was accepted by a coworker and requires final approval.', 'Exchange')
+            `;
+          }
+        }
+      }
     }
 
     revalidatePath("/", "layout");
