@@ -218,7 +218,7 @@ export default async function AdminPerformancePage() {
           </p>
         </div>
 
-        <AdminPerformanceControls />
+        <AdminPerformanceControls isAdmin={isAdmin} />
       </div>
 
       <Suspense fallback={<KpiSkeleton />}>

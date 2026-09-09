@@ -8,12 +8,10 @@ export const GoalSchema = z.object({
 });
 
 export const SelfAssessmentSchema = z.object({
-  achievements: z.string().min(10),
-  challenges: z.string().min(10),
-  future_goals: z.string().min(10),
+  achievements: z.string().min(1, "Please enter your achievements"),
+  challenges: z.string().min(1, "Please enter your challenges"),
+  future_goals: z.string().min(1, "Please enter your future goals"),
 });
 
 export type GoalFormValues = z.infer<typeof GoalSchema>;
-export type SelfAssessmentFormValues = z.infer<
-  typeof SelfAssessmentSchema
->;
+export type SelfAssessmentFormValues = z.infer<typeof SelfAssessmentSchema>;

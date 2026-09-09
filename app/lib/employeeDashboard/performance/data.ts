@@ -44,7 +44,7 @@ export async function getUserKPIs(userId: string) {
       SELECT *
       FROM user_kpis
       WHERE user_id = ${userId}
-    `, 
+    `,
     sql<{ total_days: number; present_days: number; on_time_days: number }[]>`
       WITH target_user AS (
         SELECT id, COALESCE(working_days, '{1,2,3,4,5}'::int[]) as working_days 
@@ -201,6 +201,8 @@ export async function getSelfAssessment(userId: string) {
     SELECT *
     FROM self_assessments
     WHERE user_id=${userId}
+    ORDER BY submitted ASC, cycle DESC
+    LIMIT 1
   `;
 
   return rows[0] ?? null;

@@ -1,13 +1,12 @@
 // @/app/(admin)/dashboard/(overview)/performance/modals/initiate-selfAssessment.tsx
-
 "use client";
 
 import { useState } from "react";
 import Link from "next/link";
 import { Plus, MessageSquarePlus } from "lucide-react";
 import { OpenAssessmentModal } from "./open-assessment-modal";
-
-export function AdminPerformanceControls() {
+ 
+export function AdminPerformanceControls({ isAdmin }: { isAdmin: boolean }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
@@ -27,13 +26,17 @@ export function AdminPerformanceControls() {
           <Plus className="w-4 h-4 text-slate-400" />
           New Goal
         </Link>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-slate-800 rounded-xl hover:bg-slate-900 transition-all shadow-sm ring-1 ring-inset ring-slate-700/20 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          Open Assessment
-        </button>
+ 
+        {isAdmin && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-slate-800 rounded-xl hover:bg-slate-900 transition-all shadow-sm ring-1 ring-inset ring-slate-700/20 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            Open Assessment
+          </button>
+        )}
+
         <Link
           href="/dashboard/performance/reviews/new"
           className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-all shadow-sm ring-1 ring-inset ring-indigo-500/20"
@@ -43,10 +46,12 @@ export function AdminPerformanceControls() {
         </Link>
       </div>
 
-      <OpenAssessmentModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
+      {isAdmin && (
+        <OpenAssessmentModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+        />
+      )}
     </>
   );
 }

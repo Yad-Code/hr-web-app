@@ -356,8 +356,12 @@ export async function createNewFeedback(formData: FormData): Promise<void> {
 
 export async function initiateSelfAssessmentCycle(formData: FormData) {
   const session = await auth();
-  if (!session?.user || session.user.role === "employee") {
-    return { success: false, error: "Unauthorized" };
+
+  if (!session?.user || session.user.role !== "admin") {
+    return {
+      success: false,
+      error: "Unauthorized: Only Admins can initiate company-wide cycles.",
+    };
   }
 
   const cycleName = formData.get("cycleName") as string;
@@ -374,23 +378,26 @@ export async function initiateSelfAssessmentCycle(formData: FormData) {
     if (employees.length === 0)
       return { success: false, error: "No active employees found." };
 
-    for (const emp of employees) { 
-      await db`
+    for (const emp of employees) {
+      const insertResult = await db`
         INSERT INTO self_assessments (user_id, cycle, submitted)
         VALUES (${emp.id}, ${cycleName}, false)
         ON CONFLICT (user_id, cycle) DO NOTHING
+        RETURNING id
       `;
 
-      await db`
-        INSERT INTO performance_notifications (user_id, title, description, type, is_read)
-        VALUES (
-          ${emp.id}, 
-          'New Self-Assessment Cycle', 
-          ${`The ${cycleName} self-assessment cycle is now open. Please complete your evaluation.`}, 
-          'Assessment', 
-          false
-        )
-      `;
+      if (insertResult.length > 0) {
+        await db`
+          INSERT INTO performance_notifications (user_id, title, description, type, is_read)
+          VALUES (
+            ${emp.id}, 
+            'New Self-Assessment Cycle', 
+            ${`The ${cycleName} self-assessment cycle is now open. Please complete your evaluation.`}, 
+            'Assessment', 
+            false
+          )
+        `;
+      }
     }
 
     revalidatePath("/dashboard/performance");
