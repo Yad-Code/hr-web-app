@@ -94,7 +94,6 @@ export async function updateEmployeeProfile(
   prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  // 1. Verify caller session
   const session = await auth();
 
   if (!session?.user?.email) {
@@ -104,7 +103,6 @@ export async function updateEmployeeProfile(
     };
   }
 
-  // 2. Extract raw input safely
   const rawData = {
     preferredName: formData.get("preferredName"),
     maritalStatus: formData.get("maritalStatus"),
@@ -114,7 +112,6 @@ export async function updateEmployeeProfile(
     currentAddress: formData.get("currentAddress"),
   };
 
-  // Safe parse with Zod
   const validatedFields = ProfileUpdateSchema.safeParse(rawData);
 
   if (!validatedFields.success) {
@@ -424,10 +421,11 @@ export async function submitWFHRequest(formData: FormData) {
         'Pending'
       )
     `;
- 
+
     let managerId = null;
     if (managerName) {
-      const managerQuery = await sql`SELECT id FROM users WHERE name = ${managerName} LIMIT 1`;
+      const managerQuery =
+        await sql`SELECT id FROM users WHERE name = ${managerName} LIMIT 1`;
       managerId = managerQuery[0]?.id;
     }
 
@@ -454,8 +452,16 @@ export async function submitWFHRequest(formData: FormData) {
 }
 
 export async function approveLeaveRequest(requestId: string) {
+  const session = await auth();
+
+  if (!session?.user?.isAdmin && !session?.user?.canApproveLeaves) {
+    return {
+      success: false,
+      error: "Forbidden: You do not have permission to approve leaves.",
+    };
+  }
+
   try {
-    // UPDATED: Fetch the new exchange fields needed for overrides
     const requests = await sql`
       SELECT id, user_id, type, leave_category, total_days, hours, status, 
              helper_id, original_date, exchange_date
@@ -564,7 +570,7 @@ export async function respondToExchangeRequest(
         SET helper_status = 'Accepted' 
         WHERE id = ${requestId}
       `;
- 
+
       const reqQuery = await sql`
         SELECT r.user_id, u.manager_name 
         FROM leave_requests r 
@@ -575,8 +581,9 @@ export async function respondToExchangeRequest(
       if (reqQuery && reqQuery.length > 0) {
         const req = reqQuery[0];
         if (req.manager_name) {
-          const managerQuery = await sql`SELECT id FROM users WHERE name = ${req.manager_name} LIMIT 1`;
-          if (managerQuery && managerQuery.length > 0) { 
+          const managerQuery =
+            await sql`SELECT id FROM users WHERE name = ${req.manager_name} LIMIT 1`;
+          if (managerQuery && managerQuery.length > 0) {
             await sql`
               INSERT INTO performance_notifications (user_id, requester_id, title, description, type)
               VALUES (${managerQuery[0].id}, ${req.user_id}, 'Shift Swap Ready', 'A shift swap was accepted by a coworker and requires final approval.', 'Exchange')

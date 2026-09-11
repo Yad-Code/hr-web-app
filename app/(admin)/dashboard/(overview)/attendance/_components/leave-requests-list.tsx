@@ -10,11 +10,18 @@ import Image from "next/image";
 
 export function LeaveRequestsList({
   requests,
+  currentUser,
 }: {
   requests: LeaveRequestRow[];
+  currentUser: {
+    isAdmin?: boolean;
+    canApproveLeaves?: boolean;
+  };
 }) {
   const [isPending, startTransition] = useTransition();
   const [processingId, setProcessingId] = useState<string | null>(null);
+
+  const canApprove = currentUser.isAdmin || currentUser.canApproveLeaves;
 
   const handleStatusUpdate = (id: string, status: "Approved" | "Rejected") => {
     setProcessingId(id);
@@ -101,7 +108,6 @@ export function LeaveRequestsList({
                       day: "numeric",
                     })}
 
-                    {/* Only show End Date if it spans multiple days */}
                     {!isSingleDay && (
                       <>
                         {" - "}
@@ -113,31 +119,41 @@ export function LeaveRequestsList({
                     )}
                   </span>
 
-                  <div className="flex gap-1.5">
-                    <button
-                      onClick={() => handleStatusUpdate(request.id, "Rejected")}
-                      disabled={isPending}
-                      className="p-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition flex justify-center items-center"
-                    >
-                      {isCurrentlyProcessing ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <X className="w-3.5 h-3.5" />
-                      )}
-                    </button>
+                  {canApprove ? (
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() =>
+                          handleStatusUpdate(request.id, "Rejected")
+                        }
+                        disabled={isPending}
+                        className="p-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 disabled:opacity-50 transition flex justify-center items-center"
+                      >
+                        {isCurrentlyProcessing ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <X className="w-3.5 h-3.5" />
+                        )}
+                      </button>
 
-                    <button
-                      onClick={() => handleStatusUpdate(request.id, "Approved")}
-                      disabled={isPending}
-                      className="p-1.5 bg-[#009473] text-white rounded-md hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex justify-center items-center"
-                    >
-                      {isCurrentlyProcessing ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Check className="w-3.5 h-3.5" />
-                      )}
-                    </button>
-                  </div>
+                      <button
+                        onClick={() =>
+                          handleStatusUpdate(request.id, "Approved")
+                        }
+                        disabled={isPending}
+                        className="p-1.5 bg-[#009473] text-white rounded-md hover:bg-emerald-700 disabled:opacity-50 transition flex justify-center items-center"
+                      >
+                        {isCurrentlyProcessing ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Check className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-[10px] italic font-medium text-slate-400">
+                      Pending Manager Approval
+                    </span>
+                  )}
                 </div>
               </div>
             );

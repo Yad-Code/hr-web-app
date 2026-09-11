@@ -11,7 +11,8 @@ export async function updateLeaveRequestStatus(
 ) {
   try {
     const session = await auth();
-    if (!session?.user) return { success: false, error: "Unauthorized" };
+    if (!session?.user?.isAdmin && !session?.user?.canApproveLeaves)
+      if (!session?.user) return { success: false, error: "Unauthorized" };
     if (!requestId) return { success: false, error: "Request ID is required." };
 
     const isAdmin = session.user.isAdmin;

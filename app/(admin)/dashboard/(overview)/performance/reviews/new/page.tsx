@@ -5,9 +5,17 @@ import { SubmitButton } from "./submit-button";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getEmployeesList } from "@/app/lib/admin/performance/data";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
 export default async function NewReviewPage() {
+  const session = await auth();
+  if (!session?.user?.isAdmin && !session?.user?.canStartReviews) {
+    redirect("/dashboard/performance/reviews");
+  }
+
   const employees = await getEmployeesList();
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
