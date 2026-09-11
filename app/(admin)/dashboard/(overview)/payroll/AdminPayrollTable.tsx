@@ -1,3 +1,5 @@
+// @/app/(admin)/dashboard/(overview)/payroll/AdminPayrollTable.tsx
+
 "use client";
 
 import { useState } from "react";

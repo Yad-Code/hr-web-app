@@ -63,8 +63,7 @@ export default async function MeetingDetailPage({
   };
 
   return (
-    <main className="max-w-5xl mx-auto w-full p-4 sm:p-6 lg:p-8 space-y-6">
-      {/* Navigation */}
+    <main className="max-w-5xl mx-auto w-full p-4 sm:p-6 lg:p-8 space-y-6"> 
       <Link
         href="/dashboard/performance/meetings"
         className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"

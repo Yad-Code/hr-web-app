@@ -4,10 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowRightLeft } from "lucide-react";
 
-export function WorkspaceToggle({ role }: { role: string }) {
+export function WorkspaceToggle({ isManager }: { isManager: boolean }) {
   const pathname = usePathname();
-  console.log(role); // Debugging line to check the role value
-  if (role !== "manager") return null;
+  if (!isManager) return null;
 
   const isDashboard = pathname.startsWith("/dashboard");
   const target = isDashboard ? "/my-profile" : "/dashboard";

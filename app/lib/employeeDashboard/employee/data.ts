@@ -71,13 +71,12 @@ export async function fetchEmployeeStatusList(): Promise<Employee[]> {
     const session = await auth();
     if (!session?.user) return [];
 
-    const isAdmin = session.user.role === "admin";
+    const isAdmin = session.user.isAdmin;
     const managerName = session.user.name as string;
 
     let rows;
 
-    if (isAdmin) {
-      // HR Admin sees the entire directory
+    if (isAdmin) { 
       rows = await sql`
         SELECT id, name, email, role, image_url, last_seen_at, department
         FROM users
@@ -132,6 +131,8 @@ export function getRelativeTimeString(date: Date): string {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+
+// trying looking at this in the future, but for now, we will just return the role from the session
 export async function getCurrentUserRole() {
   const session = await auth();
   return session?.user?.role || "employee";

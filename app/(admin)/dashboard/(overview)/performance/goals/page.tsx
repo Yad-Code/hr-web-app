@@ -20,7 +20,7 @@ export default async function FullGoalsPage() {
   const session = await auth();
   if (!session?.user) return null;
 
-  const isAdmin = session.user.role === "admin";
+  const isAdmin = session.user.isAdmin;
   const managerName = session.user.name as string;
   let allGoals;
 

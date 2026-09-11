@@ -3,7 +3,6 @@
 
 import { sql } from "../employeeDashboard/employee/db";
 import { auth } from "@/auth";
-import { getCurrentUserRole } from "@/app/lib/employeeDashboard/employee/data";
 import { revalidatePath } from "next/cache";
 import { put, del } from "@vercel/blob";
 
@@ -28,7 +27,6 @@ export async function uploadProfilePicture(formData: FormData) {
     const targetUserId =
       formData.get("employeeId")?.toString() || session.user?.id;
 
-    // Guard clause: ensures targetUserId is a defined string
     if (!targetUserId) {
       return { success: false, error: "User identifier is missing." };
     }
@@ -45,7 +43,6 @@ export async function uploadProfilePicture(formData: FormData) {
       return { success: false, error: "Image must be smaller than 4MB." };
     }
 
-    // Fetch existing user to retrieve old image URL and identifier for file naming
     const existingUser = await sql`
       SELECT image_url, email FROM users WHERE id = ${targetUserId}::uuid
     `;
@@ -57,19 +54,16 @@ export async function uploadProfilePicture(formData: FormData) {
     const oldImageUrl = existingUser[0]?.image_url;
     const userIdentifier = existingUser[0]?.email || targetUserId;
 
-    // 1. Upload new image to Vercel Blob
     const blob = await put(`avatars/${userIdentifier}-${Date.now()}`, file, {
       access: "public",
     });
 
-    // 2. Update Postgres database with the Vercel Blob URL
     await sql`
       UPDATE users 
       SET image_url = ${blob.url} 
       WHERE id = ${targetUserId}::uuid
     `;
 
-    // 3. Clean up old blob image safely if it exists on Vercel Blob
     if (oldImageUrl && oldImageUrl.includes("public.blob.vercel-storage.com")) {
       try {
         await del(oldImageUrl);
@@ -78,7 +72,6 @@ export async function uploadProfilePicture(formData: FormData) {
       }
     }
 
-    // 4. Revalidate cache for all profile & admin edit views
     revalidatePath(`/dashboard/employees/${targetUserId}/edit`);
     revalidatePath(`/dashboard/employees`);
     revalidatePath(`/my-profile`);
@@ -101,8 +94,7 @@ export async function updateEmployeeDetails(
       return { success: false, message: "Unauthorized. Please log in again." };
     }
 
-    const currentRole = await getCurrentUserRole();
-    const isAdmin = currentRole === "admin";
+    const isAdmin = session.user.isAdmin;
     const isEditingSelf = session.user.id === targetUserId;
 
     if (!isEditingSelf && !isAdmin) {
@@ -112,7 +104,6 @@ export async function updateEmployeeDetails(
       };
     }
 
-    // Extract all potential fields from formData
     const employeeId = formData.get("employeeId")?.toString() || null;
     const name = formData.get("name")?.toString() || null;
     const email = formData.get("email")?.toString() || null;
@@ -144,7 +135,17 @@ export async function updateEmployeeDetails(
     const rawSalary = formData.get("baseSalary");
     const baseSalary = rawSalary ? Number(rawSalary) : null;
 
-    // Use COALESCE so fields omitted from the active form retain their existing DB values
+    const isJobForm = formData.has("role") || formData.has("department");
+
+    const isAdminFlag = isJobForm ? formData.get("isAdmin") === "on" : null;
+    const isManagerFlag = isJobForm ? formData.get("isManager") === "on" : null;
+    const canApproveLeaves = isJobForm
+      ? formData.get("canApproveLeaves") === "on"
+      : null;
+    const canStartReviews = isJobForm
+      ? formData.get("canStartReviews") === "on"
+      : null;
+
     if (isAdmin) {
       await sql`
         UPDATE users 
@@ -160,6 +161,12 @@ export async function updateEmployeeDetails(
           nationality = COALESCE(${nationality}, nationality),
           status = COALESCE(${status}, status),
           role = COALESCE(${role}::user_role, role),
+          
+          is_admin = COALESCE(${isAdminFlag}, is_admin),
+          is_manager = COALESCE(${isManagerFlag}, is_manager),
+          can_approve_leaves = COALESCE(${canApproveLeaves}, can_approve_leaves),
+          can_start_reviews = COALESCE(${canStartReviews}, can_start_reviews),
+
           preferred_name = COALESCE(${preferredName}, preferred_name),
           marital_status = COALESCE(${maritalStatus}, marital_status),
           blood_group = COALESCE(${bloodGroup}, blood_group),
@@ -226,12 +233,10 @@ export async function addDocumentAction(
       throw new Error("Unauthorized");
     }
 
-    const currentRole = await getCurrentUserRole();
-    if (currentRole !== "admin") {
-      throw new Error("Forbidden: Only admins can upload documents.");
+    if (!session.user.isAdmin) {
+      throw new Error("Forbidden: Only admins can perform this action.");
     }
 
-    // Safely extract the file extension from the URL or fallback to 'pdf'
     const cleanUrl = newDoc.file_url.split("?")[0];
     const fileExtension = cleanUrl.split(".").pop() || "pdf";
 
@@ -267,9 +272,8 @@ export async function deleteDocumentAction(documentId: string, userId: string) {
       throw new Error("Unauthorized");
     }
 
-    const currentRole = await getCurrentUserRole();
-    if (currentRole !== "admin") {
-      throw new Error("Forbidden: Only admins can delete documents.");
+    if (!session.user.isAdmin) {
+      throw new Error("Forbidden: Only admins can perform this action.");
     }
 
     await sql`

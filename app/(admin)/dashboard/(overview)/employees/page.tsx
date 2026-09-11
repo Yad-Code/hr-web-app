@@ -10,7 +10,7 @@ export const metadata = {
 
 export default async function EmployeesStatusPage() {
   const session = await auth();
-  const isAdmin = session?.user?.role === "admin";
+  const isAdmin = session?.user?.isAdmin;  
 
   return (
     <main className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto w-full space-y-8">

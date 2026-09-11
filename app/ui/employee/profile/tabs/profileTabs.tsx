@@ -8,7 +8,7 @@ import OfficialInfoCard from "../officialInfoCard";
 import ProfileForm from "../profileForm";
 import EducationTab from "./educationTab";
 import LanguageTab from "./languageTab";
-import DocumentsTab from "./documentsTab"; // 👈 1. Import DocumentsTab component
+import DocumentsTab from "./documentsTab";  
 import {
   Briefcase,
   UserPen,

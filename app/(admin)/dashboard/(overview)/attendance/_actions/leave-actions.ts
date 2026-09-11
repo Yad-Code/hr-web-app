@@ -14,10 +14,9 @@ export async function updateLeaveRequestStatus(
     if (!session?.user) return { success: false, error: "Unauthorized" };
     if (!requestId) return { success: false, error: "Request ID is required." };
 
-    const isAdmin = session.user.role === "admin";
- 
+    const isAdmin = session.user.isAdmin;
     const managerName = session.user.name as string;
- 
+
     if (!isAdmin) {
       const authCheck = await db`
         SELECT r.id FROM leave_requests r

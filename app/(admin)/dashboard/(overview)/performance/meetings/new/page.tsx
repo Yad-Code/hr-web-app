@@ -14,7 +14,7 @@ import { auth } from "@/auth";
 
 export default async function ScheduleMeetingPage() {
   const session = await auth();
-  const isAdmin = session?.user?.role === "admin";
+  const isAdmin = session?.user?.isAdmin;
   const employees = await getEmployeesList();
 
   return (

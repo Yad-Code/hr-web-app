@@ -11,8 +11,8 @@ interface UserDropdownProps {
   user: {
     name: string;
     email: string;
-    role: string;
     image_url: string | null;
+    isAdmin: boolean;
   };
 }
 
@@ -68,7 +68,7 @@ export function UserDropdown({ user }: UserDropdownProps) {
             {user.name}
           </p>
           <p className="text-[10px] font-medium text-slate-400 mt-0.5 uppercase tracking-wider">
-            {user.role === "admin" ? "HR Administrator" : "Employee"}
+            {user.isAdmin ? "HR Administrator" : "Employee"}
           </p>
         </div>
         <ChevronDown
@@ -108,13 +108,13 @@ export function UserDropdown({ user }: UserDropdownProps) {
             <div className="flex justify-between items-center text-slate-500">
               <span className="font-medium">Role</span>
               <span className="font-bold text-slate-800">
-                {user.role === "admin" ? "HR Administrator" : "Employee"}
+                {user.isAdmin ? "HR Administrator" : "Employee"}
               </span>
             </div>
             <div className="flex justify-between items-center text-slate-500">
               <span className="font-medium">Team</span>
               <span className="font-bold text-slate-800">
-                {user.role === "admin" ? "People Ops" : "Engineering"}
+                {user.isAdmin ? "People Ops" : "Engineering"}
               </span>
             </div>
           </div>

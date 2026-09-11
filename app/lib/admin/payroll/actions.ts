@@ -8,7 +8,7 @@ import { auth } from "@/auth";
 
 async function verifyAdminAction() {
   const session = await auth();
-  return session?.user?.role === "admin";
+  return session?.user?.isAdmin;  
 }
 
 export async function generateMonthlyPayroll() {

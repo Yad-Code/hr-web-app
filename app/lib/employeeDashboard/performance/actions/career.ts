@@ -15,8 +15,8 @@ export async function requestOneOnOne(data: RequestMeetingData) {
 
     await sql`
       INSERT INTO one_on_one_meetings (
-        employee_id,   -- 👈 Fixed: Matches your seeded table schema
-        manager_id,    -- 👈 Added: Required because it is NOT NULL
+        employee_id,    
+        manager_id,     
         topic,
         meeting_date,
         notes,
@@ -25,7 +25,7 @@ export async function requestOneOnOne(data: RequestMeetingData) {
       )
       VALUES (
         ${userId},
-        (SELECT id FROM users WHERE role = 'admin' LIMIT 1), -- Automatically assigns your seeded Admin Manager
+        (SELECT id FROM users WHERE is_admin = true LIMIT 1),
         ${data.topic},
         ${data.meeting_date},
         ${data.notes || null},

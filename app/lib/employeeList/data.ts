@@ -1,14 +1,13 @@
 // app/lib/employeeList/data.ts
 import { sql } from "@/app/lib/employeeDashboard/employee/db";
-import { FullEmployeeProfile } from "@/app/lib/employee/definitions"; // Adjust import path if needed
+import { FullEmployeeProfile } from "@/app/lib/employee/definitions"; 
 
 export async function getProfileById(
   id: string,
 ): Promise<FullEmployeeProfile | null> {
   if (!id) return null;
 
-  try {
-    // Queries against PK `id` (UUID) or custom `employee_id` (VARCHAR)
+  try { 
     const users = await sql`
       SELECT * 
       FROM users 

@@ -61,7 +61,7 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
   const session = await auth();
   if (!session?.user) return null;
 
-  const isAdmin = session.user.role === "admin";
+  const isAdmin = session.user.isAdmin;
   const managerName = session.user.name as string;
 
   const resolvedParams = await searchParams;

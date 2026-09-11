@@ -10,9 +10,10 @@ import { auth } from "@/auth";
 async function authorizeManagerAction(targetUserId: string) {
   const session = await auth();
   if (!session?.user) return false;
-  if (session.user.role === "admin") return true;
-  if (session.user.role === "manager") {
-    const managerName = session.user.name as string; // STRICT TYPING
+
+  if (session.user.isAdmin) return true;
+  if (session.user.isManager) {
+    const managerName = session.user.name as string;
     const check =
       await db`SELECT id FROM users WHERE id = ${targetUserId} AND manager_name = ${managerName}`;
     return check.length > 0;
@@ -328,7 +329,7 @@ export async function createNewFeedback(formData: FormData): Promise<void> {
   const senderName = session?.user?.name as string;
 
   let senderRole = "Manager";
-  if (session?.user?.role === "admin") senderRole = "HR Admin";
+  if (session?.user?.isAdmin) senderRole = "HR Admin";
 
   const todayDate = new Date().toISOString().split("T")[0];
 
@@ -357,7 +358,7 @@ export async function createNewFeedback(formData: FormData): Promise<void> {
 export async function initiateSelfAssessmentCycle(formData: FormData) {
   const session = await auth();
 
-  if (!session?.user || session.user.role !== "admin") {
+  if (!session?.user || !session.user.isAdmin) {
     return {
       success: false,
       error: "Unauthorized: Only Admins can initiate company-wide cycles.",

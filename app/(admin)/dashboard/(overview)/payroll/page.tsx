@@ -1,4 +1,5 @@
 // @/app/(admin)/dashboard/(overview)/payroll/page.tsx
+
 import { fetchAllPayStubs } from "@/app/lib/admin/payroll/data";
 import {
   generateMonthlyPayroll,
@@ -14,7 +15,7 @@ import { AdminPayrollTable } from "./AdminPayrollTable";
 export default async function AdminPayrollPage() {
   const session = await auth();
 
-  if (session?.user?.role !== "admin") {
+  if (!session?.user?.isAdmin) {
     return (
       <main className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center">
         <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-6 ring-8 ring-slate-50">

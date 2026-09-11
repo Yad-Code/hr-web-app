@@ -3,8 +3,7 @@ import { TrendingUp, ArrowRight } from "lucide-react";
 import { ReviewRow } from "../types";
 import Link from "next/link";
 
-export function RecentReviewsList({ reviews }: { reviews: ReviewRow[] }) {
-  // Helper to color-code the ratings
+export function RecentReviewsList({ reviews }: { reviews: ReviewRow[] }) { 
   const getRatingColor = (rating: string | number) => {
     const num = Number(rating);
     if (num >= 4.0) return "text-emerald-600";

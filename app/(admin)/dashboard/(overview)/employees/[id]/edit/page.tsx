@@ -19,19 +19,18 @@ import {
 import { getEmployeeSelfAssessment } from "@/app/lib/admin/performance/data";
 import { getEmployeeSkills } from "@/app/lib/admin/profile/skills/data";
 
-export default async function AdminEmployeeEditPage({ 
+export default async function AdminEmployeeEditPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const session = await auth();
 
-  // FIXED: Allow both admins and managers to access the profile edit view
-  if (session?.user?.role !== "admin" && session?.user?.role !== "manager") {
+  if (!session?.user?.isAdmin && !session?.user?.isManager) {
     redirect("/my-profile");
   }
-
-  const isManager = session.user.role === "manager";
+  
+  const isManager = session.user.isManager;
 
   const { id } = await params;
   const profile = await getProfileById(id);

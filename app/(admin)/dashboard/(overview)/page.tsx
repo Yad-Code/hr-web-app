@@ -13,7 +13,7 @@ import {
 
 export default async function Page() {
   const session = await auth();
-  const isAdmin = session?.user?.role === "admin";
+  const isAdmin = session?.user?.isAdmin;
 
   return (
     <main className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-fadeIn">

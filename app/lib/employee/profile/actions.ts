@@ -4,8 +4,7 @@
 import { revalidatePath } from "next/cache";
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 
-export async function addEducationAction(userId: string, formData: FormData) {
-  // 1. CRITICAL: Check if userId is undefined before hitting the DB
+export async function addEducationAction(userId: string, formData: FormData) { 
   if (!userId) {
     throw new Error(
       "Missing userId. Make sure it is being passed from the component.",
@@ -64,8 +63,7 @@ export async function deleteEducationAction(id: string) {
   revalidatePath("/dashboard/employee");
 }
 
-// for adding languages
-
+ 
 export async function addLanguageAction(
   userId: string,
   createdBy: string,

@@ -87,17 +87,18 @@ const links = {
 };
 
 interface NavLinksProps {
-  role: "admin" | "manager" | "employee";
+  isAdmin: boolean;
+  isManager: boolean;
 }
 
-export default function NavLinks({ role }: NavLinksProps) {
+export default function NavLinks({ isAdmin, isManager }: NavLinksProps) {
   const pathname = usePathname();
-  
+
   let activeLinks = pathname.startsWith("/dashboard")
     ? links.admin
     : links.employee;
  
-  if (role === "manager" && pathname.startsWith("/dashboard")) {
+  if (isManager && !isAdmin && pathname.startsWith("/dashboard")) {
     activeLinks = activeLinks.filter(
       (link) => link.name !== "Payroll" && link.name !== "Settings",
     );

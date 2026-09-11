@@ -1,4 +1,5 @@
 // @/app/(admin)/dashboard/(overview)/payroll/[id]/page.tsx
+
 import Link from "next/link";
 import {
   fetchPayStubDetails,
@@ -19,7 +20,7 @@ interface PageProps {
 export default async function PayStubDetailsPage({ params }: PageProps) {
   const session = await auth();
 
-  if (session?.user?.role !== "admin") {
+  if (!session?.user?.isAdmin) {
     redirect("/dashboard");
   }
 
@@ -49,7 +50,7 @@ export default async function PayStubDetailsPage({ params }: PageProps) {
         </div>
 
         <div className="flex items-center gap-3">
-          { payStub.status === "processing" && (
+          {payStub.status === "processing" && (
             <form
               action={async () => {
                 "use server";
@@ -69,7 +70,7 @@ export default async function PayStubDetailsPage({ params }: PageProps) {
               ✓ Payment Cleared
             </span>
           )}
-          {(
+          {
             <form
               action={async () => {
                 "use server";
@@ -83,7 +84,7 @@ export default async function PayStubDetailsPage({ params }: PageProps) {
                 Delete
               </button>
             </form>
-          )}
+          }
         </div>
       </div>
 
@@ -130,8 +131,7 @@ export default async function PayStubDetailsPage({ params }: PageProps) {
             </p>
           </div>
 
-          { 
-            payStub.payment_method_id &&
+          {payStub.payment_method_id &&
             payStub.payment_status !== "verified" && (
               <form
                 action={async () => {

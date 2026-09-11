@@ -32,7 +32,7 @@ export async function getAdminUpcomingSyncs(): Promise<MeetingRow[]> {
     const session = await auth();
     if (!session?.user) return [];
 
-    const isAdmin = session.user.role === "admin";
+    const isAdmin = session.user.isAdmin;
     const managerName = session.user.name as string;
 
     if (isAdmin) {
@@ -61,7 +61,7 @@ export async function getAllAdminMeetings(): Promise<MeetingRow[]> {
     const session = await auth();
     if (!session?.user) return [];
 
-    const isAdmin = session.user.role === "admin";
+    const isAdmin = session.user.isAdmin;
     const managerName = session.user.name as string;
 
     if (isAdmin) {
@@ -91,7 +91,7 @@ export async function getMeetingDetailsById(
     const session = await auth();
     if (!session?.user) return null;
 
-    const isAdmin = session.user.role === "admin";
+    const isAdmin = session.user.isAdmin;
     const managerName = session.user.name as string;
 
     let rows;
@@ -131,7 +131,7 @@ export async function getEmployeesList(): Promise<EmployeeOption[]> {
     const session = await auth();
     if (!session?.user) return [];
 
-    const isAdmin = session.user.role === "admin";
+    const isAdmin = session.user.isAdmin;
     const managerName = session.user.name as string;
 
     if (isAdmin) {
@@ -162,7 +162,7 @@ export async function getEmployeeSelfAssessment(
     const session = await auth();
     if (!session?.user) return null;
 
-    const isAdmin = session.user.role === "admin";
+    const isAdmin = session.user.isAdmin;
     const managerName = session.user.name as string;
 
     let data;
@@ -191,7 +191,7 @@ export async function getEmployeeSelfAssessment(
 export async function getCompanyFeedback() {
   const session = await auth();
   if (!session?.user) return [];
-  const isAdmin = session.user.role === "admin";
+  const isAdmin = session.user.isAdmin;
   const managerName = session.user.name as string;
 
   if (isAdmin) {

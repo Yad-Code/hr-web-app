@@ -4,14 +4,14 @@ import { handleSignOut } from "@/app/lib/employeeDashboard/employee/auth-actions
 import { WorkspaceToggle } from "./workSpace-toggle";
 
 interface SideNavProps {
-  role: "admin" | "manager" | "employee";
+  isAdmin: boolean;
+  isManager: boolean;
 }
 
-export default async function SideNav({ role }: SideNavProps) {
+export default async function SideNav({ isAdmin, isManager }: SideNavProps) {
   return (
     <div className="flex h-full flex-col justify-between bg-white border-r border-slate-100 p-4 w-full">
       <div className="space-y-6">
-        {/* Header App Identity Banner */}
         <div className="flex items-center gap-3 px-2 py-2 border-b border-slate-50 pb-5">
           <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#009473] text-white shadow-sm shadow-emerald-800/10 shrink-0">
             <Building2 className="w-6 h-6 stroke-[1.75]" />
@@ -29,12 +29,10 @@ export default async function SideNav({ role }: SideNavProps) {
         {/* Content Navigation Block */}
         <div className="flex flex-col">
           <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase px-3 mb-3">
-            {role === "admin" || role === "manager"
-              ? "Management"
-              : "Workspace"}
+            {isAdmin || isManager ? "Management" : "Workspace"}
           </span>
           <nav className="space-y-1">
-            <NavLinks role={role} />
+            <NavLinks isAdmin={isAdmin} isManager={isManager} />
           </nav>
         </div>
       </div>
@@ -42,7 +40,7 @@ export default async function SideNav({ role }: SideNavProps) {
       {/* Profile & Server-Side Sign Out Action Block */}
       <div className="pt-4 border-t border-slate-50 space-y-3 flex flex-col">
         {/* The new Workspace Toggle */}
-        <WorkspaceToggle role={role} />
+        <WorkspaceToggle isManager={isManager} />
 
         <form action={handleSignOut}>
           <button

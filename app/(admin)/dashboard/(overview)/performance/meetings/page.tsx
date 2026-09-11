@@ -7,7 +7,9 @@ import { auth } from "@/auth";
 
 export default async function AdminMeetingsPage() {
   const session = await auth();
-  const isAdmin = session?.user?.role === "admin";
+  if (!session?.user) return null;
+  
+  const isAdmin = session.user.isAdmin;
 
   const meetings = await getAllAdminMeetings();
 

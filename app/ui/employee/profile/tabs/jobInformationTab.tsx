@@ -17,7 +17,7 @@ import {
 import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
 
 interface JobInformationTabProps {
-  profile: FullEmployeeProfile; // 👈 Use the interface here
+  profile: FullEmployeeProfile;  
 }
 
 export default function JobInformationTab({ profile }: JobInformationTabProps) {
@@ -39,8 +39,7 @@ export default function JobInformationTab({ profile }: JobInformationTabProps) {
   ];
 
   return (
-    <div className="space-y-6 text-left animate-fadeIn">
-      {/* SECTION 1: CURRENT POSITION */}
+    <div className="space-y-6 text-left animate-fadeIn"> 
       <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xs space-y-5">
         <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
           <div className="w-7 h-7 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">

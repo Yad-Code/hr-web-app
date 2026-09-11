@@ -3,7 +3,14 @@
 
 import React, { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { RotateCcw, Save, Loader2, Check, AlertCircle } from "lucide-react";
+import {
+  RotateCcw,
+  Save,
+  Loader2,
+  Check,
+  AlertCircle,
+  ShieldAlert,
+} from "lucide-react";
 import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
 import { updateEmployeeDetails } from "@/app/lib/employeeList/actions";
 
@@ -62,6 +69,89 @@ export default function AdminJobInformationTab({
         <CurrentPositionSection profile={profile} />
 
         <OrganizationDetailsSection profile={profile} />
+
+        {/* --- NEW SYSTEM PERMISSIONS SECTION --- */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xs space-y-5">
+          <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+            <div className="w-7 h-7 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
+              <ShieldAlert className="w-4 h-4" />
+            </div>
+            <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+              System Permissions
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label className="flex items-start gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
+              <input
+                type="checkbox"
+                name="isAdmin"
+                defaultChecked={profile.isAdmin}
+                className="mt-1 w-4 h-4 text-indigo-600 rounded border-slate-300"
+              />
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-slate-900">
+                  System Administrator
+                </span>
+                <span className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                  Grants full access to payroll, settings, and all directories.
+                </span>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
+              <input
+                type="checkbox"
+                name="isManager"
+                defaultChecked={profile.isManager}
+                className="mt-1 w-4 h-4 text-indigo-600 rounded border-slate-300"
+              />
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-slate-900">
+                  Manager Dashboard
+                </span>
+                <span className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                  Grants access to team-level analytics and schedule oversight.
+                </span>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
+              <input
+                type="checkbox"
+                name="canApproveLeaves"
+                defaultChecked={profile.canApproveLeaves}
+                className="mt-1 w-4 h-4 text-indigo-600 rounded border-slate-300"
+              />
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-slate-900">
+                  Approve Time-Off
+                </span>
+                <span className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                  Allows user to accept or reject team absence requests.
+                </span>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
+              <input
+                type="checkbox"
+                name="canStartReviews"
+                defaultChecked={profile.canStartReviews}
+                className="mt-1 w-4 h-4 text-indigo-600 rounded border-slate-300"
+              />
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-slate-900">
+                  Initiate Reviews
+                </span>
+                <span className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                  Allows user to start formal performance review cycles.
+                </span>
+              </div>
+            </label>
+          </div>
+        </div>
+        {/* -------------------------------------- */}
 
         <div className="flex items-center justify-end gap-3">
           <button

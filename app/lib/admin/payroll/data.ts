@@ -19,7 +19,7 @@ export type AdminPayrollRecord = {
 export async function fetchAllPayStubs(): Promise<AdminPayrollRecord[]> {
   try {
     const session = await auth();
-    if (session?.user?.role !== "admin") throw new Error("Unauthorized");
+    if (!session?.user?.isAdmin) throw new Error("Unauthorized");
 
     return await db<AdminPayrollRecord[]>`
     SELECT p.id, p.user_id, p.pay_period_start, p.pay_period_end, p.pay_date, p.gross_pay, p.net_pay, p.status, u.name as employee_name, u.email as employee_email, u.image_url
@@ -36,7 +36,7 @@ export async function fetchPayStubDetails(id: string) {
   const session = await auth();
   if (!session?.user) return null;
 
-  const isAdmin = session.user.role === "admin";
+  const isAdmin = session.user.isAdmin;
   const managerName = session.user.name as string;
 
   let result;

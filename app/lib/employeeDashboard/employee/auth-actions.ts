@@ -21,7 +21,20 @@ const LoginSchema = z.object({
 
 async function getUser(email: string) {
   try {
-    const user = await sql`SELECT id, name, email, password_hash, role FROM users WHERE email=${email}`;
+    // UPDATED: Fetch the new granular boolean flags
+    const user = await sql`
+      SELECT 
+        id, name, email, password_hash, role, image_url,
+        is_admin AS "isAdmin", 
+        is_manager AS "isManager", 
+        has_employee_view AS "hasEmployeeView",
+        can_edit_profile AS "canEditProfile",
+        can_start_reviews AS "canStartReviews",
+        can_log_feedback AS "canLogFeedback",
+        can_approve_leaves AS "canApproveLeaves"
+      FROM users 
+      WHERE email=${email}
+    `;
     return user[0];
   } catch (err) {
     console.error("Failed to fetch user:", err);
@@ -40,14 +53,26 @@ export async function verifyUserCredentials(email: string, password: string) {
   const user = await getUser(cleanEmail);
   if (!user) return null;
 
-  const passwordsMatch = await bcrypt.compare(cleanPassword, user.password_hash);
+  const passwordsMatch = await bcrypt.compare(
+    cleanPassword,
+    user.password_hash,
+  );
 
   if (passwordsMatch) {
+    // UPDATED: Return the booleans to NextAuth so they can be injected into the session token
     return {
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role,
+      role: user.role, // Cosmetic title
+      image: user.image_url,
+      isAdmin: user.isAdmin,
+      isManager: user.isManager,
+      hasEmployeeView: user.hasEmployeeView,
+      canEditProfile: user.canEditProfile,
+      canStartReviews: user.canStartReviews,
+      canLogFeedback: user.canLogFeedback,
+      canApproveLeaves: user.canApproveLeaves,
     };
   }
 
@@ -65,8 +90,6 @@ export async function handleSignOut() {
 /**
  * Server Action to securely authenticate users.
  */
-// app/lib/auth-actions.ts
-// app/lib/auth-actions.ts
 export async function authenticate(
   prevState: string | undefined,
   formData: FormData,
@@ -81,9 +104,10 @@ export async function authenticate(
 
     const { email, password } = validatedFields.data;
 
-    // Fetch user role to direct them to their correct section immediately
+    // UPDATED: Redirect logic now uses absolute structural flags instead of cosmetic strings
     const user = await getUser(email);
-    const destination = user?.role === "admin" ? "/dashboard" : "/my-profile";
+    const destination =
+      user?.isAdmin || user?.isManager ? "/dashboard" : "/my-profile";
 
     await signIn("credentials", {
       email,

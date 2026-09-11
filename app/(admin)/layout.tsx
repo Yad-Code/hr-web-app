@@ -18,11 +18,13 @@ export default async function Layout({
   }
 
   const currentUser = {
-    id: session.user.id as string,  
+    id: session.user.id as string,
     name: session.user.name as string,
     email: session.user.email as string,
-    role: session.user.role as "admin" | "manager" | "employee",
-    image_url: session.user.image || null,
+    image_url: session.user.image || null, 
+    role: session.user.role as string, 
+    isAdmin: session.user.isAdmin as boolean,
+    isManager: session.user.isManager as boolean,
   };
 
   return (
@@ -32,7 +34,10 @@ export default async function Layout({
       )}
 
       <div className="w-full flex-none md:w-64">
-        <SideNav role={currentUser.role} />
+        <SideNav
+          isAdmin={currentUser.isAdmin}
+          isManager={currentUser.isManager}
+        />
       </div>
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">

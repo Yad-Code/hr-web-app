@@ -19,13 +19,11 @@ interface PendingRequestType {
 export async function QuickOperationsWidget() {
   const session = await auth();
   if (!session?.user) return null;
-
-  const role = session.user.role;
+ 
   const managerName = session.user.name as string;
 
-  // Distinguish between Leaders (who approve things) and standard Employees
-  const isLeader = role === "admin" || role === "manager";
-  const isAdmin = role === "admin";
+  const isLeader = session.user.isAdmin || session.user.isManager;
+  const isAdmin = session.user.isAdmin;
 
   let pendingRequests: PendingRequestType[] = [];
 
@@ -36,7 +34,7 @@ export async function QuickOperationsWidget() {
       WHERE r.status ILIKE 'pending'
       ORDER BY r.created_at ASC LIMIT 5
     `;
-  } else if (role === "manager") {
+  } else if (session.user.isManager) {
     pendingRequests = await db<PendingRequestType[]>`
       SELECT r.id, r.type, r.reason as description, r.status, r.created_at, u.name as employee_name, u.job_title, u.image_url as employee_image
       FROM leave_requests r JOIN users u ON r.user_id = u.id

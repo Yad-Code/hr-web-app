@@ -10,7 +10,7 @@ import { RecentReviewsList } from "./_components/recent-reviews-list";
 import { GoalTrackerList } from "./_components/goal-tracker-list";
 import { UpcomingSyncsList } from "./_components/upcoming-syncs-list";
 import { FeedbackWidget } from "./_components/feedback-widget";
- 
+
 import {
   ReviewRow,
   GoalRow,
@@ -18,7 +18,7 @@ import {
   FeedbackRequestRow,
   MeetingRow,
 } from "./types";
-import { getPerformanceKPIs } from "@/app/lib/performance/data"; 
+import { getPerformanceKPIs } from "@/app/lib/performance/data";
 
 export const revalidate = 0;
 
@@ -201,8 +201,13 @@ export default async function AdminPerformancePage() {
   const session = await auth();
   if (!session?.user) return null;
 
-  const isAdmin = session.user.role === "admin";
+  const isAdmin = session.user.isAdmin;
+  const isManager = session.user.isManager;
   const managerName = session.user.name as string;
+
+  if (!isAdmin && !isManager) {
+    return <div className="p-6 text-slate-500">Access Denied.</div>;
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -217,8 +222,8 @@ export default async function AdminPerformancePage() {
               : "Monitor your team's review cycles, goal progression, and 1-on-1 syncs"}
           </p>
         </div>
-
-        <AdminPerformanceControls isAdmin={isAdmin} />
+ 
+        <AdminPerformanceControls user={session.user} />
       </div>
 
       <Suspense fallback={<KpiSkeleton />}>

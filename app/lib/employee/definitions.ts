@@ -2,9 +2,7 @@
 
 export type UserRole = "ADMIN" | "MANAGER" | "EMPLOYEE";
 export type WorkType = "FULL_TIME" | "PART_TIME" | "CONTRACTOR" | "INTERN";
-
-// Profile tabs prop
-// language
+ 
 export interface LanguageItem {
   id: string;
   user_id: string;
@@ -25,7 +23,6 @@ export interface LanguageTabProps {
   employeeName?: string;
 }
 
-// Education levels for the education history tab
 export interface EducationItem {
   id: string;
   level: string;
@@ -47,7 +44,7 @@ export interface ProfileTabsProps {
   userEmail: string;
   educationHistory?: EducationItem[];
   languageHistory?: LanguageItem[];
-  documents?: EmployeeDocument[]; // 👈 Add documents array prop
+  documents?: EmployeeDocument[];
 }
 
 export interface EmploymentHistoryItem {
@@ -68,12 +65,9 @@ export interface EmployeeDocument {
 }
 
 export interface FullEmployeeProfile {
-  // Core Identifiers
   id: string;
   userId?: string;
   employee_id?: string | null;
-
-  // Personal Info
   name: string;
   preferred_name?: string | null;
   email: string;
@@ -83,19 +77,22 @@ export interface FullEmployeeProfile {
   date_of_birth?: string | Date | null;
   age?: number | null;
   gender?: string | null;
-  nationality?: string | null; 
+  nationality?: string | null;
   marital_status?: string | null;
   blood_group?: string | null;
-
-  // Organization & Administrative
   department?: string | null;
   branch?: string | null;
   role?: string | null;
+  isAdmin?: boolean;
+  isManager?: boolean;
+  hasEmployeeView?: boolean;
+  canEditProfile?: boolean;
+  canStartReviews?: boolean;
+  canLogFeedback?: boolean;
+  canApproveLeaves?: boolean;
   status?: string | null;
   base_salary?: number | null;
   image_url?: string | null;
-
-  // Job & Shift Details (used in JobInformationTab)
   jobTitle?: string | null;
   jobFamily?: string | null;
   employmentType?: string | null;
@@ -104,8 +101,6 @@ export interface FullEmployeeProfile {
   shift_start?: string | null;
   shift_end?: string | null;
   shift_type?: string | null;
-
-  // Benefits & History
   privateOrg?: string | null;
   publicOrg?: string | null;
   insurance?: string | null;
@@ -141,14 +136,10 @@ export type BloodGroup =
 
 export type MaritalStatus = "Single" | "Married" | "Divorced" | "Widowed";
 
-// ==========================================
-// 2. CORE DATABASE ENTITIES
-// ==========================================
-
 export type User = {
-  id: string; // Unique identifier
-  email: string; // Used for logging in
-  passwordHash: string; // Securely stored password
+  id: string;
+  email: string;
+  passwordHash: string;
   role: UserRole;
   status: AccountStatus;
   createdAt: Date;
@@ -157,15 +148,11 @@ export type User = {
 
 export type EmployeeProfile = {
   id: string;
-  userId: string; // Links directly to User.id
-
-  // Name Fields
+  userId: string;
   firstName: string;
   middleName?: string;
   lastName: string;
   preferredName?: string;
-
-  // Contact & Personal Details
   phoneNumber?: string;
   personalEmail?: string;
   maritalStatus?: MaritalStatus;
@@ -174,9 +161,7 @@ export type EmployeeProfile = {
   dateOfBirth?: Date;
   gender?: string;
   nationality?: string;
-
-  // Work & Department Info
-  employeeId?: string; // Custom string ID (e.g. "EMP-102")
+  employeeId?: string;
   workType: WorkType;
   departmentId: string;
   jobTitle: string;
@@ -186,13 +171,13 @@ export type EmployeeProfile = {
 
 export type Department = {
   id: string;
-  name: string; // e.g., "Engineering", "Marketing"
-  managerId: string; // Links to User.id
+  name: string;
+  managerId: string;
 };
 
 export type Shift = {
   id: string;
-  employeeId: string; // Links to User.id
+  employeeId: string;
   startTime: Date;
   endTime: Date;
   notes?: string;
@@ -200,7 +185,7 @@ export type Shift = {
 
 export type Timesheet = {
   id: string;
-  employeeId: string; // Links to User.id
+  employeeId: string;
   date: Date;
   clockIn: Date;
   clockOut: Date | null;
@@ -209,18 +194,12 @@ export type Timesheet = {
   notes?: string;
 };
 
-// ==========================================
-// 3. UI & COMPONENT-LEVEL TYPES
-// ==========================================
-
-// Form state typing for React Server Actions (e.g., useActionState)
 export type ActionState = {
   error?: string;
   fieldErrors?: Record<string, string[]>;
   success?: boolean;
 } | null;
 
-// What the user actually submits on the Register Form
 export type RegisterFormInput = {
   email: string;
   password: string;
@@ -233,12 +212,8 @@ export type RegisterFormInput = {
   departmentId: string;
 };
 
-// ==========================================
-// 4. MOCK DATA
-// ==========================================
-
+//MOCK DATA!!!!!!!!!!!!!!!!!!!!!!!
 export const Timesheets: Timesheet[] = [
-  // --- YAD'S TIMESHEETS ---
   {
     id: "time-row-1",
     employeeId: "user-emp-yad",
@@ -250,7 +225,6 @@ export const Timesheets: Timesheet[] = [
     notes: "Worked on Next.js setup.",
   },
 
-  // --- ALICE'S TIMESHEETS (Manager) ---
   {
     id: "time-row-2",
     employeeId: "user-mgr-alice",
@@ -262,7 +236,6 @@ export const Timesheets: Timesheet[] = [
     notes: "Conducted interviews and code reviews.",
   },
 
-  // --- BOB'S TIMESHEETS (HR Manager) ---
   {
     id: "time-row-3",
     employeeId: "user-mgr-bob",
@@ -274,13 +247,12 @@ export const Timesheets: Timesheet[] = [
     notes: "Processed payroll and sorted pending approvals.",
   },
 
-  // --- ANOTHER DAY FOR YAD ---
   {
     id: "time-row-4",
     employeeId: "user-emp-yad",
     date: new Date("2026-07-16T00:00:00Z"),
     clockIn: new Date("2026-07-16T09:00:00Z"),
-    clockOut: null, // Currently clocked in today!
+    clockOut: null,
     breakDurationMinutes: 0,
     status: "PENDING_APPROVAL",
     notes: "Building definitions.ts and mock data.",

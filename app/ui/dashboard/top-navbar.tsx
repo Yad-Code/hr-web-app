@@ -26,20 +26,22 @@ interface TopNavbarProps {
     id: string;
     name: string;
     email: string;
-    role: string;
     image_url: string | null;
+    role: string;
+    isAdmin: boolean;
+    isManager: boolean;
   };
 }
 
 export function TopNavbar({ user }: TopNavbarProps) {
-  const isManagement = user.role === "admin" || user.role === "manager";
+  const isManagement = user.isAdmin || user.isManager;
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [, startTransition] = useTransition();
   const popoverRef = useRef<HTMLDivElement>(null);
- 
+
   useEffect(() => {
     let isMounted = true;
     async function fetchNotifications() {
@@ -53,14 +55,14 @@ export function TopNavbar({ user }: TopNavbarProps) {
     }
 
     fetchNotifications();
- 
+
     const interval = setInterval(fetchNotifications, 60000);
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
   }, [user.id]);
- 
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -73,7 +75,7 @@ export function TopNavbar({ user }: TopNavbarProps) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
- 
+
   const handleMarkAsRead = (id: string, isAlreadyRead: boolean) => {
     if (isAlreadyRead) return;
 
@@ -123,7 +125,6 @@ export function TopNavbar({ user }: TopNavbarProps) {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-100 px-4 sm:px-6 py-3 flex items-center justify-between shadow-sm backdrop-blur-md bg-white">
-       
       <div className="flex flex-col text-left">
         <h2 className="text-base font-bold text-slate-900 leading-tight tracking-tight">
           {isManagement ? "Dashboard" : "Workspace"}
@@ -134,7 +135,7 @@ export function TopNavbar({ user }: TopNavbarProps) {
             : "Your operational dashboard shell updates"}
         </p>
       </div>
- 
+
       <div className="flex-1 max-w-lg mx-6 hidden md:block">
         <div className="relative group">
           <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
@@ -147,8 +148,8 @@ export function TopNavbar({ user }: TopNavbarProps) {
           />
         </div>
       </div>
- 
-      <div className="flex items-center gap-4 ml-auto md:ml-0" ref={popoverRef}> 
+
+      <div className="flex items-center gap-4 ml-auto md:ml-0" ref={popoverRef}>
         <div className="relative">
           <button
             onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
@@ -166,7 +167,7 @@ export function TopNavbar({ user }: TopNavbarProps) {
               </span>
             )}
           </button>
- 
+
           {isNotificationsOpen && (
             <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-200/90 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
               <div className="p-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
@@ -265,9 +266,9 @@ export function TopNavbar({ user }: TopNavbarProps) {
             </div>
           )}
         </div>
- 
+
         <div className="h-6 w-px bg-slate-100 hidden sm:block" />
- 
+
         <UserDropdown user={user} />
       </div>
     </header>

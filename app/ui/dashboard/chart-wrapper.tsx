@@ -8,7 +8,7 @@ export default async function AdminChartWrapper() {
  
   if (!session?.user) return null;
 
-  const isAdmin = session.user.role === "admin";
+  const isAdmin = session.user.isAdmin;
  
   const managerName = session.user.name as string;
 

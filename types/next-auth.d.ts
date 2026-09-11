@@ -1,23 +1,44 @@
-// next-auth.d.ts
 import { DefaultSession, DefaultUser } from "next-auth";
-import { JWT } from "next-auth/jwt";
+import { DefaultJWT } from "next-auth/jwt";
 
 declare module "next-auth" {
   interface User extends DefaultUser {
-    role?: "admin" | "manager" | "employee";
+    id: string;
+    role: string;
+    isAdmin: boolean;
+    isManager: boolean;
+    hasEmployeeView: boolean;
+    canEditProfile: boolean;
+    canStartReviews: boolean;
+    canLogFeedback: boolean;
+    canApproveLeaves: boolean;
   }
 
   interface Session {
     user: {
-      role?: "admin" | "manager" | "employee";
-      id?: string;
+      id: string;
+      role: string;
+      isAdmin: boolean;
+      isManager: boolean;
+      hasEmployeeView: boolean;
+      canEditProfile: boolean;
+      canStartReviews: boolean;
+      canLogFeedback: boolean;
+      canApproveLeaves: boolean;
     } & DefaultSession["user"];
   }
 }
 
 declare module "next-auth/jwt" {
-  interface JWT {
-    role?: "admin" | "manager" | "employee";
-    id?: string;
+  interface JWT extends DefaultJWT {
+    id: string;
+    role: string;
+    isAdmin: boolean;
+    isManager: boolean;
+    hasEmployeeView: boolean;
+    canEditProfile: boolean;
+    canStartReviews: boolean;
+    canLogFeedback: boolean;
+    canApproveLeaves: boolean;
   }
 }
