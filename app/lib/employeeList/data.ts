@@ -1,13 +1,13 @@
 // app/lib/employeeList/data.ts
 import { sql } from "@/app/lib/employeeDashboard/employee/db";
-import { FullEmployeeProfile } from "@/app/lib/employee/definitions"; 
+import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
 
 export async function getProfileById(
   id: string,
 ): Promise<FullEmployeeProfile | null> {
   if (!id) return null;
 
-  try { 
+  try {
     const users = await sql`
       SELECT * 
       FROM users 
@@ -24,7 +24,6 @@ export async function getProfileById(
 
     const user = users[0];
 
-    // 1. Fetch dynamic employment history records for this user
     const historyRows = await sql`
       SELECT title, company, period 
       FROM employment_history 
@@ -33,12 +32,9 @@ export async function getProfileById(
     `;
 
     return {
-      // Core Identifiers
       id: String(user.id),
       userId: String(user.id),
       employee_id: user.employee_id || String(user.id).slice(0, 8),
-
-      // Personal Info
       name: user.name,
       preferred_name: user.preferred_name || user.name,
       email: user.email,
@@ -51,16 +47,19 @@ export async function getProfileById(
       nationality: user.nationality || "N/A",
       marital_status: user.marital_status || "Single",
       blood_group: user.blood_group || "Unknown",
-
-      // Organization & Administrative
       department: user.department || "General",
       branch: user.branch || "Main Branch",
       role: user.role || "employee",
+      isAdmin: user.is_admin,
+      isManager: user.is_manager,
+      hasEmployeeView: user.has_employee_view,
+      canApproveLeaves: user.can_approve_leaves,
+      canStartReviews: user.can_start_reviews,
+      canEditProfile: user.can_edit_profile,
+      canLogFeedback: user.can_log_feedback,
       status: user.status || "Active",
       base_salary: user.base_salary ? Number(user.base_salary) : 3500.0,
       image_url: user.image_url || null,
-
-      // Job & Shift Details
       jobTitle: user.job_title || null,
       jobFamily: user.job_family || null,
       employmentType: user.employment_type || null,
@@ -71,14 +70,10 @@ export async function getProfileById(
       shift_start: user.shift_start || "09:00:00",
       shift_end: user.shift_end || "17:00:00",
       shift_type: user.shift_type || "Standard (Mon - Fri)",
-
-      // Benefits
       publicOrg: user.public_org || null,
       privateOrg: user.private_org || null,
       insurance: user.insurance || null,
       subscription: user.subscription || null,
-
-      // 2. Map history array into response
       history: historyRows.map((row) => ({
         title: row.title,
         company: row.company || "Company",

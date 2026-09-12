@@ -9,10 +9,10 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 
 export default async function NewReviewPage() {
-  const session = await auth();
-  if (!session?.user?.isAdmin && !session?.user?.canStartReviews) {
-    redirect("/dashboard/performance/reviews");
-  }
+    const session = await auth();
+    if (!session?.user?.isAdmin && !session?.user?.canStartReviews) {
+      redirect("/dashboard/performance/reviews");
+    }
 
   const employees = await getEmployeesList();
 

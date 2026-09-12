@@ -21,10 +21,11 @@ export default async function Layout({
     id: session.user.id as string,
     name: session.user.name as string,
     email: session.user.email as string,
-    image_url: session.user.image || null, 
-    role: session.user.role as string, 
+    image_url: session.user.image || null,
+    role: session.user.role as string,
     isAdmin: session.user.isAdmin as boolean,
     isManager: session.user.isManager as boolean,
+    hasEmployeeView: session.user.hasEmployeeView as boolean,
   };
 
   return (
@@ -37,6 +38,7 @@ export default async function Layout({
         <SideNav
           isAdmin={currentUser.isAdmin}
           isManager={currentUser.isManager}
+          hasEmployeeView={currentUser.hasEmployeeView}
         />
       </div>
 

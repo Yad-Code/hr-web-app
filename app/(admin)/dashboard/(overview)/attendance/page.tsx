@@ -61,14 +61,15 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
   const session = await auth();
   if (!session?.user) return null;
 
-  const isAdmin = session.user.isAdmin;
+  // 👉 1. EXTRACT ALL NEEDED PERMISSIONS
+  const isAdmin = session.user.isAdmin as boolean;
+  const canApproveLeaves = session.user.canApproveLeaves as boolean;
   const managerName = session.user.name as string;
 
   const resolvedParams = await searchParams;
   const todayString = new Date().toISOString().split("T")[0];
   const targetDate = resolvedParams.date || todayString;
 
-  // 1. FORKED ATTENDANCE QUERY
   let attendanceRows;
   if (isAdmin) {
     attendanceRows = (await db`
@@ -140,7 +141,6 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
     onLeaveToday,
   };
 
-  // 2. FORKED LEAVE REQUESTS QUERY
   let requestRows;
   if (isAdmin) {
     requestRows = (await db`
@@ -209,7 +209,6 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
     <div className="p-6 max-w-7xl mx-auto space-y-8 bg-slate-50/50 dark:bg-transparent min-h-screen">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          {/* 3. DYNAMIC HEADER TITLES */}
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             {isAdmin ? "Time & Attendance" : "Team Attendance"}
           </h1>
@@ -236,7 +235,10 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
         </div>
 
         <div className="space-y-8">
-          <LeaveRequestsList requests={leaveRequests} />
+          <LeaveRequestsList
+            requests={leaveRequests}
+            currentUser={{ isAdmin, canApproveLeaves }}
+          />
           <ShiftRulesCard shifts={shifts} />
         </div>
       </div>

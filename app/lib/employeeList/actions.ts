@@ -135,16 +135,12 @@ export async function updateEmployeeDetails(
     const rawSalary = formData.get("baseSalary");
     const baseSalary = rawSalary ? Number(rawSalary) : null;
 
-    const isJobForm = formData.has("role") || formData.has("department");
-
-    const isAdminFlag = isJobForm ? formData.get("isAdmin") === "on" : null;
-    const isManagerFlag = isJobForm ? formData.get("isManager") === "on" : null;
-    const canApproveLeaves = isJobForm
-      ? formData.get("canApproveLeaves") === "on"
-      : null;
-    const canStartReviews = isJobForm
-      ? formData.get("canStartReviews") === "on"
-      : null;
+    const isJobForm = formData.get("isJobForm") === "true" || formData.has("department") || formData.has("role");
+    const isAdminFlag = isJobForm ? formData.get("isAdmin") === "true" : null;
+    const isManagerFlag = isJobForm ? formData.get("isManager") === "true" : null;
+    const canApproveLeaves = isJobForm ? formData.get("canApproveLeaves") === "true" : null;
+    const canStartReviews = isJobForm ? formData.get("canStartReviews") === "true" : null;
+    const hasEmployeeViewFlag = isJobForm ? formData.get("hasEmployeeView") === "true" : null;
 
     if (isAdmin) {
       await sql`
@@ -162,10 +158,11 @@ export async function updateEmployeeDetails(
           status = COALESCE(${status}, status),
           role = COALESCE(${role}::user_role, role),
           
-          is_admin = COALESCE(${isAdminFlag}, is_admin),
-          is_manager = COALESCE(${isManagerFlag}, is_manager),
-          can_approve_leaves = COALESCE(${canApproveLeaves}, can_approve_leaves),
-          can_start_reviews = COALESCE(${canStartReviews}, can_start_reviews),
+          is_admin = COALESCE(${isAdminFlag}::boolean, is_admin),
+          is_manager = COALESCE(${isManagerFlag}::boolean, is_manager),
+          can_approve_leaves = COALESCE(${canApproveLeaves}::boolean, can_approve_leaves),
+          can_start_reviews = COALESCE(${canStartReviews}::boolean, can_start_reviews),
+          has_employee_view = COALESCE(${hasEmployeeViewFlag}::boolean, has_employee_view),
 
           preferred_name = COALESCE(${preferredName}, preferred_name),
           marital_status = COALESCE(${maritalStatus}, marital_status),

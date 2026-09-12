@@ -75,8 +75,7 @@ export default async function AdminEmployeeEditPage({
         >
           ← Back to Team Presence
         </Link>
-
-        {/* FIXED: Dynamic badge for the current user's role */}
+ 
         <span
           className={`px-2.5 py-1 text-[11px] font-bold rounded-full ${
             isManager

@@ -4,15 +4,26 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowRightLeft } from "lucide-react";
 
-export function WorkspaceToggle({ isManager }: { isManager: boolean }) {
+export function WorkspaceToggle({
+  isAdmin,
+  isManager,
+  hasEmployeeView = true,
+}: {
+  isAdmin?: boolean;
+  isManager?: boolean;
+  hasEmployeeView?: boolean;
+}) {
   const pathname = usePathname();
-  if (!isManager) return null;
+
+  if ((!isAdmin && !isManager) || !hasEmployeeView) return null;
 
   const isDashboard = pathname.startsWith("/dashboard");
   const target = isDashboard ? "/my-profile" : "/dashboard";
   const label = isDashboard
     ? "Switch to Employee View"
-    : "Switch to Manager View";
+    : isAdmin
+      ? "Switch to Admin View"
+      : "Switch to Manager View";
 
   return (
     <Link

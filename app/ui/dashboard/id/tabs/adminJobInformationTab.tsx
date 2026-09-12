@@ -51,7 +51,6 @@ export default function AdminJobInformationTab({
     <div className="space-y-6 text-left animate-fadeIn">
       <AdminHeader />
 
-      {/* Action Notification Banner */}
       {showSuccess && state?.success && (
         <div className="p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2 border bg-emerald-50 border-emerald-200 text-emerald-800">
           <Check className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -65,12 +64,12 @@ export default function AdminJobInformationTab({
         </div>
       )}
 
-      <form action={formAction} className="space-y-6">
-        <CurrentPositionSection profile={profile} />
+      <form action={formAction} className="space-y-6"> 
+        <input type="hidden" name="isJobForm" value="true" />
 
+        <CurrentPositionSection profile={profile} />
         <OrganizationDetailsSection profile={profile} />
 
-        {/* --- NEW SYSTEM PERMISSIONS SECTION --- */}
         <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xs space-y-5">
           <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
             <div className="w-7 h-7 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
@@ -82,10 +81,13 @@ export default function AdminJobInformationTab({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Added value="true" and key{} to force React to update the UI correctly */}
             <label className="flex items-start gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
               <input
                 type="checkbox"
                 name="isAdmin"
+                value="true"
+                key={String(profile.isAdmin)}
                 defaultChecked={profile.isAdmin}
                 className="mt-1 w-4 h-4 text-indigo-600 rounded border-slate-300"
               />
@@ -103,6 +105,8 @@ export default function AdminJobInformationTab({
               <input
                 type="checkbox"
                 name="isManager"
+                value="true"
+                key={String(profile.isManager)}
                 defaultChecked={profile.isManager}
                 className="mt-1 w-4 h-4 text-indigo-600 rounded border-slate-300"
               />
@@ -120,6 +124,8 @@ export default function AdminJobInformationTab({
               <input
                 type="checkbox"
                 name="canApproveLeaves"
+                value="true"
+                key={String(profile.canApproveLeaves)}
                 defaultChecked={profile.canApproveLeaves}
                 className="mt-1 w-4 h-4 text-indigo-600 rounded border-slate-300"
               />
@@ -137,6 +143,8 @@ export default function AdminJobInformationTab({
               <input
                 type="checkbox"
                 name="canStartReviews"
+                value="true"
+                key={String(profile.canStartReviews)}
                 defaultChecked={profile.canStartReviews}
                 className="mt-1 w-4 h-4 text-indigo-600 rounded border-slate-300"
               />
@@ -149,9 +157,28 @@ export default function AdminJobInformationTab({
                 </span>
               </div>
             </label>
+
+            <label className="flex items-start gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
+              <input
+                type="checkbox"
+                name="hasEmployeeView"
+                value="true"
+                key={String(profile.hasEmployeeView)}
+                defaultChecked={profile.hasEmployeeView !== false}
+                className="mt-1 w-4 h-4 text-indigo-600 rounded border-slate-300"
+              />
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-slate-900">
+                  Personal Workspace
+                </span>
+                <span className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                  Allows user to access their own employee profile and time-off
+                  requests.
+                </span>
+              </div>
+            </label>
           </div>
         </div>
-        {/* -------------------------------------- */}
 
         <div className="flex items-center justify-end gap-3">
           <button

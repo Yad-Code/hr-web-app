@@ -26,7 +26,7 @@ export async function GET() {
     await db`DROP TABLE IF EXISTS leave_balances`;
     await db`DROP TABLE IF EXISTS attendance`;
     await db`DROP TABLE IF EXISTS schedule_overrides`;
-    
+
     await db`DROP TABLE IF EXISTS users CASCADE`;
     await db`DROP TYPE IF EXISTS user_role`;
     await db`DROP TYPE IF EXISTS user_status`;
@@ -34,19 +34,17 @@ export async function GET() {
     await db`DROP TABLE IF EXISTS payment_methods`;
     await db`DROP TABLE IF EXISTS pay_stub_items`;
     await db`DROP TABLE IF EXISTS pay_stubs`;
-    
+
     await db`DROP TABLE IF EXISTS leave_requests`;
     await db`DROP TABLE IF EXISTS daily_attendance`;
     await db`DROP TABLE IF EXISTS shift_rules`;
     await db`DROP TABLE IF EXISTS education_history`;
     await db`DROP TABLE IF EXISTS employment_history`;
-    
+
     await db`DROP TABLE IF EXISTS requests`;
     await db`DROP TABLE IF EXISTS schedules`;
     await db`DROP TABLE IF EXISTS wfh_requests`;
-    await db`CREATE TYPE user_role AS ENUM ('admin', 'manager', 'employee')`;
 
-    // --- Original Tables ---
     await db`
      CREATE TABLE users (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -108,8 +106,6 @@ export async function GET() {
           UNIQUE(user_id, target_date) -- Prevents duplicate conflicts on the same day
       );
     `;
-
-  
 
     await db`
       CREATE TABLE attendance (
@@ -407,7 +403,7 @@ CREATE TABLE self_assessments (
         employee_id, name, preferred_name, job_title, job_family, employment_type, manager_name, join_date, 
         department, branch, date_of_birth, age, gender, nationality, marital_status, 
         blood_group, email, personal_email, personal_phone, current_address, 
-        password_hash, role, is_admin, is_manager, has_employee_view, status, base_salary, 
+        password_hash, role, is_admin, is_manager, has_employee_view, can_approve_leaves, can_start_reviews, status, base_salary, 
         public_org, private_org, insurance, subscription,
         image_url, shift_start, shift_end, shift_type, working_days, last_seen_at
        )
@@ -417,7 +413,7 @@ CREATE TABLE self_assessments (
           'Human Resources', 'HQ - Sulaymaniyah',
           '1988-03-15', 38, 'Female', 'Iraqi', 'Married', 'O+',
           'admin@company.com', 'admin.personal@gmail.com', '+964 770 111 2233',
-          'Main Street, District 101, Sulaymaniyah', ${adminPassword}, 'admin', true, true, false, 'Active',
+          'Main Street, District 101, Sulaymaniyah', ${adminPassword}, 'admin', true, true, false, true, true, 'Active',
           5000.00, NULL, NULL, 'Premium Health', NULL,
           'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
@@ -427,7 +423,7 @@ CREATE TABLE self_assessments (
           'Engineering', 'HQ - Sulaymaniyah',
           '1985-08-22', 40, 'Female', 'American', 'Married', 'A+',
           'sarah.j@company.com', 'sarah.j.personal@gmail.com', '+964 770 999 8877',
-          'Tech Park, Sulaymaniyah', ${adminPassword}, 'manager', false, true, true, 'Active',  
+          'Tech Park, Sulaymaniyah', ${adminPassword}, 'manager', false, true, true, true, true, 'Active',
           6000.00, NULL, NULL, 'Premium Health', NULL,
           'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
@@ -437,7 +433,7 @@ CREATE TABLE self_assessments (
           'Design', 'HQ - Sulaymaniyah',
           '1990-12-05', 35, 'Male', 'British', 'Single', 'B-',
           'alex.s@company.com', 'alex.s.personal@gmail.com', '+964 770 666 5544',
-          'Creative Hub, Sulaymaniyah', ${adminPassword}, 'manager', false, true, true, 'Active',  
+          'Creative Hub, Sulaymaniyah', ${adminPassword}, 'manager', false, true, true, true, true, 'Active', 
           5500.00, NULL, NULL, 'Premium Health', 'Adobe CC',
           'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
@@ -447,7 +443,7 @@ CREATE TABLE self_assessments (
           'Engineering', 'HQ - Sulaymaniyah',
           '2002-05-20', 24, 'Male', 'Iraqi', 'Single', 'A+',
           'yad@company.com', 'yad.dev@gmail.com', '+964 770 222 3344',
-          'Salim Street, Sulaymaniyah', ${employeePassword}, 'employee', false, false, true, 'Active',
+          'Salim Street, Sulaymaniyah', ${employeePassword}, 'employee', false, false, true, false, false, 'Active',
           4200.00, NULL, NULL, 'Standard Health', 'GitHub Copilot',
           'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Weekend Flex', '{6,0,1}', CURRENT_TIMESTAMP
@@ -457,7 +453,7 @@ CREATE TABLE self_assessments (
           'Design', 'HQ - Sulaymaniyah',
           '1997-09-12', 28, 'Female', 'Iraqi', 'Single', 'B+',
           'lana@company.com', 'lana.amin@gmail.com', '+964 770 333 4455',
-          'Barty Street, Sulaymaniyah', ${employeePassword}, 'employee', false, false, true, 'Offline',
+          'Barty Street, Sulaymaniyah', ${employeePassword}, 'employee', false, false, true, false, false, 'Offline',
           3800.00, NULL, NULL, 'Standard Health', 'Figma Professional',
           'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Mid-Week Core', '{2,3,4}', CURRENT_TIMESTAMP - INTERVAL '2 hours'
@@ -467,7 +463,7 @@ CREATE TABLE self_assessments (
           'Engineering', 'HQ - Sulaymaniyah',
           '1995-11-04', 30, 'Male', 'Iraqi', 'Married', 'O-',
           'diyar@company.com', 'diyar.karwan@gmail.com', '+964 770 444 5566',
-          'Sarchinar Way, Sulaymaniyah', ${employeePassword}, 'employee', false, false, true, 'Offline',
+          'Sarchinar Way, Sulaymaniyah', ${employeePassword}, 'employee', false, false, true, false, false, 'Offline',
           4000.00, NULL, NULL, 'Standard Health', 'AWS Builder',
           'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP - INTERVAL '1 day'
@@ -477,7 +473,7 @@ CREATE TABLE self_assessments (
           'Engineering', 'HQ - Sulaymaniyah',
           '1999-01-28', 27, 'Female', 'Iraqi', 'Single', 'AB+',
           'sara@company.com', 'sara.omar@gmail.com', '+964 770 555 6677',
-          'Rapakarin Quarter, Sulaymaniyah', ${employeePassword}, 'employee', false, false, true, 'Active',
+          'Rapakarin Quarter, Sulaymaniyah', ${employeePassword}, 'employee', false, false, true, false, false, 'Active',
           3500.00, NULL, NULL, 'Standard Health', NULL,
           'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP - INTERVAL '5 minutes'
@@ -583,7 +579,6 @@ CREATE TABLE self_assessments (
         );
       `;
 
-      
       await db`
           INSERT INTO leave_requests (user_id, type, leave_category, start_date, end_date, total_days, reason, status)
           VALUES (${emp.id}, 'dayoff', 'annual', '2026-10-15', '2026-10-16', 2, 'Requesting 2 days off for a local engineering hackathon event.', 'Pending')
@@ -606,7 +601,7 @@ CREATE TABLE self_assessments (
           (${emp.id}, 'Team Collaboration', '4.8/5', '4.5/5', '+0.3', true),
           (${emp.id}, 'Task Completion Rate', '92.0%', '90.0%', '+5.0%', true);
       `;
- 
+
       await db`
         INSERT INTO user_performance (
             user_id,
@@ -789,7 +784,6 @@ VALUES
     true
 );
 `;
- 
 
       const variance = Math.floor(Math.random() * 5) - 2;
 
@@ -828,7 +822,7 @@ VALUES
                 NOW()
             )
             ON CONFLICT (user_id, cycle) DO NOTHING;
-`; 
+`;
 
       await db`
       INSERT INTO skills (user_id, name, label, level) VALUES
@@ -837,7 +831,7 @@ VALUES
         (${emp.id}, 'Node.js & Express', 'Technical', 4),
         (${emp.id}, 'System Architecture', 'Architecture', 3)
     `;
- 
+
       await db`
 INSERT INTO user_feedback (
     user_id,
@@ -877,7 +871,7 @@ VALUES
     false
 );
 `;
- 
+
       await db`
         INSERT INTO education_history (
           user_id, 
@@ -910,7 +904,7 @@ VALUES
           2020
         )
       `;
- 
+
       await db`
         INSERT INTO employee_languages (
           user_id, 

@@ -6,9 +6,14 @@ import { WorkspaceToggle } from "./workSpace-toggle";
 interface SideNavProps {
   isAdmin: boolean;
   isManager: boolean;
+  hasEmployeeView: boolean;
 }
 
-export default async function SideNav({ isAdmin, isManager }: SideNavProps) {
+export default async function SideNav({
+  isAdmin,
+  isManager,
+  hasEmployeeView,
+}: SideNavProps) {
   return (
     <div className="flex h-full flex-col justify-between bg-white border-r border-slate-100 p-4 w-full">
       <div className="space-y-6">
@@ -39,8 +44,12 @@ export default async function SideNav({ isAdmin, isManager }: SideNavProps) {
 
       {/* Profile & Server-Side Sign Out Action Block */}
       <div className="pt-4 border-t border-slate-50 space-y-3 flex flex-col">
-        {/* The new Workspace Toggle */}
-        <WorkspaceToggle isManager={isManager} />
+        
+        <WorkspaceToggle
+          isAdmin={isAdmin}
+          isManager={isManager}
+          hasEmployeeView={hasEmployeeView}
+        />
 
         <form action={handleSignOut}>
           <button
