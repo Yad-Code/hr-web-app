@@ -19,13 +19,11 @@ import { CurrentPositionSection } from "./job/currentPositionSection";
 import { OrganizationDetailsSection } from "./job/organizationDetailsSection";
 import { EmploymentHistoryTimeline } from "./job/employmentHistoryTimeline";
 
-interface AdminJobInformationTabProps {
-  profile: FullEmployeeProfile;
-}
-
 export default function AdminJobInformationTab({
   profile,
-}: AdminJobInformationTabProps) {
+}: {
+  profile: FullEmployeeProfile;
+}) {
   const router = useRouter();
   const updateProfileWithId = updateEmployeeDetails.bind(null, profile.id);
   const [state, formAction, isPending] = useActionState(
@@ -64,7 +62,7 @@ export default function AdminJobInformationTab({
         </div>
       )}
 
-      <form action={formAction} className="space-y-6"> 
+      <form action={formAction} className="space-y-6">
         <input type="hidden" name="isJobForm" value="true" />
 
         <CurrentPositionSection profile={profile} />
@@ -78,105 +76,6 @@ export default function AdminJobInformationTab({
             <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
               System Permissions
             </h2>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Added value="true" and key{} to force React to update the UI correctly */}
-            <label className="flex items-start gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
-              <input
-                type="checkbox"
-                name="isAdmin"
-                value="true"
-                key={String(profile.isAdmin)}
-                defaultChecked={profile.isAdmin}
-                className="mt-1 w-4 h-4 text-indigo-600 rounded border-slate-300"
-              />
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold text-slate-900">
-                  System Administrator
-                </span>
-                <span className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                  Grants full access to payroll, settings, and all directories.
-                </span>
-              </div>
-            </label>
-
-            <label className="flex items-start gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
-              <input
-                type="checkbox"
-                name="isManager"
-                value="true"
-                key={String(profile.isManager)}
-                defaultChecked={profile.isManager}
-                className="mt-1 w-4 h-4 text-indigo-600 rounded border-slate-300"
-              />
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold text-slate-900">
-                  Manager Dashboard
-                </span>
-                <span className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                  Grants access to team-level analytics and schedule oversight.
-                </span>
-              </div>
-            </label>
-
-            <label className="flex items-start gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
-              <input
-                type="checkbox"
-                name="canApproveLeaves"
-                value="true"
-                key={String(profile.canApproveLeaves)}
-                defaultChecked={profile.canApproveLeaves}
-                className="mt-1 w-4 h-4 text-indigo-600 rounded border-slate-300"
-              />
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold text-slate-900">
-                  Approve Time-Off
-                </span>
-                <span className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                  Allows user to accept or reject team absence requests.
-                </span>
-              </div>
-            </label>
-
-            <label className="flex items-start gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
-              <input
-                type="checkbox"
-                name="canStartReviews"
-                value="true"
-                key={String(profile.canStartReviews)}
-                defaultChecked={profile.canStartReviews}
-                className="mt-1 w-4 h-4 text-indigo-600 rounded border-slate-300"
-              />
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold text-slate-900">
-                  Initiate Reviews
-                </span>
-                <span className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                  Allows user to start formal performance review cycles.
-                </span>
-              </div>
-            </label>
-
-            <label className="flex items-start gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
-              <input
-                type="checkbox"
-                name="hasEmployeeView"
-                value="true"
-                key={String(profile.hasEmployeeView)}
-                defaultChecked={profile.hasEmployeeView !== false}
-                className="mt-1 w-4 h-4 text-indigo-600 rounded border-slate-300"
-              />
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold text-slate-900">
-                  Personal Workspace
-                </span>
-                <span className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                  Allows user to access their own employee profile and time-off
-                  requests.
-                </span>
-              </div>
-            </label>
           </div>
         </div>
 

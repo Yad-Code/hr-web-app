@@ -1,4 +1,5 @@
 // @/app/(employee)/layout.tsx
+
 import SideNav from "../ui/dashboard/sidnav";
 import { TopNavbar } from "@/app/ui/employee/top-navbar";
 import { auth } from "@/auth";
@@ -16,14 +17,15 @@ export default async function Layout({
     redirect("/login");
   }
 
- const currentUser = {
+  const currentUser = {
     id: session.user.id as string,
     name: session.user.name as string,
     email: session.user.email as string,
-    image_url: session.user.image || null, 
-    role: session.user.role as string, 
+    image_url: session.user.image || null,
+    role: session.user.role as string,
     isAdmin: session.user.isAdmin as boolean,
     isManager: session.user.isManager as boolean,
+    hasEmployeeView: session.user.hasEmployeeView as boolean,
   };
 
   return (
@@ -36,6 +38,7 @@ export default async function Layout({
         <SideNav
           isAdmin={currentUser.isAdmin}
           isManager={currentUser.isManager}
+          hasEmployeeView={currentUser.hasEmployeeView}
         />
       </div>
 

@@ -689,10 +689,7 @@ CREATE TABLE self_assessments (
             'Completed'
         );
 `;
-
-      // ----------------------------------------------------
-      // CAREER DEVELOPMENT
-      // ----------------------------------------------------
+ 
       await db`
     INSERT INTO career_development (
         user_id,

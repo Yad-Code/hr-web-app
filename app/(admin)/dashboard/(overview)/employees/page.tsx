@@ -13,8 +13,7 @@ export default async function EmployeesStatusPage() {
   const isAdmin = session?.user?.isAdmin;  
 
   return (
-    <main className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto w-full space-y-8">
-      {/* Softened Header Layout */}
+    <main className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto w-full space-y-8"> 
       <div className="flex flex-col gap-1.5">
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
           {isAdmin ? "Company Directory" : "My Team's Presence"}

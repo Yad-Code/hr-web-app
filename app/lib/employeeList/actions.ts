@@ -85,7 +85,7 @@ export async function uploadProfilePicture(formData: FormData) {
 
 export async function updateEmployeeDetails(
   targetUserId: string,
-  prevState: ActionState,
+  _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
   try {
@@ -135,12 +135,13 @@ export async function updateEmployeeDetails(
     const rawSalary = formData.get("baseSalary");
     const baseSalary = rawSalary ? Number(rawSalary) : null;
 
-    const isJobForm = formData.get("isJobForm") === "true" || formData.has("department") || formData.has("role");
-    const isAdminFlag = isJobForm ? formData.get("isAdmin") === "true" : null;
-    const isManagerFlag = isJobForm ? formData.get("isManager") === "true" : null;
-    const canApproveLeaves = isJobForm ? formData.get("canApproveLeaves") === "true" : null;
-    const canStartReviews = isJobForm ? formData.get("canStartReviews") === "true" : null;
-    const hasEmployeeViewFlag = isJobForm ? formData.get("hasEmployeeView") === "true" : null;
+    const isPermissionsForm = formData.has("isPermissionsForm");
+  
+    const isAdminFlag = isPermissionsForm ? formData.get("isAdmin") === "true" : null;
+    const isManagerFlag = isPermissionsForm ? formData.get("isManager") === "true" : null;
+    const canApproveLeaves = isPermissionsForm ? formData.get("canApproveLeaves") === "true" : null;
+    const canStartReviews = isPermissionsForm ? formData.get("canStartReviews") === "true" : null;
+    const hasEmployeeViewFlag = isPermissionsForm ? formData.get("hasEmployeeView") === "true" : null;
 
     if (isAdmin) {
       await sql`

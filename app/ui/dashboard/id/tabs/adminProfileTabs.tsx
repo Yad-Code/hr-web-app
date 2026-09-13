@@ -1,7 +1,7 @@
 // @/app/ui/dashboard/id/tabs/adminProfileTabs.tsx
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   UserPen,
   Briefcase,
@@ -10,6 +10,7 @@ import {
   FileText,
   TrendingUp,
   Wrench,
+  ShieldAlert,
 } from "lucide-react";
 import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
 import {
@@ -29,10 +30,12 @@ import AdminLanguageTab from "./adminLanguageTab";
 import AdminDocumentsTab from "./adminDocumentsTab";
 import AdminPerformanceTab from "./adminPerformanceTab";
 import AdminSkillsTab from "./adminSkillsTab";
+import AdminPermissionsTab from "./adminPermissionsTab";
 
 export type AdminTabType =
   | "profile"
   | "job"
+  | "permissions"
   | "education"
   | "language"
   | "documents"
@@ -61,6 +64,7 @@ export default function AdminProfileTabs({
   const tabs = [
     { id: "profile", label: "Edit Profile & Official Info", icon: UserPen },
     { id: "job", label: "Job Details", icon: Briefcase },
+    { id: "permissions", label: "Permissions", icon: ShieldAlert },
     { id: "education", label: "Education History", icon: GraduationCap },
     { id: "language", label: "Languages", icon: Languages },
     { id: "documents", label: "Documents", icon: FileText },
@@ -96,6 +100,10 @@ export default function AdminProfileTabs({
         {activeTab === "profile" && <ProfileForm profile={profile} />}
 
         {activeTab === "job" && <AdminJobInformationTab profile={profile} />}
+        
+        {activeTab === "permissions" && (
+          <AdminPermissionsTab profile={profile} />
+        )}
 
         {activeTab === "education" && (
           <AdminEducationTab
