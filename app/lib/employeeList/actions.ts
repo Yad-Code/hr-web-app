@@ -157,7 +157,7 @@ export async function updateEmployeeDetails(
           gender = COALESCE(${gender}, gender),
           nationality = COALESCE(${nationality}, nationality),
           status = COALESCE(${status}, status),
-          role = COALESCE(${role}::user_role, role),
+          role = COALESCE(${role}, role),
           
           is_admin = COALESCE(${isAdminFlag}::boolean, is_admin),
           is_manager = COALESCE(${isManagerFlag}::boolean, is_manager),

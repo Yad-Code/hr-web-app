@@ -28,7 +28,6 @@ export async function GET() {
     await db`DROP TABLE IF EXISTS schedule_overrides`;
 
     await db`DROP TABLE IF EXISTS users CASCADE`;
-    await db`DROP TYPE IF EXISTS user_role`;
     await db`DROP TYPE IF EXISTS user_status`;
     await db`DROP TABLE IF EXISTS job_postings`;
     await db`DROP TABLE IF EXISTS payment_methods`;
@@ -40,10 +39,11 @@ export async function GET() {
     await db`DROP TABLE IF EXISTS shift_rules`;
     await db`DROP TABLE IF EXISTS education_history`;
     await db`DROP TABLE IF EXISTS employment_history`;
-
+    
     await db`DROP TABLE IF EXISTS requests`;
     await db`DROP TABLE IF EXISTS schedules`;
     await db`DROP TABLE IF EXISTS wfh_requests`;
+    await db`DROP TYPE IF EXISTS user_role`;
 
     await db`
      CREATE TABLE users (
@@ -72,13 +72,13 @@ export async function GET() {
 
         role VARCHAR(50) DEFAULT 'Staff' NOT NULL,
 
-        is_admin BOOLEAN DEFAULT false NOT NULL,         -- Full system access
-        is_manager BOOLEAN DEFAULT false NOT NULL,       -- Team-level visibility
+        is_admin BOOLEAN DEFAULT false NOT NULL,          
+        is_manager BOOLEAN DEFAULT false NOT NULL,        
         has_employee_view BOOLEAN DEFAULT true NOT NULL,
 
-        can_edit_profile BOOLEAN DEFAULT true NOT NULL,   -- Can edit personal info
-        can_start_reviews BOOLEAN DEFAULT false NOT NULL, -- Can initiate review cycles
-        can_log_feedback BOOLEAN DEFAULT true NOT NULL,   -- Can give peer-to-peer feedback
+        can_edit_profile BOOLEAN DEFAULT true NOT NULL,   
+        can_start_reviews BOOLEAN DEFAULT false NOT NULL,  
+        can_log_feedback BOOLEAN DEFAULT true NOT NULL,    
         can_approve_leaves BOOLEAN DEFAULT false NOT NULL,
 
         status VARCHAR(20) DEFAULT 'Active',
