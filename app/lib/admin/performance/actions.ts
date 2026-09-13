@@ -408,3 +408,38 @@ export async function initiateSelfAssessmentCycle(formData: FormData) {
     return { success: false, error: "Failed to initiate the cycle." };
   }
 }
+
+export async function resetAllLeaveBalances() {
+  try {
+    const session = await auth();
+    if (!session?.user?.isAdmin) {
+      return {
+        success: false,
+        message: "Forbidden: Only admins can perform this action.",
+      };
+    }
+
+    await db`
+      UPDATE leave_balances 
+      SET 
+        annual_remaining = annual_total,
+        sick_remaining = sick_total,
+        monthly_remaining_hours = monthly_total_hours
+    `;
+
+    revalidatePath("/dashboard/attendance");
+    revalidatePath("/dashboard/employees");
+
+    return {
+      success: true,
+      message:
+        "All employee leave balances have been reset to their annual maximums.",
+    };
+  } catch (error) {
+    console.error("Failed to reset leave balances:", error);
+    return {
+      success: false,
+      message: "Database error: Failed to reset balances.",
+    };
+  }
+}

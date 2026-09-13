@@ -54,7 +54,6 @@ export default function FeedbackTab({
         manager={manager}
       />
 
-      {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -92,7 +91,6 @@ export default function FeedbackTab({
         </div>
       </div>
 
-      {/* Filter Tabs */}
       <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-3">
         {[
           { id: "all", label: "All Feedback" },
@@ -115,8 +113,26 @@ export default function FeedbackTab({
         ))}
       </div>
 
-      {/* Feedback List */}
-      {filteredList.length === 0 ? (
+      {feedbackList.length === 0 ? (
+        <div className="text-center py-16 px-6 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+          <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-200 shadow-xs">
+            <span className="text-2xl">💬</span>
+          </div>
+          <h3 className="text-base font-bold text-slate-800 mb-1">
+            No Feedback History
+          </h3>
+          <p className="text-sm text-slate-500 max-w-sm mx-auto mb-4">
+            You haven&apos;t received any feedback yet. Proactively request feedback
+            from your manager or peers to get started.
+          </p>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 bg-blue-600 text-white font-bold text-xs rounded-lg hover:bg-blue-700 transition-colors cursor-pointer shadow-xs"
+          >
+            + Request Feedback
+          </button>
+        </div>
+      ) : filteredList.length === 0 ? (
         <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
           <p className="text-sm text-slate-500">
             No feedback matches the selected filter.

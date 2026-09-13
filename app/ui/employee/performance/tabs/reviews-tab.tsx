@@ -70,8 +70,6 @@ export default function ReviewsTab({
       }
     });
   };
- 
-   
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -93,9 +91,16 @@ export default function ReviewsTab({
       </div>
 
       {reviews.length === 0 ? (
-        <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-          <p className="text-sm text-slate-500">
-            No performance reviews available.
+        <div className="text-center py-16 px-6 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+          <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-200 shadow-xs">
+            <span className="text-2xl">⭐</span>
+          </div>
+          <h3 className="text-base font-bold text-slate-800 mb-1">
+            No Performance Reviews Yet
+          </h3>
+          <p className="text-sm text-slate-500 max-w-md mx-auto">
+            Official manager evaluations will appear here once you complete your
+            first review cycle. Keep up the great work!
           </p>
         </div>
       ) : (
@@ -119,10 +124,9 @@ export default function ReviewsTab({
                 </p>
               </div>
 
-             <ReviewRatingBadge rating={review.rating} />
+              <ReviewRatingBadge rating={review.rating} />
             </div>
 
-            {/* Notification Banner */}
             {activeMessage && activeMessage.id === review.id && (
               <div
                 className={`p-3 rounded-lg text-xs font-medium ${
@@ -135,7 +139,6 @@ export default function ReviewsTab({
               </div>
             )}
 
-            {/* Strengths & Improvements */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               <div className="p-3.5 bg-slate-50/70 border border-slate-100 rounded-lg">
                 <h4 className="font-bold text-slate-700 mb-1 text-xs">
@@ -155,7 +158,6 @@ export default function ReviewsTab({
               </div>
             </div>
 
-            {/* Manager Comments */}
             <div className="bg-blue-50/30 border border-blue-100 p-4 rounded-lg text-xs">
               <h4 className="font-bold text-slate-800 mb-1">
                 Manager Overview & Feedback
@@ -165,7 +167,6 @@ export default function ReviewsTab({
               </p>
             </div>
 
-            {/* Employee Comments Form */}
             <form
               onSubmit={(e) => handleCommentSubmit(review.id, e)}
               className="space-y-3 pt-2"
@@ -183,7 +184,6 @@ export default function ReviewsTab({
               />
 
               <div className="flex items-center justify-between pt-2">
-                {/* Acknowledgment Status */}
                 <div>
                   {review.acknowledged ? (
                     <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-md">

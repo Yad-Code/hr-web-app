@@ -2,8 +2,14 @@
 "use client";
 
 import { useState, useTransition, useOptimistic } from "react";
-import { Goal, NewGoalData } from "@/app/lib/employeeDashboard/performance/definitions";
-import { updateGoalProgress, addGoal } from "@/app/lib/employeeDashboard/performance/actions/goals";
+import {
+  Goal,
+  NewGoalData,
+} from "@/app/lib/employeeDashboard/performance/definitions";
+import {
+  updateGoalProgress,
+  addGoal,
+} from "@/app/lib/employeeDashboard/performance/actions/goals";
 import AddGoalModal from "@/app/ui/employee/performance/modals/add-goal-modal";
 import GoalsHeader from "@/app/ui/employee/performance/goals/goals-header";
 import GoalCard from "@/app/ui/employee/performance/goals/goal-card";
@@ -24,7 +30,7 @@ export default function GoalsTab({ goals }: { goals: Goal[] }) {
         type: "SAVE_ALL";
         pendingProgress: Record<string, number>;
         pendingNewGoals: NewGoalData[];
-      }
+      },
     ) => {
       const updatedExisting = currentGoals.map((g) => ({
         ...g,
@@ -45,10 +51,12 @@ export default function GoalsTab({ goals }: { goals: Goal[] }) {
       }));
 
       return [...updatedExisting, ...createdGoals];
-    }
+    },
   );
 
-  const [pendingProgress, setPendingProgress] = useState<Record<string, number>>({});
+  const [pendingProgress, setPendingProgress] = useState<
+    Record<string, number>
+  >({});
   const [pendingNewGoals, setPendingNewGoals] = useState<NewGoalData[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<{
@@ -56,7 +64,8 @@ export default function GoalsTab({ goals }: { goals: Goal[] }) {
     text: string;
   } | null>(null);
 
-  const unsavedCount = Object.keys(pendingProgress).length + pendingNewGoals.length;
+  const unsavedCount =
+    Object.keys(pendingProgress).length + pendingNewGoals.length;
   const hasUnsavedChanges = unsavedCount > 0;
 
   const handleSliderChange = (goalId: string, newProgress: number) => {
@@ -88,13 +97,16 @@ export default function GoalsTab({ goals }: { goals: Goal[] }) {
       });
 
       try {
-        const progressUpdates = Object.entries(progressToUpdate).map(([id, p]) =>
-          updateGoalProgress(id, p)
+        const progressUpdates = Object.entries(progressToUpdate).map(
+          ([id, p]) => updateGoalProgress(id, p),
         );
         const goalCreations = goalsToAdd.map((g) => addGoal(g));
 
         await Promise.all([...progressUpdates, ...goalCreations]);
-        setFeedbackMessage({ type: "success", text: "Goals saved successfully!" });
+        setFeedbackMessage({
+          type: "success",
+          text: "Goals saved successfully!",
+        });
       } catch (err) {
         console.error("Failed to save goals:", err);
         setFeedbackMessage({
@@ -156,9 +168,33 @@ export default function GoalsTab({ goals }: { goals: Goal[] }) {
       )}
 
       <div className="space-y-4">
-        {displayGoals.map((goal) => (
-          <GoalCard key={goal.id} goal={goal} onSliderChange={handleSliderChange} />
-        ))}
+        {displayGoals.length === 0 ? (
+          <div className="text-center py-16 px-6 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-200 shadow-xs">
+              <span className="text-2xl">🎯</span>
+            </div>
+            <h3 className="text-base font-bold text-slate-800 mb-1">
+              No Active Goals
+            </h3>
+            <p className="text-sm text-slate-500 max-w-sm mx-auto mb-4">
+              You haven&apos;t set any performance goals yet. Establish objectives for this cycle to track your progress.
+            </p>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-4 py-2 bg-blue-600 text-white font-bold text-xs rounded-lg hover:bg-blue-700 transition-colors cursor-pointer shadow-xs"
+            >
+              + Create First Goal
+            </button>
+          </div>
+        ) : (
+          displayGoals.map((goal) => (
+            <GoalCard
+              key={goal.id}
+              goal={goal}
+              onSliderChange={handleSliderChange}
+            />
+          ))
+        )}
       </div>
 
       <AddGoalModal

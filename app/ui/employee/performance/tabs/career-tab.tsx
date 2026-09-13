@@ -102,13 +102,28 @@ export default function CareerTab({ career, meetings }: CareerTabProps) {
             )}
           </div>
         ) : (
-          <p className="text-slate-500 text-sm">
-            No active career development plan configured.
-          </p>
+          <div className="text-center py-12 px-6 bg-white rounded-2xl border border-dashed border-slate-300 mt-4">
+            <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-200 shadow-xs">
+              <span className="text-2xl">🚀</span>
+            </div>
+            <h3 className="text-base font-bold text-slate-800 mb-1">
+              Define Your Path
+            </h3>
+            <p className="text-sm text-slate-500 max-w-md mx-auto mb-4">
+              Map out your professional growth. Set a target position and build
+              a roadmap to help your manager support your journey.
+            </p>
+            <button
+              type="button"
+              onClick={() => setIsEditPlanOpen(true)}
+              className="px-4 py-2 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors shadow-xs cursor-pointer"
+            >
+              + Create Career Plan
+            </button>
+          </div>
         )}
       </section>
 
-      {/* 1:1 Manager Syncs */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-slate-800">
@@ -124,7 +139,25 @@ export default function CareerTab({ career, meetings }: CareerTabProps) {
         </div>
 
         {meetings.length === 0 ? (
-          <p className="text-slate-500 text-sm">No 1:1 meetings logged.</p>
+          <div className="text-center py-12 px-6 bg-slate-50 rounded-2xl border border-dashed border-slate-300 mt-4">
+            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-200 shadow-xs">
+              <span className="text-2xl">☕</span>
+            </div>
+            <h3 className="text-base font-bold text-slate-800 mb-1">
+              No Syncs Logged
+            </h3>
+            <p className="text-sm text-slate-500 max-w-md mx-auto mb-4">
+              Regular 1:1 meetings help align your goals with team objectives
+              and remove roadblocks.
+            </p>
+            <button
+              type="button"
+              onClick={() => setIsRequestMeetingOpen(true)}
+              className="px-4 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 transition-colors shadow-xs cursor-pointer"
+            >
+              Request a Sync
+            </button>
+          </div>
         ) : (
           <div className="space-y-3">
             {meetings.map((meeting) => (
@@ -170,7 +203,6 @@ export default function CareerTab({ career, meetings }: CareerTabProps) {
         )}
       </section>
 
-      {/* Modals */}
       <EditCareerModal
         key={isEditPlanOpen ? "edit-career-open" : "edit-career-closed"}
         isOpen={isEditPlanOpen}

@@ -3,7 +3,6 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-
 import {
   Download,
   Calendar as CalendarIcon,
@@ -11,9 +10,11 @@ import {
   X,
   Loader2,
 } from "lucide-react";
+
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { DailyAttendanceRow, ShiftRule } from "../types";
 import { assignEmployeeShift } from "../_actions/attendance-actions";
+import { ResetLeavesButton } from "./reset-leaves-button";
 
 export function AttendanceHeaderActions({
   logs,
@@ -111,6 +112,10 @@ export function AttendanceHeaderActions({
           <Download className="w-4 h-4" />
           <span>Export CSV</span>
         </button>
+
+        <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+        <ResetLeavesButton />
+        
       </div>
 
       {isModalOpen && (

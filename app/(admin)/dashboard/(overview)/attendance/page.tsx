@@ -60,8 +60,7 @@ interface ShiftRuleDbRow {
 export default async function AdminAttendancePage({ searchParams }: PageProps) {
   const session = await auth();
   if (!session?.user) return null;
-
-  // 👉 1. EXTRACT ALL NEEDED PERMISSIONS
+ 
   const isAdmin = session.user.isAdmin as boolean;
   const canApproveLeaves = session.user.canApproveLeaves as boolean;
   const managerName = session.user.name as string;

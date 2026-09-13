@@ -9,7 +9,7 @@ import {
 } from "@/app/lib/employeeDashboard/performance/definitions";
 import PerformanceChart from "./performance-chart";
 
-interface OverviewTabProps { 
+interface OverviewTabProps {
   profile?: PerformanceProfile | null;
   kpis: KPI[];
   history: PerformanceHistory[];
@@ -26,7 +26,7 @@ export default function OverviewTab({
 }: OverviewTabProps) {
   const unreadNotifications = notifications.filter((n) => !n.is_read);
   const activeNotification = unreadNotifications[0];
- 
+
   const getActionDetails = (type?: string) => {
     const t = type?.toLowerCase() || "";
     if (t.includes("assessment"))
@@ -41,14 +41,14 @@ export default function OverviewTab({
     : { tab: "feedback", label: "View Feedback →" };
 
   return (
-    <div className="space-y-8 max-w-5xl"> 
+    <div className="space-y-8 max-w-5xl">
       {unreadNotifications.length > 0 && (
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-3">
             <span className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold flex items-center justify-center">
               {unreadNotifications.length}
             </span>
-            <div> 
+            <div>
               <p className="text-sm font-bold text-slate-800">
                 {unreadNotifications.length > 1
                   ? `Action Needed (1 of ${unreadNotifications.length})`
@@ -72,7 +72,7 @@ export default function OverviewTab({
           )}
         </div>
       )}
- 
+
       <section>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold text-slate-800">
@@ -82,39 +82,53 @@ export default function OverviewTab({
             {profile?.cycle || "Current Review Cycle"}
           </span>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {kpis.map((kpi) => (
-            <div
-              key={kpi.id}
-              className="p-4 bg-white border border-slate-200 rounded-xl shadow-xs space-y-2 hover:border-blue-200 transition-colors"
-            >
-              <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
-                {kpi.label}
-              </p>
-              <div className="flex items-baseline justify-between">
-                <span className="text-2xl font-extrabold text-slate-900">
-                  {kpi.value}
-                </span>
-                <span
-                  className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                    kpi.is_up
-                      ? "bg-emerald-100 text-emerald-800"
-                      : "bg-amber-100 text-amber-800"
-                  }`}
-                >
-                  {kpi.trend}
-                </span>
-              </div>
-              <p className="text-xs text-slate-400">
-                Target:{" "}
-                <span className="font-semibold text-slate-600">
-                  {kpi.target}
-                </span>
-              </p>
+        {kpis.length === 0 ? (
+          <div className="text-center py-10 px-6 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 border border-slate-200 shadow-xs">
+              <span className="text-xl">📊</span>
             </div>
-          ))}
-        </div>
+            <h4 className="text-sm font-bold text-slate-800">
+              No KPIs Assigned
+            </h4>
+            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+              Your key performance metrics will appear here once your manager
+              sets them for the current cycle.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {kpis.map((kpi) => (
+              <div
+                key={kpi.id}
+                className="p-4 bg-white border border-slate-200 rounded-xl shadow-xs space-y-2 hover:border-blue-200 transition-colors"
+              >
+                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
+                  {kpi.label}
+                </p>
+                <div className="flex items-baseline justify-between">
+                  <span className="text-2xl font-extrabold text-slate-900">
+                    {kpi.value}
+                  </span>
+                  <span
+                    className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                      kpi.is_up
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-amber-100 text-amber-800"
+                    }`}
+                  >
+                    {kpi.trend}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400">
+                  Target:{" "}
+                  <span className="font-semibold text-slate-600">
+                    {kpi.target}
+                  </span>
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -129,15 +143,23 @@ export default function OverviewTab({
           </div>
 
           {history.length === 0 ? (
-            <p className="text-xs text-slate-500 py-6 text-center">
-              No monthly metrics logged yet.
-            </p>
+            <div className="text-center py-12 px-6 bg-slate-50 rounded-2xl border border-dashed border-slate-300 my-4">
+              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 border border-slate-200 shadow-xs">
+                <span className="text-xl">📈</span>
+              </div>
+              <h4 className="text-sm font-bold text-slate-800">
+                No Performance Data
+              </h4>
+              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                Monthly metrics and trends will populate here after your first
+                full month of performance tracking.
+              </p>
+            </div>
           ) : (
             <PerformanceChart history={history} />
           )}
         </section>
-
-        {/* 4. Quick Actions Sidebar */}
+ 
         <section className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4 h-fit">
           <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">
             Quick Actions

@@ -61,10 +61,23 @@ export default function SelfAssessmentTab({
     });
   };
 
-  if (!assessment)
-    return <p className="text-slate-500">No active self-assessment cycle.</p>;
-
-  // READ-ONLY VIEW
+  if (!assessment) {
+    return (
+      <div className="text-center py-16 px-6 bg-slate-50 rounded-2xl border border-dashed border-slate-300 max-w-3xl">
+        <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-200 shadow-xs">
+          <span className="text-2xl">📝</span>
+        </div>
+        <h3 className="text-base font-bold text-slate-800 mb-1">
+          No Active Assessment Cycle
+        </h3>
+        <p className="text-sm text-slate-500 max-w-md mx-auto">
+          There are currently no self-assessments due. You will be notified here
+          when HR or your Manager initiates the next performance review cycle.
+        </p>
+      </div>
+    );
+  }
+   
   if (assessment.submitted) {
     return (
       <div className="space-y-6 max-w-3xl">
