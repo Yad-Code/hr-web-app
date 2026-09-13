@@ -89,58 +89,88 @@ export function DailyAttendanceTable({ logs }: { logs: DailyAttendanceRow[] }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-              {filteredLogs.map((log) => (
-                <tr
-                  key={log.id}
-                  className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition"
-                >
-                  <td className="px-4 py-3 flex items-center gap-3">
-                    <Image
-                      src={
-                        log.imageUrl ||
-                        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
-                      }
-                      alt={log.employeeName}
-                      width={36}
-                      height={36}
-                      className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700"
-                    />
-                    <div>
-                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                        {log.employeeName}
+              {filteredLogs.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-16">
+                    <div className="text-center bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-6 max-w-md mx-auto">
+                      <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-3 border border-slate-200 dark:border-slate-800 shadow-xs">
+                        <Search className="w-5 h-5 text-slate-400" />
+                      </div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-1">
+                        No records found
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        We couldn&apos;t find any attendance logs matching your
+                        current search or status filter.
                       </p>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                        {log.department}
-                      </p>
+                      {(searchQuery || statusFilter !== "All") && (
+                        <button
+                          onClick={() => {
+                            setSearchQuery("");
+                            setStatusFilter("All");
+                          }}
+                          className="mt-4 px-4 py-2 text-xs font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shadow-xs cursor-pointer"
+                        >
+                          Clear Filters
+                        </button>
+                      )}
                     </div>
                   </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`px-2 py-1 rounded-md text-[10px] font-bold border ${getStatusStyles(log.status)}`}
-                    >
-                      {log.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-300">
-                    {log.checkInTime || "--:--"}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-300">
-                    {log.checkOutTime || "--:--"}
-                  </td>
-                  <td className="px-4 py-3 text-xs font-medium text-slate-900 dark:text-slate-100">
-                    {log.workHours || "-"}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => setEditingRecord(log)}
-                      className="p-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-[#009473] hover:text-white rounded-md transition"
-                      title="Override Record"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                  </td>
                 </tr>
-              ))}
+              ) : (
+                filteredLogs.map((log) => (
+                  <tr
+                    key={log.id}
+                    className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition"
+                  >
+                    <td className="px-4 py-3 flex items-center gap-3">
+                      <Image
+                        src={
+                          log.imageUrl ||
+                          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
+                        }
+                        alt={log.employeeName}
+                        width={36}
+                        height={36}
+                        className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700"
+                      />
+                      <div>
+                        <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                          {log.employeeName}
+                        </p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                          {log.department}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`px-2 py-1 rounded-md text-[10px] font-bold border ${getStatusStyles(log.status)}`}
+                      >
+                        {log.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-300">
+                      {log.checkInTime || "--:--"}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-300">
+                      {log.checkOutTime || "--:--"}
+                    </td>
+                    <td className="px-4 py-3 text-xs font-medium text-slate-900 dark:text-slate-100">
+                      {log.workHours || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => setEditingRecord(log)}
+                        className="p-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-[#009473] hover:text-white rounded-md transition cursor-pointer"
+                        title="Override Record"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

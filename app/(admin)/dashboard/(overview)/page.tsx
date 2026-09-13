@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import AdminCardsWrapper from "@/app/ui/dashboard/cards-wrapper";
 import AdminChartWrapper from "@/app/ui/dashboard/chart-wrapper";
 import { QuickOperationsWidget } from "@/app/ui/dashboard/quick-operations";
+import { SecondaryWidgets } from "@/app/ui/dashboard/secondary-widgets";
 import { lusitana } from "@/app/ui/fonts";
 import { auth } from "@/auth";
 import {
@@ -43,6 +44,14 @@ export default async function Page() {
           <QuickOperationsWidget />
         </Suspense>
       </div>
+ 
+      <Suspense
+        fallback={
+          <div className="h-48 bg-slate-50 rounded-2xl animate-pulse" />
+        }
+      >
+        <SecondaryWidgets />
+      </Suspense>
     </main>
   );
 }

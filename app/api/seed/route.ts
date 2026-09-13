@@ -591,6 +591,7 @@ CREATE TABLE self_assessments (
             (${emp.id}, '2026-09-02', '08:55 AM', '05:02 PM', '8h 07m', 'Present', 'Office'),
             (${emp.id}, '2026-09-03', '09:15 AM', '05:10 PM', '7h 55m', 'Late', 'Office'),
             (${emp.id}, '2026-09-04', '08:48 AM', '05:00 PM', '8h 12m', 'Present', 'Remote')
+            (${emp.id}, '2026-09-07', NULL, NULL, '0h 0m', 'Absent', 'None')
         `;
 
       await db`

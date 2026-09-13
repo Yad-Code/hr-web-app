@@ -1,5 +1,4 @@
 // @/app/(admin)/dashboard/(overview)/attendance/page.tsx
-
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { auth } from "@/auth";
 import {
@@ -18,49 +17,10 @@ interface PageProps {
   searchParams: Promise<{ date?: string }>;
 }
 
-interface AttendanceDbRow {
-  id: string | null;
-  user_id: string;
-  employee_name: string;
-  department: string;
-  image_url: string | null;
-  shift_type: string;
-  status: "Present" | "Late" | "Absent" | "On Leave" | "Off Day" | null;
-  check_in: string | null;
-  check_out: string | null;
-  work_hours: string | null;
-  job_title: string | null;
-  working_days: number[];
-  created_at: string | Date | null;
-}
-
-interface LeaveRequestDbRow {
-  id: string;
-  employee_name: string;
-  image_url: string | null;
-  type: string;
-  leave_category: string | null;
-  start_date: string;
-  end_date: string;
-  total_days: number;
-  hours: number;
-  status: string;
-  job_title: string | null;
-  created_at: string | Date;
-}
-
-interface ShiftRuleDbRow {
-  id: string;
-  shift_name: string;
-  start_time: string;
-  end_time: string;
-  grace_period_minutes: number;
-}
-
 export default async function AdminAttendancePage({ searchParams }: PageProps) {
   const session = await auth();
   if (!session?.user) return null;
- 
+
   const isAdmin = session.user.isAdmin as boolean;
   const canApproveLeaves = session.user.canApproveLeaves as boolean;
   const managerName = session.user.name as string;
@@ -69,139 +29,136 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
   const todayString = new Date().toISOString().split("T")[0];
   const targetDate = resolvedParams.date || todayString;
 
-  let attendanceRows;
-  if (isAdmin) {
-    attendanceRows = (await db`
+  // Unify all database calls into a single, high-performance Promise.all block
+  const [
+    kpiStatsResult,
+    rawLogsResult,
+    requestRowsResult,
+    shiftRowsResult,
+    employeesResult,
+  ] = await Promise.all([
+    db`
       SELECT 
-        a.id, u.id AS user_id, u.name AS employee_name, u.department, 
-        u.image_url, u.working_days, u.shift_type, a.status, a.check_in, 
-        a.check_out, a.work_hours
-      FROM users u
-      LEFT JOIN attendance a ON u.id = a.user_id AND a.date = ${targetDate}
-      WHERE u.role = 'employee'
-      ORDER BY u.name ASC
-    `) as unknown as AttendanceDbRow[];
-  } else {
-    attendanceRows = (await db`
+        COUNT(CASE WHEN a.status = 'Present' THEN 1 END) as present_today,
+        COUNT(CASE WHEN a.status = 'Late' THEN 1 END) as late_today,
+        COUNT(CASE WHEN a.status = 'Absent' THEN 1 END) as absent_today,
+        (
+          SELECT COUNT(*) FROM leave_requests lr 
+          JOIN users u ON lr.user_id = u.id
+          WHERE lr.status = 'Approved' 
+            AND ${targetDate}::date BETWEEN lr.start_date AND lr.end_date
+            AND (${isAdmin}::boolean OR u.manager_name = ${managerName})
+        ) as on_leave_today,
+        (
+          SELECT COUNT(*) FROM users 
+          WHERE status = 'Active' AND role = 'employee'
+            AND (${isAdmin}::boolean OR manager_name = ${managerName})
+        ) as total_employees
+      FROM attendance a
+      JOIN users u ON a.user_id = u.id
+      WHERE a.date = ${targetDate}::date
+        AND (${isAdmin}::boolean OR u.manager_name = ${managerName})
+    `,
+    db`
       SELECT 
-        a.id, u.id AS user_id, u.name AS employee_name, u.department, 
-        u.image_url, u.working_days, u.shift_type, a.status, a.check_in, 
-        a.check_out, a.work_hours
-      FROM users u
-      LEFT JOIN attendance a ON u.id = a.user_id AND a.date = ${targetDate}
-      WHERE u.role = 'employee' AND u.manager_name = ${managerName}
-      ORDER BY u.name ASC
-    `) as unknown as AttendanceDbRow[];
-  }
+        a.id, 
+        u.name as employee_name, 
+        u.department, 
+        u.image_url, 
+        a.status, 
+        a.check_in, 
+        a.check_out, 
+        a.work_hours
+      FROM attendance a
+      JOIN users u ON a.user_id = u.id
+      WHERE a.date = ${targetDate}::date
+        AND (${isAdmin}::boolean OR u.manager_name = ${managerName})
+      ORDER BY a.created_at DESC
+    `,
 
-  const totalEmployees = attendanceRows.length;
+    db`
+      SELECT 
+        r.id, u.name AS employee_name, u.image_url, u.job_title,       
+        r.created_at, r.type, r.leave_category, r.start_date, r.end_date,
+        r.total_days, r.hours, r.status
+      FROM leave_requests r
+      JOIN users u ON r.user_id = u.id
+      WHERE (${isAdmin}::boolean OR u.manager_name = ${managerName})
+      ORDER BY r.created_at DESC
+    `,
 
-  const employeeList = attendanceRows.map((row) => ({
-    id: row.user_id,
-    name: row.employee_name,
-    department: row.department || "Unassigned",
-    shift_type: row.shift_type || "Standard",
-  }));
+    db`
+      SELECT id, shift_name, start_time, end_time, grace_period_minutes
+      FROM shift_rules
+      ORDER BY created_at ASC
+    `,
 
-  const [year, month, day] = targetDate.split("-").map(Number);
-  const targetDayOfWeek = new Date(year, month - 1, day).getDay();
-
-  const dailyLogs: DailyAttendanceRow[] = attendanceRows.map((row) => {
-    let currentStatus = row.status;
-
-    if (!currentStatus) {
-      currentStatus = row.working_days.includes(targetDayOfWeek)
-        ? "Absent"
-        : "Off Day";
-    }
-
-    return {
-      id: row.id || `pending-${row.user_id}`,
-      employeeName: row.employee_name,
-      department: row.department || "Unassigned",
-      imageUrl: row.image_url,
-      status: currentStatus as DailyAttendanceRow["status"],
-      checkInTime: row.check_in || null,
-      checkOutTime: row.check_out || null,
-      workHours: row.work_hours || null,
-    };
-  });
-
-  const presentToday = dailyLogs.filter((l) => l.status === "Present").length;
-  const lateToday = dailyLogs.filter((l) => l.status === "Late").length;
-  const absentToday = dailyLogs.filter((l) => l.status === "Absent").length;
-  const onLeaveToday = dailyLogs.filter((l) => l.status === "On Leave").length;
+    db`
+      SELECT id, name, department, shift_type 
+      FROM users 
+      WHERE status = 'Active' AND role = 'employee'
+        AND (${isAdmin}::boolean OR manager_name = ${managerName})
+    `,
+  ]);
 
   const kpis: AttendanceKpiData = {
-    totalEmployees,
-    presentToday,
-    lateToday,
-    absentToday,
-    onLeaveToday,
+    presentToday: Number(kpiStatsResult[0]?.present_today || 0),
+    lateToday: Number(kpiStatsResult[0]?.late_today || 0),
+    absentToday: Number(kpiStatsResult[0]?.absent_today || 0),
+    onLeaveToday: Number(kpiStatsResult[0]?.on_leave_today || 0),
+    totalEmployees: Number(kpiStatsResult[0]?.total_employees || 0),
   };
 
-  let requestRows;
-  if (isAdmin) {
-    requestRows = (await db`
-      SELECT 
-        r.id, u.name AS employee_name, u.image_url, u.job_title,       
-        r.created_at, r.type, r.leave_category, r.start_date, r.end_date,
-        r.total_days, r.hours, r.status
-      FROM leave_requests r
-      JOIN users u ON r.user_id = u.id
-    `) as unknown as LeaveRequestDbRow[];
-  } else {
-    requestRows = (await db`
-      SELECT 
-        r.id, u.name AS employee_name, u.image_url, u.job_title,       
-        r.created_at, r.type, r.leave_category, r.start_date, r.end_date,
-        r.total_days, r.hours, r.status
-      FROM leave_requests r
-      JOIN users u ON r.user_id = u.id
-      WHERE u.manager_name = ${managerName}
-    `) as unknown as LeaveRequestDbRow[];
-  }
+  const dailyLogs: DailyAttendanceRow[] = rawLogsResult.map((row) => ({
+    id: row.id as string,
+    employeeName: row.employee_name as string,
+    department: (row.department as string) || "Unassigned",
+    imageUrl: row.image_url as string | null,
+    status: row.status as DailyAttendanceRow["status"],
+    checkInTime: row.check_in as string | null,
+    checkOutTime: row.check_out as string | null,
+    workHours: row.work_hours as string | null,
+  }));
 
-  const leaveRequests: LeaveRequestRow[] = requestRows.map((row) => {
-    let formattedType = row.type;
-    if (row.type === "timeoff") formattedType = "Hourly Time-Off";
-    else if (row.type === "dayoff")
+  const leaveRequests: LeaveRequestRow[] = requestRowsResult.map((row) => {
+    let formattedType = row.type as string;
+    if (formattedType === "timeoff") formattedType = "Hourly Time-Off";
+    else if (formattedType === "dayoff")
       formattedType = row.leave_category
         ? `${row.leave_category} Leave`
         : "Day Off";
-    else if (row.type === "wfh") formattedType = "Work From Home";
-    else if (row.type === "exchange") formattedType = "Shift Exchange";
+    else if (formattedType === "wfh") formattedType = "Work From Home";
+    else if (formattedType === "exchange") formattedType = "Shift Exchange";
 
     return {
-      id: row.id,
-      employeeName: row.employee_name,
-      imageUrl: row.image_url,
+      id: row.id as string,
+      employeeName: row.employee_name as string,
+      imageUrl: row.image_url as string | null,
       leaveType: formattedType,
-      startDate: row.start_date,
-      endDate: row.end_date,
-      days: row.total_days,
-      hours: row.hours,
-      jobTitle: row.job_title,
-      createdAt: row.created_at,
-      status: (row.status.charAt(0).toUpperCase() + row.status.slice(1)) as
-        | "Pending"
-        | "Approved"
-        | "Rejected",
+      startDate: row.start_date as string,
+      endDate: row.end_date as string,
+      days: Number(row.total_days),
+      hours: Number(row.hours),
+      jobTitle: row.job_title as string | null,
+      createdAt: row.created_at as Date,
+      status: ((row.status as string).charAt(0).toUpperCase() +
+        (row.status as string).slice(1)) as "Pending" | "Approved" | "Rejected",
     };
-  }) as unknown as LeaveRequestRow[];
+  });
 
-  const shiftRows = (await db`
-    SELECT id, shift_name, start_time, end_time, grace_period_minutes
-    FROM shift_rules
-    ORDER BY created_at ASC
-  `) as unknown as ShiftRuleDbRow[];
+  const shifts: ShiftRule[] = shiftRowsResult.map((row) => ({
+    id: row.id as string,
+    shiftName: row.shift_name as string,
+    startTime: row.start_time as string,
+    endTime: row.end_time as string,
+    gracePeriodMinutes: Number(row.grace_period_minutes),
+  }));
 
-  const shifts: ShiftRule[] = shiftRows.map((row) => ({
-    id: row.id,
-    shiftName: row.shift_name,
-    startTime: row.start_time,
-    endTime: row.end_time,
-    gracePeriodMinutes: row.grace_period_minutes,
+  const employeesList = employeesResult.map((row) => ({
+    id: row.id as string,
+    name: row.name as string,
+    department: (row.department as string) || "Unassigned",
+    shift_type: (row.shift_type as string) || "Standard",
   }));
 
   return (
@@ -221,7 +178,7 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
         <AttendanceHeaderActions
           logs={dailyLogs}
           targetDate={targetDate}
-          employees={employeeList}
+          employees={employeesList}
           shifts={shifts}
         />
       </div>

@@ -3,7 +3,7 @@
 import { UserCheck, Clock, UserX, CalendarOff } from "lucide-react";
 import { AttendanceKpiData } from "../types";
 
-export function AttendanceKpiCards({ stats }: { stats: AttendanceKpiData }) {
+export function AttendanceKpiCards({ stats }: { stats: AttendanceKpiData }) { 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {/* Present Today */}
