@@ -23,11 +23,12 @@ import {
 
 interface TopNavbarProps {
   user: {
-    id: string; // Ensure id is passed down from your session/user prop
+    id: string;
     name: string;
     email: string;
     role: string;
     image_url: string | null;
+    isAdmin: boolean; 
   };
 }
 
@@ -37,8 +38,7 @@ export function TopNavbar({ user }: TopNavbarProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [, startTransition] = useTransition();
   const popoverRef = useRef<HTMLDivElement>(null);
-
-  // 1. Fetch real notifications on component mount
+ 
   useEffect(() => {
     let isMounted = true;
     async function fetchNotifications() {
@@ -52,7 +52,6 @@ export function TopNavbar({ user }: TopNavbarProps) {
 
     fetchNotifications();
 
-    // Poll for new notifications every 60 seconds
     const interval = setInterval(fetchNotifications, 60000);
     return () => {
       isMounted = false;
@@ -60,7 +59,6 @@ export function TopNavbar({ user }: TopNavbarProps) {
     };
   }, [user.id]);
 
-  // 2. Close popover on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -74,26 +72,21 @@ export function TopNavbar({ user }: TopNavbarProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 3. Handlers with Optimistic Updates
   const handleMarkAsRead = (id: string, isAlreadyRead: boolean) => {
     if (isAlreadyRead) return;
 
-    // Optimistic state update
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
     );
 
-    // Backend sync
     startTransition(async () => {
       await markNotificationAsRead(id);
     });
   };
 
   const handleMarkAllAsRead = () => {
-    // Optimistic state update
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
 
-    // Backend sync
     startTransition(async () => {
       await markAllNotificationsAsRead(user.id);
     });
@@ -101,7 +94,6 @@ export function TopNavbar({ user }: TopNavbarProps) {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // Updated icon mapping to support database notification types
   const getNotificationIcon = (type: Notification["type"]) => {
     switch (type) {
       case "review":
@@ -129,7 +121,6 @@ export function TopNavbar({ user }: TopNavbarProps) {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200/60 bg-white/80 backdrop-blur-md px-4 sm:px-6 py-2.5 flex items-center justify-between shadow-xs">
-      {/* Left Column: Contextual Workspace Header */}
       <div className="flex items-center gap-3">
         <div>
           <div className="flex items-center gap-2">
@@ -147,9 +138,7 @@ export function TopNavbar({ user }: TopNavbarProps) {
         </div>
       </div>
 
-      {/* Right Column: Actions & User Subsystem */}
       <div className="flex items-center gap-3" ref={popoverRef}>
-        {/* Notification Trigger & Popover Wrapper */}
         <div className="relative">
           <button
             onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
@@ -168,7 +157,6 @@ export function TopNavbar({ user }: TopNavbarProps) {
             )}
           </button>
 
-          {/* Notifications Popover Menu */}
           {isNotificationsOpen && (
             <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-200/90 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
               {/* Header */}
@@ -203,7 +191,6 @@ export function TopNavbar({ user }: TopNavbarProps) {
                 </div>
               </div>
 
-              {/* List Content */}
               <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
                 {isLoading ? (
                   <div className="p-8 flex items-center justify-center text-slate-400 gap-2 text-xs">
@@ -257,7 +244,6 @@ export function TopNavbar({ user }: TopNavbarProps) {
                 )}
               </div>
 
-              {/* Footer */}
               <div className="p-2.5 bg-slate-50 border-t border-slate-100 text-center">
                 <a
                   href="/my-profile/notifications"
@@ -271,10 +257,8 @@ export function TopNavbar({ user }: TopNavbarProps) {
           )}
         </div>
 
-        {/* Separator Accent */}
         <div className="h-5 w-px bg-slate-200/80" />
 
-        {/* User Profile Subsystem */}
         <UserDropdown user={user} />
       </div>
     </header>
