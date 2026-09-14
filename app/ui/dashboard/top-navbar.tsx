@@ -41,6 +41,14 @@ export function TopNavbar({ user }: TopNavbarProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [, startTransition] = useTransition();
   const popoverRef = useRef<HTMLDivElement>(null);
+  const modifierRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (modifierRef.current) {
+      const isMac = /(Mac|iPhone|iPod|iPad)/i.test(navigator.userAgent);
+      modifierRef.current.textContent = isMac ? "⌘" : "Ctrl";
+    }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -151,7 +159,14 @@ export function TopNavbar({ user }: TopNavbarProps) {
           </span>
           <div className="flex items-center gap-1">
             <kbd className="hidden sm:inline-flex items-center justify-center px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-bold text-slate-500 shadow-xs">
-              <span className="text-xs leading-none mr-0.5">⌘</span> K
+              <span
+                ref={modifierRef}
+                suppressHydrationWarning
+                className="text-xs leading-none mr-0.5"
+              >
+                ⌘
+              </span>
+              K
             </kbd>
           </div>
         </button>
