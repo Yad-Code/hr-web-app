@@ -5,6 +5,7 @@ import { TopNavbar } from "@/app/ui/dashboard/top-navbar";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { PresenceHeartbeat } from "@/app/providers/PresenceHeartbeat";
+import { CommandPalette } from "../ui/command-palette";
 
 export default async function Layout({
   children,
@@ -33,7 +34,7 @@ export default async function Layout({
       {session.user.id && (
         <PresenceHeartbeat userId={session.user.id as string} />
       )}
-
+      <CommandPalette />
       <div className="w-full flex-none md:w-64">
         <SideNav
           isAdmin={currentUser.isAdmin}

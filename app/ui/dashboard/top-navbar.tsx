@@ -137,16 +137,24 @@ export function TopNavbar({ user }: TopNavbarProps) {
       </div>
 
       <div className="flex-1 max-w-lg mx-6 hidden md:block">
-        <div className="relative group">
-          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-slate-400 group-focus-within:text-[#009473] transition-colors" />
+        <button
+          onClick={() =>
+            document.dispatchEvent(
+              new KeyboardEvent("keydown", { key: "k", metaKey: true }),
+            )
+          }
+          className="w-full relative flex items-center group bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-1.5 hover:bg-white hover:border-[#009473] hover:ring-2 hover:ring-[#eaf8f5] transition-all cursor-text text-left shadow-xs"
+        >
+          <Search className="h-4 w-4 text-slate-400 group-hover:text-[#009473] transition-colors shrink-0 mr-2" />
+          <span className="text-xs font-medium text-slate-400 flex-1">
+            Search commands, employees, requests...
+          </span>
+          <div className="flex items-center gap-1">
+            <kbd className="hidden sm:inline-flex items-center justify-center px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-bold text-slate-500 shadow-xs">
+              <span className="text-xs leading-none mr-0.5">⌘</span> K
+            </kbd>
           </div>
-          <input
-            type="text"
-            placeholder="Search employees, requests, documents..."
-            className="w-full pl-9 pr-14 py-1.5 text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-xl placeholder-slate-400 focus:outline-none focus:border-[#009473] focus:ring-2 focus:ring-[#eaf8f5] transition-all"
-          />
-        </div>
+        </button>
       </div>
 
       <div className="flex items-center gap-4 ml-auto md:ml-0" ref={popoverRef}>
