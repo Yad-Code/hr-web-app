@@ -61,16 +61,15 @@ export async function getAttendanceData(
   userId?: string,
   targetMonth?: string,
 ): Promise<AttendanceData> {
-  const now = new Date();
-  const currentMonthName = now.toLocaleString("default", { month: "long" });
-  const currentYearNum = now.getFullYear();
+  const now = new Date(); 
   const targetDate = targetMonth ? new Date(`${targetMonth}-01T12:00:00`) : now;
   const targetY = targetDate.getFullYear();
   const targetM = targetDate.getMonth();
 
   try {
-    if (!userId)
-      return getFallbackAttendanceData(currentMonthName, currentYearNum);
+    if (!userId) {
+      throw new Error("User authentication failed. Please log in again.");
+    }
 
     const localY = now.getFullYear();
     const localM = String(now.getMonth() + 1).padStart(2, "0");
@@ -101,8 +100,8 @@ export async function getAttendanceData(
       : new Date(targetY, targetM + 1, 0).getDate();
 
     let expectedWorkingDays = 0;
-    let scheduledDaysPresent = 0; 
-    let totalDaysPresent = 0;  
+    let scheduledDaysPresent = 0;
+    let totalDaysPresent = 0;
     let lateArrivals = 0;
     let totalMinutes = 0;
 
@@ -152,7 +151,6 @@ export async function getAttendanceData(
       }
     }
 
-    // 2. Safely calculate total hours and overall days present for the month
     const allMonthLogs = monthlyLogs.filter((l) => {
       const lDate = new Date(l.date);
       return lDate.getFullYear() === targetY && lDate.getMonth() === targetM;
@@ -263,62 +261,8 @@ export async function getAttendanceData(
     };
   } catch (error) {
     console.error("Failed to fetch attendance data:", error);
-    return getFallbackAttendanceData(currentMonthName, currentYearNum);
+    throw new Error(
+      "Unable to connect to the attendance database. Please try again later.",
+    );
   }
-}
-
-function getFallbackAttendanceData(
-  month: string,
-  year: number,
-): AttendanceData {
-  return {
-    today: {
-      checkIn: "08:55 AM",
-      checkOut: null,
-      status: "Checked In",
-      shiftStart: "09:00 AM",
-      shiftEnd: "05:00 PM",
-      workLocation: "Office",
-    },
-    summary: {
-      attendanceRate: 98,
-      daysPresent: 21,
-      lateArrivals: 1,
-      totalHoursLogged: 160,
-    },
-    leaveBalance: {
-      annualRemaining: 14,
-      annualTotal: 20,
-      sickRemaining: 6,
-      sickTotal: 10,
-      monthlyTotalHours: 16,
-      monthlyRemainingHours: 14,
-    },
-    currentMonth: month,
-    currentYear: year,
-    calendarDays: [],
-    // ADDED: Fallback values for the new scheduling system
-    workingDays: [1, 2, 3, 4, 5], // Default Monday to Friday
-    overrides: [], // No shift swaps in the fallback data
-    attendanceLog: [
-      {
-        id: "1",
-        date: "Jul 20, 2026",
-        checkIn: "08:55 AM",
-        checkOut: "05:02 PM",
-        workHours: "8h 07m",
-        status: "Present",
-        location: "Office",
-      },
-      {
-        id: "2",
-        date: "Jul 19, 2026",
-        checkIn: "09:12 AM",
-        checkOut: "05:15 PM",
-        workHours: "8h 03m",
-        status: "Late",
-        location: "Office",
-      },
-    ],
-  };
 }

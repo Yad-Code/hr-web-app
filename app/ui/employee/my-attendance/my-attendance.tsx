@@ -32,6 +32,7 @@ import {
 export function DashboardControls() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
 
   const currentMonth =
     searchParams.get("month") || new Date().toISOString().slice(0, 7);
@@ -39,7 +40,10 @@ export function DashboardControls() {
   const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const params = new URLSearchParams(searchParams);
     params.set("month", e.target.value);
-    router.push(`?${params.toString()}`);
+
+    startTransition(() => {
+      router.push(`?${params.toString()}`);
+    });
   };
 
   return (
@@ -48,7 +52,8 @@ export function DashboardControls() {
         type="month"
         value={currentMonth}
         onChange={handleMonthChange}
-        className="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-xs outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer"
+        disabled={isPending}
+        className={`px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-xs outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer ${isPending ? "opacity-50" : "transition-colors"}`}
       />
       <ExportButton selectedMonth={currentMonth} />
     </div>
@@ -269,6 +274,58 @@ export function TodayStatusCard({
   );
 }
 
+function ProgressRing({
+  percentage,
+  color,
+  value,
+}: {
+  percentage: number;
+  color: string;
+  value: string | number;
+}) {
+  const radius = 28;
+  const stroke = 5;
+  const normalizedRadius = radius - stroke * 2;
+  const circumference = normalizedRadius * 2 * Math.PI;
+  const safePercentage = Math.min(100, Math.max(0, percentage));
+  const strokeDashoffset =
+    circumference - (safePercentage / 100) * circumference;
+
+  return (
+    <div className="relative flex items-center justify-center shrink-0">
+      <svg
+        height={radius * 2}
+        width={radius * 2}
+        className="transform -rotate-90"
+      >
+        <circle
+          stroke="#f1f5f9"
+          fill="transparent"
+          strokeWidth={stroke}
+          r={normalizedRadius}
+          cx={radius}
+          cy={radius}
+        />
+        <circle
+          className={`${color} transition-all duration-1000 ease-out`}
+          stroke="currentColor"
+          fill="transparent"
+          strokeWidth={stroke}
+          strokeDasharray={circumference + " " + circumference}
+          style={{ strokeDashoffset }}
+          strokeLinecap="round"
+          r={normalizedRadius}
+          cx={radius}
+          cy={radius}
+        />
+      </svg>
+      <div className="absolute flex flex-col items-center justify-center text-sm font-bold text-slate-800">
+        {value}
+      </div>
+    </div>
+  );
+}
+
 export function AttendanceStatsGrid({
   summary,
   leaveBalance,
@@ -276,31 +333,95 @@ export function AttendanceStatsGrid({
   summary: AttendanceSummary;
   leaveBalance: LeaveBalance;
 }) {
+  const annualPct =
+    leaveBalance.annualTotal > 0
+      ? (leaveBalance.annualRemaining / leaveBalance.annualTotal) * 100
+      : 0;
+
+  const sickPct =
+    leaveBalance.sickTotal > 0
+      ? (leaveBalance.sickRemaining / leaveBalance.sickTotal) * 100
+      : 0;
+
   return (
     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 text-left">
-      <div className="bg-white p-5 border border-slate-100 rounded-2xl shadow-xs">
-        <p className="text-xs font-medium text-slate-400">Attendance Rate</p>
-        <p className="text-2xl font-bold text-slate-900 mt-1">
-          {summary.attendanceRate}%
-        </p>
+      {/* Card 1: Attendance Rate Ring */}
+      <div className="bg-white p-5 border border-slate-100 rounded-2xl shadow-xs flex items-center gap-4">
+        <ProgressRing
+          percentage={summary.attendanceRate}
+          color={
+            summary.attendanceRate >= 90 ? "text-emerald-500" : "text-amber-500"
+          }
+          value={`${summary.attendanceRate}%`}
+        />
+        <div>
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            Attendance
+          </p>
+          <p className="text-xs font-medium text-slate-500 mt-0.5">
+            Current Month
+          </p>
+        </div>
       </div>
-      <div className="bg-white p-5 border border-slate-100 rounded-2xl shadow-xs">
-        <p className="text-xs font-medium text-slate-400">Days Present</p>
-        <p className="text-2xl font-bold text-slate-900 mt-1">
-          {summary.daysPresent}
-        </p>
+
+      <div className="bg-white p-5 border border-slate-100 rounded-2xl shadow-xs flex flex-col justify-center">
+        <div className="flex justify-between items-end">
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              Days Present
+            </p>
+            <div className="flex items-baseline gap-1.5 mt-1">
+              <p className="text-2xl font-bold text-slate-900">
+                {summary.daysPresent}
+              </p>
+              <p className="text-xs font-medium text-slate-500">
+                ({summary.totalHoursLogged} hrs)
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              Late
+            </p>
+            <p
+              className={`text-lg font-bold mt-0.5 ${summary.lateArrivals > 0 ? "text-amber-500" : "text-slate-300"}`}
+            >
+              {summary.lateArrivals}
+            </p>
+          </div>
+        </div>
       </div>
-      <div className="bg-white p-5 border border-slate-100 rounded-2xl shadow-xs">
-        <p className="text-xs font-medium text-slate-400">Late Arrivals</p>
-        <p className="text-2xl font-bold text-amber-600 mt-1">
-          {summary.lateArrivals}
-        </p>
+
+      <div className="bg-white p-5 border border-slate-100 rounded-2xl shadow-xs flex items-center gap-4">
+        <ProgressRing
+          percentage={annualPct}
+          color="text-indigo-500"
+          value={leaveBalance.annualRemaining}
+        />
+        <div>
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            Annual Leave
+          </p>
+          <p className="text-xs font-medium text-slate-500 mt-0.5">
+            Of {leaveBalance.annualTotal} Total Days
+          </p>
+        </div>
       </div>
-      <div className="bg-white p-5 border border-slate-100 rounded-2xl shadow-xs">
-        <p className="text-xs font-medium text-slate-400">Leave Remaining</p>
-        <p className="text-2xl font-bold text-indigo-600 mt-1">
-          {leaveBalance.annualRemaining} Days
-        </p>
+
+      <div className="bg-white p-5 border border-slate-100 rounded-2xl shadow-xs flex items-center gap-4">
+        <ProgressRing
+          percentage={sickPct}
+          color="text-rose-500"
+          value={leaveBalance.sickRemaining}
+        />
+        <div>
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            Sick Leave
+          </p>
+          <p className="text-xs font-medium text-slate-500 mt-0.5">
+            Of {leaveBalance.sickTotal} Total Days
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -322,6 +443,7 @@ export function AttendanceCalendar({
   year,
 }: AttendanceCalendarProps) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   const monthIndex = month
     ? new Date(Date.parse(`${month} 1, 2000`)).getMonth()
@@ -333,7 +455,10 @@ export function AttendanceCalendar({
   const navigateMonth = (offset: number) => {
     const targetDate = new Date(yearNum, monthIndex + offset, 1);
     const targetStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}`;
-    router.push(`?month=${targetStr}`);
+
+    startTransition(() => {
+      router.push(`?month=${targetStr}`);
+    });
   };
 
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -349,7 +474,9 @@ export function AttendanceCalendar({
   today.setHours(0, 0, 0, 0);
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs text-left h-full flex flex-col">
+    <div
+      className={`bg-white border border-slate-200 rounded-2xl p-5 shadow-xs text-left h-full flex flex-col transition-opacity duration-300 ${isPending ? "opacity-60 pointer-events-none" : "opacity-100"}`}
+    >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <div className="flex items-center gap-4">
           <h3 className="text-sm font-bold text-slate-900 w-32">
@@ -388,7 +515,6 @@ export function AttendanceCalendar({
           </div>
         </div>
       </div>
-
       <div className="grid grid-cols-7 gap-1 text-center mb-2">
         {weekDays.map((day, idx) => (
           <span
@@ -401,7 +527,6 @@ export function AttendanceCalendar({
           </span>
         ))}
       </div>
-
       <div className="grid grid-cols-7 gap-1.5 flex-1">
         {paddedDays.map((dayNum, idx) => {
           if (dayNum === null) {
@@ -471,13 +596,17 @@ export function AttendanceCalendar({
                 : (logForDay.status as string);
             }
           } else {
-            if (dateObj < today) {
-              bgClass = "bg-rose-50 border-rose-200 text-rose-900";
-              statusText = overrideBadge ? "Absent (Swap)" : "Absent";
-            } else if (overrideBadge === "Swapped In") {
+            if (overrideBadge === "Swapped In") {
               bgClass =
                 "bg-indigo-50 border-indigo-200 text-indigo-900 shadow-sm";
               statusText = "Swapped In";
+            } else if (dateObj > today) {
+              statusText = "Scheduled";
+            } else if (dateObj.getTime() === today.getTime()) {
+              statusText = "Pending";
+            } else {
+              bgClass = "bg-slate-50 border-slate-200 text-slate-400";
+              statusText = "No Record";
             }
           }
 
@@ -565,6 +694,7 @@ export function AttendanceLogTable({
 }) {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState("All");
+  const [isPending, startTransition] = useTransition();
 
   const monthIndex = month
     ? new Date(Date.parse(`${month} 1, 2000`)).getMonth()
@@ -576,7 +706,9 @@ export function AttendanceLogTable({
   const navigateMonth = (offset: number) => {
     const targetDate = new Date(yearNum, monthIndex + offset, 1);
     const targetStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}`;
-    router.push(`?month=${targetStr}`);
+    startTransition(() => {
+      router.push(`?month=${targetStr}`);
+    });
   };
 
   const allDaysInMonth = useMemo(() => {
@@ -644,17 +776,17 @@ export function AttendanceLogTable({
         rawStatusForFilter =
           typeof log.status === "string" ? log.status.toLowerCase() : "";
       } else {
-        if (dateObj < today) {
-          displayStatus = "Absent";
-          badgeClass = "bg-rose-50 text-rose-700 border border-rose-100/50";
-          rawStatusForFilter = "absent";
-        } else {
+        if (dateObj > today || dateObj.getTime() === today.getTime()) {
           displayStatus = overrideBadge
             ? `Scheduled (${overrideBadge})`
             : "Scheduled";
           badgeClass =
             "bg-white text-slate-600 border border-slate-200 shadow-2xs";
           rawStatusForFilter = "scheduled";
+        } else {
+          displayStatus = "No Record";
+          badgeClass = "bg-slate-50 text-slate-400 border border-slate-200";
+          rawStatusForFilter = "norecord";
         }
       }
 
@@ -686,7 +818,9 @@ export function AttendanceLogTable({
   }, [allDaysInMonth, statusFilter]);
 
   return (
-    <div className="bg-white border border-slate-100 rounded-2xl shadow-xs overflow-hidden text-left flex flex-col">
+    <div
+      className={`bg-white border border-slate-100 rounded-2xl shadow-xs overflow-hidden text-left flex flex-col transition-opacity duration-300 ${isPending ? "opacity-60 pointer-events-none" : "opacity-100"}`}
+    >
       <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
@@ -733,7 +867,6 @@ export function AttendanceLogTable({
           </div>
         </div>
       </div>
-
       <div className="overflow-x-auto max-h-125 overflow-y-auto">
         <table className="w-full text-left text-xs text-slate-600">
           <thead className="bg-slate-50 text-slate-400 font-semibold uppercase tracking-wider text-[10px] sticky top-0 z-10 shadow-xs">

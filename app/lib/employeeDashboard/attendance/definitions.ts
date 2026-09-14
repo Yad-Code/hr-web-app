@@ -21,6 +21,7 @@ export interface AttendanceSummary {
   attendanceRate: number;
   daysPresent: number;
   lateArrivals: number;
+  totalHoursLogged: number;
 }
 
 export interface LeaveBalance {
