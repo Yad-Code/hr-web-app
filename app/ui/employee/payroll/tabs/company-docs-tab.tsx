@@ -40,12 +40,15 @@ export default function CompanyDocsTab({
                 </div>
               </div>
 
-              <button
-                type="button"
+              <a
+                href={doc.file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                download
                 className="px-3.5 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer"
               >
-                Download PDF
-              </button>
+                Download File
+              </a>
             </div>
           ))}
         </div>

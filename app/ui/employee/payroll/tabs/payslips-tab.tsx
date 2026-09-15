@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { PayStub } from "@/app/lib/employeeDashboard/payroll/definitions";
+import { DownloadPdfButton } from "@/app/ui/employee/payroll/DownloadPdfButton";
 
 export default function PayslipsTab({ payStubs }: { payStubs: PayStub[] }) {
   const [selectedStub, setSelectedStub] = useState<PayStub | null>(null);
@@ -15,7 +16,6 @@ export default function PayslipsTab({ payStubs }: { payStubs: PayStub[] }) {
 
   return (
     <div className="space-y-6">
-      {/* Table Section */}
       <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
         <div className="p-5 border-b border-slate-100 flex items-center justify-between">
           <h2 className="text-base font-bold text-slate-800">
@@ -56,8 +56,8 @@ export default function PayslipsTab({ payStubs }: { payStubs: PayStub[] }) {
                         stub.status === "paid"
                           ? "bg-emerald-100 text-emerald-800"
                           : stub.status === "processing"
-                          ? "bg-amber-100 text-amber-800"
-                          : "bg-slate-100 text-slate-700"
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-slate-100 text-slate-700"
                       }`}
                     >
                       {stub.status}
@@ -78,11 +78,9 @@ export default function PayslipsTab({ payStubs }: { payStubs: PayStub[] }) {
         </div>
       </div>
 
-      {/* Payslip Detail Slide-Over / Modal */}
       {selectedStub && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex justify-end z-50 p-4 sm:p-6">
           <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 flex flex-col h-full overflow-hidden">
-            {/* Modal Header */}
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <div>
                 <h3 className="text-base font-bold text-slate-900">
@@ -92,15 +90,28 @@ export default function PayslipsTab({ payStubs }: { payStubs: PayStub[] }) {
                   Paid on {selectedStub.pay_date}
                 </p>
               </div>
-              <button
-                onClick={() => setSelectedStub(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 font-bold text-lg cursor-pointer"
-              >
-                ✕
-              </button>
+
+              <div className="flex items-center gap-3"> 
+                <DownloadPdfButton
+                  payStub={selectedStub}
+                  earnings={selectedStub.items.filter(
+                    (i) => (i.type as string) === "earning",
+                  )}
+                  deductions={selectedStub.items.filter(
+                    (i) => (i.type as string) === "deduction",
+                  )}
+                />
+
+                <button
+                  onClick={() => setSelectedStub(null)}
+                  className="text-slate-400 hover:text-slate-600 p-1 font-bold text-lg cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+              
             </div>
 
-            {/* Modal Body */}
             <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
               {/* Take-Home Summary Box */}
               <div className="bg-emerald-50/60 border border-emerald-100 p-5 rounded-xl text-center">
@@ -112,7 +123,6 @@ export default function PayslipsTab({ payStubs }: { payStubs: PayStub[] }) {
                 </p>
               </div>
 
-              {/* Earnings Breakdown */}
               <div className="space-y-2">
                 <h4 className="font-bold text-slate-800 uppercase tracking-wider text-[11px]">
                   Earnings Breakdown
@@ -142,6 +152,38 @@ export default function PayslipsTab({ payStubs }: { payStubs: PayStub[] }) {
                     ))}
                 </div>
               </div>
+
+              {selectedStub.items.some((item) => item.type === "deduction") && (
+                <div className="space-y-2 pt-2">
+                  <h4 className="font-bold text-slate-800 uppercase tracking-wider text-[11px]">
+                    Taxes & Deductions
+                  </h4>
+                  <div className="border border-rose-100 rounded-xl divide-y divide-rose-50 overflow-hidden">
+                    {selectedStub.items
+                      .filter((item) => item.type === "deduction")
+                      .map((item) => (
+                        <div
+                          key={item.id}
+                          className="p-3 flex justify-between items-center bg-rose-50/30"
+                        >
+                          <div>
+                            <p className="font-semibold text-slate-700 capitalize">
+                              {item.category}
+                            </p>
+                            {item.description && (
+                              <p className="text-[11px] text-slate-500">
+                                {item.description}
+                              </p>
+                            )}
+                          </div>
+                          <span className="font-bold text-rose-600">
+                            -{formatCurrency(item.amount)}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Modal Footer */}

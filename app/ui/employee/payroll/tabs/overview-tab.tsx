@@ -1,7 +1,10 @@
 // app/ui/employee/payroll/tabs/overview-tab.tsx
 "use client";
 
-import { CompensationSummary, PayStub } from "@/app/lib/employeeDashboard/payroll/definitions";
+import {
+  CompensationSummary,
+  PayStub,
+} from "@/app/lib/employeeDashboard/payroll/definitions";
 
 interface OverviewTabProps {
   summary: CompensationSummary;
@@ -20,9 +23,10 @@ export default function OverviewTab({
       currency: summary.currency || "USD",
     }).format(Math.abs(amount));
 
-  // Filter to keep ONLY earnings
   const incomeItems =
     latestStub?.items.filter((item) => item.type === "earning") ?? [];
+  const deductionItems =
+    latestStub?.items.filter((item) => item.type === "deduction") ?? [];
 
   return (
     <div className="space-y-6">
@@ -66,7 +70,6 @@ export default function OverviewTab({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Latest Payment Overview */}
         <section className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-5">
           <div className="flex justify-between items-center border-b border-slate-100 pb-4">
             <div>
@@ -96,7 +99,6 @@ export default function OverviewTab({
                 </p>
               </div>
 
-              {/* Income Items Breakdown */}
               {incomeItems.length > 0 && (
                 <div className="space-y-2 pt-2">
                   <p className="text-xs font-bold text-slate-700">
@@ -126,6 +128,36 @@ export default function OverviewTab({
                   </div>
                 </div>
               )}
+
+              {deductionItems.length > 0 && (
+                <div className="space-y-2 pt-4 border-t border-slate-100">
+                  <p className="text-xs font-bold text-slate-700">
+                    Taxes & Deductions
+                  </p>
+                  <div className="divide-y divide-rose-50 border border-rose-100 rounded-lg overflow-hidden">
+                    {deductionItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="p-3 bg-rose-50/30 flex justify-between items-center text-xs"
+                      >
+                        <div>
+                          <p className="font-semibold text-slate-700 capitalize">
+                            {item.category}
+                          </p>
+                          {item.description && (
+                            <p className="text-[11px] text-slate-500">
+                              {item.description}
+                            </p>
+                          )}
+                        </div>
+                        <span className="font-bold text-rose-600">
+                          -{formatMoney(item.amount)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <p className="text-xs text-slate-500 py-6 text-center">
@@ -134,7 +166,6 @@ export default function OverviewTab({
           )}
         </section>
 
-        {/* Shortcuts Panel */}
         <section className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4 h-fit">
           <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">
             Shortcuts

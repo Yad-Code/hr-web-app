@@ -1,4 +1,5 @@
 // @/app/lib/admin/payroll/data.ts
+
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { auth } from "@/auth";
 
@@ -34,7 +35,7 @@ export async function fetchAllPayStubs(): Promise<AdminPayrollRecord[]> {
 
 export async function fetchPayStubDetails(id: string) {
   const session = await auth();
- 
+
   if (!session?.user?.isAdmin) return null;
 
   try {
@@ -75,5 +76,19 @@ export async function fetchEmployeePaymentMethods(userId: string) {
   } catch (error) {
     console.error("Database Error:", error);
     throw new Error("Failed to fetch payment methods.");
+  }
+}
+
+export async function fetchEmployeeDocuments(userId: string) {
+  try {
+    return await db`
+      SELECT id, document_type, file_name, file_extension, file_url, created_at 
+      FROM employee_documents 
+      WHERE user_id = ${userId}
+      ORDER BY created_at DESC
+    `;
+  } catch (error) {
+    console.error("Failed to fetch documents:", error);
+    return [];
   }
 }

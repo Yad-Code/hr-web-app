@@ -6,22 +6,34 @@ import {
   fetchEmployeePayStubs,
   fetchPayStubItems,
   fetchEmployeePaymentMethods,
+  fetchEmployeeDocuments,
 } from "@/app/lib/admin/payroll/data";
 import { addPaymentMethod } from "@/app/lib/employee/payroll/data";
 import { getCurrentUserId } from "@/app/lib/employeeDashboard/performance/actions/utils";
 
 export default async function Page() {
-  // 1. Get the current logged-in user
   const userId = await getCurrentUserId();
 
-  // Bind the userId so the form action receives it automatically
   const handleAddAccount = addPaymentMethod.bind(null, userId);
 
-  // 2. Fetch raw database records
   const rawStubs = await fetchEmployeePayStubs(userId);
   const rawMethods = await fetchEmployeePaymentMethods(userId);
+  const rawDocs = await fetchEmployeeDocuments(userId);
 
-  // 3. Fetch line items for every pay stub concurrently
+  const documents = rawDocs.map((doc) => ({
+    id: doc.id,
+    title: doc.file_name,
+    year: new Date(doc.created_at).getFullYear().toString(),
+    type: doc.document_type,
+    issued_date: new Date(doc.created_at).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
+    file_size: doc.file_extension.toUpperCase(),
+    file_url: doc.file_url,
+  }));
+
   const stubsWithItems = await Promise.all(
     rawStubs.map(async (stub) => {
       const items = await fetchPayStubItems(stub.id);
@@ -55,7 +67,6 @@ export default async function Page() {
     }),
   );
 
-  // 4. Map payment methods to your interface
   const paymentMethods = rawMethods.map((pm) => ({
     id: pm.id,
     bank_name: pm.bank_name,
@@ -66,7 +77,6 @@ export default async function Page() {
     status: pm.status || "verified",
   }));
 
-  // 5. Calculate the dynamic summary metrics
   const currentYear = new Date().getFullYear();
   const ytd_net = stubsWithItems
     .filter(
@@ -99,21 +109,11 @@ export default async function Page() {
     },
     payStubs: stubsWithItems,
     paymentMethods: paymentMethods,
-    documents: [
-      {
-        id: "doc-1",
-        title: "2025 Annual Income Statement",
-        year: "2025",
-        type: "Annual Statement",
-        issued_date: "Jan 15, 2026",
-        file_size: "1.2 MB",
-      },
-    ],
+    documents: documents,
   };
 
   return (
     <main className="min-h-screen bg-slate-50 py-8">
-      {/* Pass the bound action down to the dashboard component */}
       <PayrollDashboard
         initialData={livePayrollData}
         onAddAccount={handleAddAccount}
