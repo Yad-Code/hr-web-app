@@ -38,13 +38,11 @@ export default function AdminEducationTab({
     AdminEducationTabProps["educationHistory"][number] | null
   >(null);
 
-  const handleAddEducation = (formData: Record<string, string>) => {
-    const data = new FormData();
-    Object.entries(formData).forEach(([key, value]) => data.append(key, value));
-
+  // 👇 FIX 1: Accept FormData directly so the physical file is preserved
+  const handleAddEducation = (formData: FormData) => {
     startTransition(async () => {
       try {
-        await addEducationAction(userId, data);
+        await addEducationAction(userId, formData);
       } catch (err) {
         console.error("Failed to add education entry:", err);
       }
@@ -69,7 +67,8 @@ export default function AdminEducationTab({
     });
   };
 
-  const handleSaveDocument = (urlToSave: string | null) => {
+  // 👇 FIX 2: Accept FormData instead of a string URL
+  const handleSaveDocument = (formData: FormData) => {
     if (!docModalItem) return;
 
     const targetId = docModalItem.id;
@@ -77,7 +76,7 @@ export default function AdminEducationTab({
 
     startTransition(async () => {
       try {
-        await updateEducationDocumentAction(targetId, urlToSave);
+        await updateEducationDocumentAction(targetId, formData);
       } catch (err) {
         console.error("Failed to update document URL:", err);
       }

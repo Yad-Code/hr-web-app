@@ -49,6 +49,7 @@ interface AdminProfileTabsProps {
   documents?: EmployeeDocument[];
   assessment?: SelfAssessment | null;
   skills?: Skill[];
+  isAdmin?: boolean;
 }
 
 export default function AdminProfileTabs({
@@ -58,13 +59,16 @@ export default function AdminProfileTabs({
   documents = [],
   assessment = null,
   skills = [],
+  isAdmin = false,
 }: AdminProfileTabsProps) {
   const [activeTab, setActiveTab] = useState<AdminTabType>("profile");
 
   const tabs = [
     { id: "profile", label: "Edit Profile & Official Info", icon: UserPen },
     { id: "job", label: "Job Details", icon: Briefcase },
-    { id: "permissions", label: "Permissions", icon: ShieldAlert },
+    ...(isAdmin
+      ? [{ id: "permissions", label: "Permissions", icon: ShieldAlert }]
+      : []),
     { id: "education", label: "Education History", icon: GraduationCap },
     { id: "language", label: "Languages", icon: Languages },
     { id: "documents", label: "Documents", icon: FileText },
@@ -100,7 +104,7 @@ export default function AdminProfileTabs({
         {activeTab === "profile" && <ProfileForm profile={profile} />}
 
         {activeTab === "job" && <AdminJobInformationTab profile={profile} />}
-        
+
         {activeTab === "permissions" && (
           <AdminPermissionsTab profile={profile} />
         )}

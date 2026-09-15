@@ -1,6 +1,5 @@
-import React, { useState } from "react";
-import { FileText, X, Link as LinkIcon } from "lucide-react";
-import { InputField } from "./formFields";
+import React from "react";
+import { FileText, X } from "lucide-react";
 
 export function EditEducationDocumentModal({
   docModalItem,
@@ -9,15 +8,13 @@ export function EditEducationDocumentModal({
 }: {
   docModalItem: { id: string; level: string; currentUrl?: string | null };
   onClose: () => void;
-  onSave: (url: string | null) => void;
+  // 👇 FIX 1: Expect FormData
+  onSave: (formData: FormData) => void;
 }) {
-  const [documentUrlInput, setDocumentUrlInput] = useState(
-    docModalItem.currentUrl || "",
-  );
-
-  const handleSubmit = (e: React.FormEvent) => {
+  // 👇 FIX 2: Correct form handling
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onSave(documentUrlInput.trim() || null);
+    onSave(new FormData(e.currentTarget));
   };
 
   return (
@@ -43,7 +40,7 @@ export function EditEducationDocumentModal({
                 Attach Education Document
               </h3>
               <p className="text-sm text-slate-500 mt-1">
-                Provide a link to the diploma, degree, or certificate for{" "}
+                Upload the diploma, degree, or certificate for{" "}
                 <span className="font-semibold text-slate-700">
                   {docModalItem.level}
                 </span>
@@ -51,15 +48,19 @@ export function EditEducationDocumentModal({
               </p>
             </div>
 
-            <InputField
-              label="Document URL"
-              type="url"
-              placeholder="https://example.com/document.pdf"
-              value={documentUrlInput}
-              onChange={(e) => setDocumentUrlInput(e.target.value)}
-              icon={LinkIcon}
-              required
-            />
+            {/* 👇 FIX 3: File Input */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                Select File
+              </label>
+              <input
+                type="file"
+                name="document_file"
+                accept=".pdf,image/*"
+                required
+                className="w-full bg-slate-50 border border-slate-200 text-slate-500 text-sm rounded-lg file:mr-4 file:py-2.5 file:px-4 file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer transition-all"
+              />
+            </div>
           </div>
 
           <div className="bg-slate-50 px-6 py-4 flex items-center justify-end gap-3 border-t border-slate-100">
@@ -74,7 +75,7 @@ export function EditEducationDocumentModal({
               type="submit"
               className="px-4 py-2 text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition-colors cursor-pointer shadow-xs"
             >
-              Save Document
+              Upload Document
             </button>
           </div>
         </form>

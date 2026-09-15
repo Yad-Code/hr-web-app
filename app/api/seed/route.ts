@@ -995,7 +995,7 @@ VALUES
           'national_identity_card.png', 
           'png', 
           'https://example.com/docs/national_identity_card.png'
-        )i
+        )
 `;
 
       await db`

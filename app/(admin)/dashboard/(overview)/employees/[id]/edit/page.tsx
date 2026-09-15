@@ -65,6 +65,7 @@ export default async function AdminEmployeeEditPage({
       getEmployeeSelfAssessment(profile.id, currentCycle),
       getEmployeeSkills(profile.id),
     ]);
+    
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 p-2 sm:p-4 text-left select-none animate-fadeIn">
@@ -99,6 +100,7 @@ export default async function AdminEmployeeEditPage({
           documents={documents}
           assessment={assessment}
           skills={skills}
+          isAdmin={session.user.isAdmin}
         />
       </Suspense>
     </div>

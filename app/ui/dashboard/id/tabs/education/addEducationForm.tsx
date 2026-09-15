@@ -4,7 +4,6 @@ import {
   BookOpen,
   Building,
   MapPin,
-  Link as LinkIcon,
   RotateCcw,
   Save,
   Loader2,
@@ -46,7 +45,8 @@ export function AddEducationForm({
   onSubmit,
   isPending,
 }: {
-  onSubmit: (formData: Record<string, string>) => void;
+  // 👇 FIX 1: Expect FormData instead of Record<string, string>
+  onSubmit: (formData: FormData) => void;
   isPending: boolean;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -55,11 +55,10 @@ export function AddEducationForm({
     subject: "",
     institution: "",
     location: "",
-    score_type: "GPA", // Default score type
+    score_type: "GPA",
     score: "",
     start_year: "",
     end_year: "",
-    document_url: "",
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -70,7 +69,7 @@ export function AddEducationForm({
     setFormData((prev) => ({
       ...prev,
       level,
-      subject: "", // Reset subject when level changes
+      subject: "",
     }));
   };
 
@@ -80,7 +79,6 @@ export function AddEducationForm({
     const { name, value } = e.target;
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
-      // Clear score if the score type switches so previous invalid ranges don't persist
       if (name === "score_type") {
         updated.score = "";
       }
@@ -91,14 +89,15 @@ export function AddEducationForm({
 
   const handleReset = () => {
     setFormData(initialFormState);
+    if (formRef.current) formRef.current.reset(); // Clears file input
     setError(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // 👇 FIX 2: Correctly handle form event and extract FormData
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 
-    // Validate Start and End Years
     if (formData.start_year && formData.end_year) {
       const start = parseInt(formData.start_year, 10);
       const end = parseInt(formData.end_year, 10);
@@ -110,7 +109,6 @@ export function AddEducationForm({
       }
     }
 
-    // Validate Score Range
     if (formData.score !== "") {
       const numericScore = parseFloat(formData.score);
       if (isNaN(numericScore)) {
@@ -137,7 +135,8 @@ export function AddEducationForm({
       }
     }
 
-    onSubmit(formData);
+    // Automatically grabs all text fields AND the file
+    onSubmit(new FormData(e.currentTarget));
     handleReset();
   };
 
@@ -209,7 +208,6 @@ export function AddEducationForm({
             required
           />
 
-          {/* Score Type & Dynamic Score Input */}
           <div className="grid grid-cols-2 gap-3">
             <SelectField
               label="Score Type"
@@ -258,14 +256,18 @@ export function AddEducationForm({
           </div>
         </div>
 
-        <InputField
-          label="Document URL / Certificate Link"
-          name="document_url"
-          value={formData.document_url}
-          onChange={handleChange}
-          placeholder="https://example.com/certificate.pdf"
-          icon={LinkIcon}
-        />
+        {/* 👇 FIX 3: Add File Upload Input */}
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            Upload Certificate (PDF / Image)
+          </label>
+          <input
+            type="file"
+            name="document_file"
+            accept=".pdf,image/png,image/jpeg"
+            className="w-full bg-slate-50 border border-slate-200 text-slate-500 text-sm rounded-lg file:mr-4 file:py-2.5 file:px-4 file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer transition-all"
+          />
+        </div>
 
         <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
           <button
