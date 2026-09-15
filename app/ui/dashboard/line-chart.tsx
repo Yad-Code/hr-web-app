@@ -22,12 +22,11 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-
-// Define the shape of our dynamic data
+ 
 export interface ChartDataPoint {
   month: string;
-  engagement: number; // Kept as 'engagement' so it seamlessly accepts your wrapper data
-  retention: number; // Kept as 'retention' so it seamlessly accepts your wrapper data
+  engagement: number;  
+  retention: number;  
 }
 
 interface RetentionEngagementChartProps {
@@ -49,14 +48,13 @@ export function RetentionEngagementChart({
   data,
 }: RetentionEngagementChartProps) {
   const [activeRange, setActiveRange] = React.useState("Y");
-
-  // Dynamically slice the data based on the selected range
+ 
   const filteredData = React.useMemo(() => {
     if (!data || data.length === 0) return [];
     if (activeRange === "1M") return data.slice(-1);
     if (activeRange === "3M") return data.slice(-3);
     if (activeRange === "6M") return data.slice(-6);
-    return data; // "Y" returns all year-to-date data
+    return data;  
   }, [data, activeRange]);
 
   return (

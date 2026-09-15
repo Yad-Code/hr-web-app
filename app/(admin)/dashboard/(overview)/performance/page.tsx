@@ -33,8 +33,7 @@ async function FeedbackSection({
   const recentFeedback = allFeedback.slice(0, 5);
 
   let pendingRequests;
-
-  // 2. Keep the pending requests query as it targets a completely different table
+ 
   if (isAdmin) {
     pendingRequests = (await db`
       SELECT id, title, description, created_at 
