@@ -451,107 +451,7 @@ export async function submitWFHRequest(formData: FormData) {
   }
 }
 
-export async function approveLeaveRequest(requestId: string) {
-  const session = await auth();
-
-  if (!session?.user?.isAdmin && !session?.user?.canApproveLeaves) {
-    return {
-      success: false,
-      error: "Forbidden: You do not have permission to approve leaves.",
-    };
-  }
-
-  try {
-    const requests = await sql`
-      SELECT id, user_id, type, leave_category, total_days, hours, status, 
-             helper_id, original_date, exchange_date
-      FROM leave_requests 
-      WHERE id = ${requestId}
-    `;
-
-    if (!requests || requests.length === 0) {
-      return { success: false, error: "Request not found." };
-    }
-
-    const request = requests[0];
-
-    if (request.status !== "Pending") {
-      return {
-        success: false,
-        error: `Request has already been ${request.status.toLowerCase()}.`,
-      };
-    }
-
-    const { user_id, type, leave_category, total_days, hours } = request;
-
-    // --- LEAVE BALANCE LOGIC ---
-    if (type === "dayoff") {
-      if (leave_category === "annual") {
-        const [balance] =
-          await sql`SELECT annual_remaining FROM leave_balances WHERE user_id = ${user_id}`;
-        if (balance && balance.annual_remaining < total_days) {
-          return {
-            success: false,
-            error: `Insufficient Annual Leave balance (${balance.annual_remaining} left).`,
-          };
-        }
-        await sql`UPDATE leave_balances SET annual_remaining = annual_remaining - ${total_days} WHERE user_id = ${user_id}`;
-      } else if (leave_category === "sick") {
-        const [balance] =
-          await sql`SELECT sick_remaining FROM leave_balances WHERE user_id = ${user_id}`;
-        if (balance && balance.sick_remaining < total_days) {
-          return {
-            success: false,
-            error: `Insufficient Sick Leave balance (${balance.sick_remaining} left).`,
-          };
-        }
-        await sql`UPDATE leave_balances SET sick_remaining = sick_remaining - ${total_days} WHERE user_id = ${user_id}`;
-      }
-    } else if (type === "timeoff") {
-      const [balance] =
-        await sql`SELECT monthly_remaining_hours FROM leave_balances WHERE user_id = ${user_id}`;
-      if (balance && balance.monthly_remaining_hours < hours) {
-        return {
-          success: false,
-          error: `Insufficient monthly hours remaining (${balance.monthly_remaining_hours} hrs left).`,
-        };
-      }
-      await sql`UPDATE leave_balances SET monthly_remaining_hours = monthly_remaining_hours - ${hours} WHERE user_id = ${user_id}`;
-    }
-
-    if (type === "exchange" && request.helper_id) {
-      await sql`
-        INSERT INTO schedule_overrides (user_id, target_date, is_working, notes)
-        VALUES 
-          (${user_id}, ${request.original_date}, false, 'Shift given to helper'),
-          (${user_id}, ${request.exchange_date}, true, 'Shift taken from helper')
-        ON CONFLICT (user_id, target_date) DO UPDATE SET is_working = EXCLUDED.is_working
-      `;
-
-      await sql`
-        INSERT INTO schedule_overrides (user_id, target_date, is_working, notes)
-        VALUES 
-          (${request.helper_id}, ${request.original_date}, true, 'Covering requester shift'),
-          (${request.helper_id}, ${request.exchange_date}, false, 'Shift given to requester')
-        ON CONFLICT (user_id, target_date) DO UPDATE SET is_working = EXCLUDED.is_working
-      `;
-    }
-
-    await sql`
-      UPDATE leave_requests 
-      SET status = 'Approved', updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${requestId}
-    `;
-
-    revalidatePath("/dashboard");
-    revalidatePath("/my-profile/attendance");
-
-    return { success: true };
-  } catch (error) {
-    console.error("Error approving leave request:", error);
-    return { success: false, error: "Failed to approve request." };
-  }
-}
+ 
 
 export async function respondToExchangeRequest(
   requestId: string,
@@ -600,23 +500,7 @@ export async function respondToExchangeRequest(
     return { success: false, error: "Failed to update request." };
   }
 }
-
-export async function rejectLeaveRequest(requestId: string) {
-  try {
-    await sql`
-      UPDATE leave_requests 
-      SET status = 'Rejected', updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${requestId}
-    `;
-
-    revalidatePath("/dashboard");
-
-    return { success: true };
-  } catch (error) {
-    console.error("Error rejecting leave request:", error);
-    return { success: false, error: "Failed to decline request." };
-  }
-}
+ 
 
 export async function exportAttendanceCSV(monthStr?: string) {
   try {
@@ -733,8 +617,7 @@ export async function exportAttendanceCSV(monthStr?: string) {
         `"${displayDate}","${checkIn}","${checkOut}","${workHours}","${location}","${status}"`,
       );
     }
-
-    // Reverse so the newest days are at the top, matching the UI
+ 
     csvRows.reverse();
 
     const csvContent = [headers.join(","), ...csvRows].join("\n");

@@ -4,10 +4,7 @@ import { useTransition } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
-import {
-  approveLeaveRequest,
-  rejectLeaveRequest,
-} from "@/app/lib/employeeDashboard/employee/actions";
+import { updateLeaveRequestStatus } from "@/app/(admin)/dashboard/(overview)/attendance/_actions/leave-actions";
 
 interface RequestItemProps {
   request: {
@@ -34,7 +31,7 @@ export function RequestItem({ request }: RequestItemProps) {
 
   const handleApprove = () => {
     startTransition(async () => {
-      const res = await approveLeaveRequest(request.id);
+      const res = await updateLeaveRequestStatus(request.id, "Approved");
       if (!res.success) {
         alert(res.error || "Failed to approve request");
       }
@@ -42,8 +39,8 @@ export function RequestItem({ request }: RequestItemProps) {
   };
 
   const handleDecline = () => {
-    startTransition(async () => {
-      const res = await rejectLeaveRequest(request.id);
+    startTransition(async () => { 
+      const res = await updateLeaveRequestStatus(request.id, "Rejected");
       if (!res.success) {
         alert(res.error || "Failed to decline request");
       }

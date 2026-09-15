@@ -6,7 +6,7 @@ import { EmployeeOperations } from "./employee-operations";
 import { AutoRefresh } from "../employee/my-attendance/auto-refresh";
 import { auth } from "@/auth";
 
-interface PendingRequestType {
+interface PendingRequestType { 
   id: string;
   type: string;
   description: string;
