@@ -4,6 +4,7 @@ import { fetchAllPayStubs } from "@/app/lib/admin/payroll/data";
 import {
   generateMonthlyPayroll,
   rollbackProcessingPayroll,
+  markAllProcessingAsPaid,
 } from "@/app/lib/admin/payroll/actions";
 
 import { auth } from "@/auth";
@@ -11,6 +12,7 @@ import Link from "next/link";
 import { ShieldAlert, ArrowLeft } from "lucide-react";
 
 import { AdminPayrollTable } from "./AdminPayrollTable";
+import { ExportPayrollButton } from "./_components/ExportPayrollButton";
 
 export default async function AdminPayrollPage() {
   const session = await auth();
@@ -72,6 +74,37 @@ export default async function AdminPayrollPage() {
               })}
             </p>
           </div>
+
+          <ExportPayrollButton />
+
+          {totalProcessing > 0 && (
+            <form
+              action={async () => {
+                "use server";
+                await markAllProcessingAsPaid();
+              }}
+            >
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors shadow-xs"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                Process All Payments
+              </button>
+            </form>
+          )}
 
           {totalProcessing > 0 && (
             <form

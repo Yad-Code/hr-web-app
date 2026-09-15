@@ -34,26 +34,27 @@ export async function fetchAllPayStubs(): Promise<AdminPayrollRecord[]> {
 
 export async function fetchPayStubDetails(id: string) {
   const session = await auth();
-  if (!session?.user) return null;
+ 
+  if (!session?.user?.isAdmin) return null;
 
-  const isAdmin = session.user.isAdmin;
-  const managerName = session.user.name as string;
+  try {
+    const result = await db`
+      SELECT 
+        p.*, u.name as employee_name, u.email, u.department, 
+        pm.id as payment_method_id, pm.bank_name, pm.account_number_masked, pm.status as payment_status
+      FROM pay_stubs p 
+      JOIN users u ON p.user_id = u.id 
+      LEFT JOIN payment_methods pm ON u.id = pm.user_id
+      WHERE p.id = ${id} 
+      ORDER BY pm.is_primary DESC, pm.id DESC 
+      LIMIT 1
+    `;
 
-  let result;
-  if (isAdmin) {
-    result = await db`
-      SELECT p.*, u.name as employee_name, u.email, u.department, pm.id as payment_method_id, pm.bank_name, pm.account_number_masked, pm.status as payment_status
-      FROM pay_stubs p JOIN users u ON p.user_id = u.id LEFT JOIN payment_methods pm ON u.id = pm.user_id
-      WHERE p.id = ${id} ORDER BY pm.is_primary DESC, pm.id DESC LIMIT 1
-    `;
-  } else {
-    result = await db`
-      SELECT p.*, u.name as employee_name, u.email, u.department, pm.id as payment_method_id, pm.bank_name, pm.account_number_masked, pm.status as payment_status
-      FROM pay_stubs p JOIN users u ON p.user_id = u.id LEFT JOIN payment_methods pm ON u.id = pm.user_id
-      WHERE p.id = ${id} AND u.manager_name = ${managerName} ORDER BY pm.is_primary DESC, pm.id DESC LIMIT 1
-    `;
+    return result[0] || null;
+  } catch (error) {
+    console.error("Database Error:", error);
+    throw new Error("Failed to fetch pay stub details.");
   }
-  return result[0] || null;
 }
 
 export async function fetchPayStubItems(payStubId: string) {
