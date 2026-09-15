@@ -16,7 +16,6 @@ import {
   X,
   FileText,
   ExternalLink,
-  Link as LinkIcon,
   Eye,
   Calendar,
   Award,
@@ -87,9 +86,7 @@ export default function EducationTab({
   const [docModalItem, setDocModalItem] = useState<{
     id: string;
     level: string;
-    currentUrl?: string | null;
   } | null>(null);
-  const [documentUrlInput, setDocumentUrlInput] = useState("");
 
   // State for the View Full Details Modal
   const [selectedItem, setSelectedItem] = useState<
@@ -107,7 +104,6 @@ export default function EducationTab({
     score: "",
     start_year: "",
     end_year: "",
-    document_url: "",
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -117,7 +113,7 @@ export default function EducationTab({
     setFormData((prev) => ({
       ...prev,
       level,
-      subject: "", // Reset subject when level changes
+      subject: "",
     }));
     setError(null);
   };
@@ -138,14 +134,14 @@ export default function EducationTab({
 
   const handleReset = () => {
     setFormData(initialFormState);
+    if (formRef.current) formRef.current.reset();
     setError(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 
-    // Validate Start and End Years
     if (!formData.start_year || !formData.end_year) {
       setError("Validation Error: Both Start Year and End Year are required.");
       return;
@@ -160,7 +156,6 @@ export default function EducationTab({
       return;
     }
 
-    // Validate Score Range
     if (formData.score !== "") {
       const numericScore = parseFloat(formData.score);
       if (isNaN(numericScore)) {
@@ -170,25 +165,26 @@ export default function EducationTab({
         return;
       }
 
-      if (formData.score_type === "GPA") {
-        if (numericScore < 0 || numericScore > 4.0) {
-          setError(
-            "Validation Error: GPA must be within the valid range of 0.0 to 4.0.",
-          );
-          return;
-        }
-      } else if (formData.score_type === "Percentage") {
-        if (numericScore < 0 || numericScore > 100) {
-          setError(
-            "Validation Error: Percentage must be within the valid range of 0 to 100.",
-          );
-          return;
-        }
+      if (
+        formData.score_type === "GPA" &&
+        (numericScore < 0 || numericScore > 4.0)
+      ) {
+        setError(
+          "Validation Error: GPA must be within the valid range of 0.0 to 4.0.",
+        );
+        return;
+      } else if (
+        formData.score_type === "Percentage" &&
+        (numericScore < 0 || numericScore > 100)
+      ) {
+        setError(
+          "Validation Error: Percentage must be within the valid range of 0 to 100.",
+        );
+        return;
       }
     }
 
-    const data = new FormData();
-    Object.entries(formData).forEach(([key, value]) => data.append(key, value));
+    const data = new FormData(e.currentTarget);
 
     startTransition(async () => {
       try {
@@ -196,11 +192,11 @@ export default function EducationTab({
         handleReset();
       } catch (err) {
         console.error("Failed to add education entry:", err);
+        setError("Failed to upload. Ensure file is under 5MB.");
       }
     });
   };
 
-  // Confirm and proceed with deletion
   const confirmDelete = () => {
     if (!itemToDelete) return;
 
@@ -219,28 +215,21 @@ export default function EducationTab({
     });
   };
 
-  // Open Document Modal prefilled with current URL if present
-  const openDocumentModal = (
-    id: string,
-    level: string,
-    currentUrl?: string | null,
-  ) => {
-    setDocModalItem({ id, level, currentUrl });
-    setDocumentUrlInput(currentUrl || "");
+  const openDocumentModal = (id: string, level: string) => {
+    setDocModalItem({ id, level });
   };
 
-  // Save Document URL from modal
-  const handleSaveDocument = (e: React.FormEvent) => {
+  const handleSaveDocument = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!docModalItem) return;
 
     const targetId = docModalItem.id;
-    const urlToSave = documentUrlInput.trim() || null;
+    const modalFormData = new FormData(e.currentTarget);
 
     setDocModalItem(null);
     startTransition(async () => {
       try {
-        await updateEducationDocumentAction(targetId, urlToSave);
+        await updateEducationDocumentAction(targetId, modalFormData);
       } catch (err) {
         console.error("Failed to update document URL:", err);
       }
@@ -253,7 +242,6 @@ export default function EducationTab({
 
   return (
     <div className="space-y-6 text-left animate-fadeIn">
-      {/* SECTION 1: EDUCATION DETAILS FORM */}
       <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xs space-y-5">
         <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
           <div className="w-7 h-7 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
@@ -321,7 +309,6 @@ export default function EducationTab({
               icon={MapPin}
             />
 
-            {/* Score Type & Dynamic Score Input */}
             <div className="grid grid-cols-2 gap-3">
               <SelectField
                 label="Score Type"
@@ -369,14 +356,17 @@ export default function EducationTab({
             </div>
           </div>
 
-          <InputField
-            label="Document URL / Certificate Link"
-            name="document_url"
-            value={formData.document_url}
-            onChange={handleChange}
-            placeholder="https://example.com/certificate.pdf"
-            icon={LinkIcon}
-          />
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              Upload Certificate (PDF / Image)
+            </label>
+            <input
+              type="file"
+              name="document_file"
+              accept=".pdf,image/png,image/jpeg"
+              className="w-full bg-slate-50 border border-slate-200 text-slate-500 text-sm rounded-lg file:mr-4 file:py-2.5 file:px-4 file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer transition-all"
+            />
+          </div>
 
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
             <button
@@ -404,7 +394,6 @@ export default function EducationTab({
         </form>
       </div>
 
-      {/* SECTION 2: EDUCATION HISTORY TABLE */}
       <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xs space-y-5 overflow-hidden">
         <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider pb-3 border-b border-slate-100">
           Education History
@@ -464,9 +453,7 @@ export default function EducationTab({
 
                       <button
                         type="button"
-                        onClick={() =>
-                          openDocumentModal(edu.id, edu.level, edu.document_url)
-                        }
+                        onClick={() => openDocumentModal(edu.id, edu.level)}
                         className={`p-1.5 rounded-md transition-colors cursor-pointer ${
                           edu.document_url
                             ? "text-indigo-600 hover:bg-indigo-50"
@@ -511,7 +498,6 @@ export default function EducationTab({
         </div>
       </div>
 
-      {/* VIEW FULL DETAILS MODAL */}
       {selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full border border-slate-200 overflow-hidden">
@@ -623,7 +609,6 @@ export default function EducationTab({
         </div>
       )}
 
-      {/* DOCUMENT ATTACH / EDIT MODAL */}
       {docModalItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full border border-slate-200 overflow-hidden">
@@ -647,7 +632,7 @@ export default function EducationTab({
                     Attach Education Document
                   </h3>
                   <p className="text-sm text-slate-500 mt-1">
-                    Provide a link to the diploma, degree, or certificate for{" "}
+                    Upload the diploma, degree, or certificate for{" "}
                     <span className="font-semibold text-slate-700">
                       {docModalItem.level}
                     </span>
@@ -655,15 +640,18 @@ export default function EducationTab({
                   </p>
                 </div>
 
-                <InputField
-                  label="Document URL"
-                  type="url"
-                  placeholder="https://example.com/document.pdf"
-                  value={documentUrlInput}
-                  onChange={(e) => setDocumentUrlInput(e.target.value)}
-                  icon={LinkIcon}
-                  required
-                />
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    Select File
+                  </label>
+                  <input
+                    type="file"
+                    name="document_file"
+                    accept=".pdf,image/*"
+                    required
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-500 text-sm rounded-lg file:mr-4 file:py-2.5 file:px-4 file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer transition-all"
+                  />
+                </div>
               </div>
 
               <div className="bg-slate-50 px-6 py-4 flex items-center justify-end gap-3 border-t border-slate-100">
@@ -678,7 +666,7 @@ export default function EducationTab({
                   type="submit"
                   className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors cursor-pointer shadow-xs"
                 >
-                  Save Document
+                  Upload Document
                 </button>
               </div>
             </form>
@@ -686,7 +674,6 @@ export default function EducationTab({
         </div>
       )}
 
-      {/* CONFIRMATION DELETE MODAL */}
       {itemToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full border border-slate-200 overflow-hidden">
@@ -738,7 +725,6 @@ export default function EducationTab({
   );
 }
 
-// Reusable Input Field Component
 function InputField({
   label,
   type = "text",
@@ -770,7 +756,6 @@ function InputField({
   );
 }
 
-// Reusable Select Field Component
 function SelectField({
   label,
   options,

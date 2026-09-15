@@ -79,16 +79,17 @@ export async function fetchEmployeePaymentMethods(userId: string) {
   }
 }
 
-export async function fetchEmployeeDocuments(userId: string) {
+export async function fetchPayrollDocuments(userId: string) {
   try {
     return await db`
       SELECT id, document_type, file_name, file_extension, file_url, created_at 
       FROM employee_documents 
-      WHERE user_id = ${userId}
+      WHERE user_id = ${userId} 
+      AND document_type IN ('Employment Contract', 'Tax Form', 'Compensation Letter', 'Policy Agreement')
       ORDER BY created_at DESC
     `;
   } catch (error) {
-    console.error("Failed to fetch documents:", error);
+    console.error("Failed to fetch payroll documents:", error);
     return [];
   }
 }

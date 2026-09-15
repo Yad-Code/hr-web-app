@@ -58,7 +58,7 @@ export interface EmployeeDocument {
   id: string;
   user_id: string;
   title: string;
-  category: "Contract" | "Identification" | "Tax" | "Certification" | "Other";
+  category: string;
   file_url: string;
   file_size?: string;
   uploaded_at: string;

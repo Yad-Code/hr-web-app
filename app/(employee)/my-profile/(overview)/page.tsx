@@ -1,18 +1,22 @@
+// @/app/(employee)/my-profile/(overview)/page.tsx
+
+import { Suspense } from "react";
 import { auth } from "@/auth";
-import { getProfileData } from "@/app/lib/employeeDashboard/employee/data";
 import { redirect } from "next/navigation";
+
 import ProfileHeader from "@/app/ui/employee/profile/profileHeader";
 import ProfileTabs from "@/app/ui/employee/profile/tabs/profileTabs";
 import {
   ProfileFormSkeleton,
   ProfileHeaderSkeleton,
 } from "@/app/ui/employee/skeleton";
-import { Suspense } from "react";
+
 import {
   getEducationData,
   getLanguageData,
   getEmployeeDocumentsData,
 } from "@/app/lib/employee/profile/data";
+import { getProfileData } from "@/app/lib/employeeDashboard/employee/data";
 
 export default async function EmployeeProfilePage() {
   const session = await auth();

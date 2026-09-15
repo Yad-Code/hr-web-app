@@ -39,7 +39,7 @@ export async function GET() {
     await db`DROP TABLE IF EXISTS shift_rules`;
     await db`DROP TABLE IF EXISTS education_history`;
     await db`DROP TABLE IF EXISTS employment_history`;
-    
+
     await db`DROP TABLE IF EXISTS requests`;
     await db`DROP TABLE IF EXISTS schedules`;
     await db`DROP TABLE IF EXISTS wfh_requests`;
@@ -54,7 +54,7 @@ export async function GET() {
         job_title VARCHAR(100),
         job_family VARCHAR(100),
         employment_type VARCHAR(50) DEFAULT 'Full-Time',
-        manager_name VARCHAR(100),
+        manager_id UUID REFERENCES users(id) ON DELETE SET NULL,
         join_date DATE,
         department VARCHAR(100), 
         branch VARCHAR(100),
@@ -398,9 +398,9 @@ CREATE TABLE self_assessments (
     const adminPassword = await bcrypt.hash("AdminPass123", 10);
     const employeePassword = await bcrypt.hash("EmployeePass123", 10);
 
-    const seededUsers = await db`
+    const seededManagers = await db`
      INSERT INTO users (
-        employee_id, name, preferred_name, job_title, job_family, employment_type, manager_name, join_date, 
+        employee_id, name, preferred_name, job_title, job_family, employment_type, manager_id, join_date, 
         department, branch, date_of_birth, age, gender, nationality, marital_status, 
         blood_group, email, personal_email, personal_phone, current_address, 
         password_hash, role, is_admin, is_manager, has_employee_view, can_approve_leaves, can_start_reviews, status, base_salary, 
@@ -409,7 +409,7 @@ CREATE TABLE self_assessments (
        )
       VALUES  
         (
-          'EMP-1001', 'Admin Manager', 'Admin', 'HR Director', 'Human Resources', 'Full-Time', 'CEO', '2020-01-15',
+          'EMP-1001', 'Admin Manager', 'Admin', 'HR Director', 'Human Resources', 'Full-Time', NULL, '2020-01-15',
           'Human Resources', 'HQ - Sulaymaniyah',
           '1988-03-15', 38, 'Female', 'Iraqi', 'Married', 'O+',
           'admin@company.com', 'admin.personal@gmail.com', '+964 770 111 2233',
@@ -419,7 +419,7 @@ CREATE TABLE self_assessments (
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
         ),
         (
-          'EMP-1006', 'Sarah Jenkins', 'Sarah', 'Head of Engineering', 'Engineering', 'Full-Time', 'CEO', '2019-05-10',
+          'EMP-1006', 'Sarah Jenkins', 'Sarah', 'Head of Engineering', 'Engineering', 'Full-Time', NULL, '2019-05-10',
           'Engineering', 'HQ - Sulaymaniyah',
           '1985-08-22', 40, 'Female', 'American', 'Married', 'A+',
           'sarah.j@company.com', 'sarah.j.personal@gmail.com', '+964 770 999 8877',
@@ -429,7 +429,7 @@ CREATE TABLE self_assessments (
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
         ),
         (
-          'EMP-1007', 'Alex Studio', 'Alex', 'Head of Design', 'Design', 'Full-Time', 'CEO', '2020-11-20',
+          'EMP-1007', 'Alex Studio', 'Alex', 'Head of Design', 'Design', 'Full-Time', NULL, '2020-11-20',
           'Design', 'HQ - Sulaymaniyah',
           '1990-12-05', 35, 'Male', 'British', 'Single', 'B-',
           'alex.s@company.com', 'alex.s.personal@gmail.com', '+964 770 666 5544',
@@ -439,7 +439,43 @@ CREATE TABLE self_assessments (
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
         ),
         (
-          'EMP-1002', 'Yad Developer', 'Yad', 'Software Engineer', 'Engineering', 'Full-Time', 'Sarah Jenkins', '2022-03-01',
+          'EMP-1008', 'Naza Rahman', 'Naza', 'HR Manager', 'Human Resources', 'Full-Time', NULL, '2022-08-15',
+          'Human Resources', 'Erbil Branch',
+          '1992-07-14', 34, 'Female', 'Iraqi', 'Married', 'A+',
+          'naza.hr@company.com', 'naza.personal@gmail.com', '+964 750 111 2233',
+          'Bakhtiari, Erbil', ${adminPassword}, 'hr', false, true, true, true, false, 'Active', 
+          4500.00, NULL, NULL, 'Standard Health', NULL,
+          'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
+        ), 
+        (
+          'EMP-1009', 'Saman Ali', 'Saman', 'HR Coordinator', 'Human Resources', 'Full-Time', NULL, '2024-02-01',
+          'Human Resources', 'HQ - Sulaymaniyah',
+          '1996-11-30', 29, 'Male', 'Iraqi', 'Single', 'O+',
+          'saman.hr@company.com', 'saman.personal@gmail.com', '+964 770 888 9900',
+          'Rizgary, Sulaymaniyah', ${adminPassword}, 'hr', false, true, true, true, false, 'Active', 
+          3200.00, NULL, NULL, 'Standard Health', NULL,
+          'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80',
+          '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
+        )
+      RETURNING id, role, name, manager_id;
+    `;
+
+    const sarahId = seededManagers.find((m) => m.name === "Sarah Jenkins")?.id;
+    const alexId = seededManagers.find((m) => m.name === "Alex Studio")?.id;
+
+    const seededEmployees = await db`
+     INSERT INTO users (
+        employee_id, name, preferred_name, job_title, job_family, employment_type, manager_id, join_date, 
+        department, branch, date_of_birth, age, gender, nationality, marital_status, 
+        blood_group, email, personal_email, personal_phone, current_address, 
+        password_hash, role, is_admin, is_manager, has_employee_view, can_approve_leaves, can_start_reviews, status, base_salary, 
+        public_org, private_org, insurance, subscription,
+        image_url, shift_start, shift_end, shift_type, working_days, last_seen_at
+       )
+      VALUES  
+        (
+          'EMP-1002', 'Yad Developer', 'Yad', 'Software Engineer', 'Engineering', 'Full-Time', ${sarahId}, '2022-03-01',
           'Engineering', 'HQ - Sulaymaniyah',
           '2002-05-20', 24, 'Male', 'Iraqi', 'Single', 'A+',
           'yad@company.com', 'yad.dev@gmail.com', '+964 770 222 3344',
@@ -449,7 +485,7 @@ CREATE TABLE self_assessments (
           '09:00:00', '17:00:00', 'Weekend Flex', '{6,0,1}', CURRENT_TIMESTAMP
         ),
         (
-          'EMP-1003', 'Lana Amin', 'Lana', 'Product Designer', 'Design', 'Full-Time', 'Alex Studio', '2023-06-10',
+          'EMP-1003', 'Lana Amin', 'Lana', 'Product Designer', 'Design', 'Full-Time', ${alexId}, '2023-06-10',
           'Design', 'HQ - Sulaymaniyah',
           '1997-09-12', 28, 'Female', 'Iraqi', 'Single', 'B+',
           'lana@company.com', 'lana.amin@gmail.com', '+964 770 333 4455',
@@ -459,7 +495,7 @@ CREATE TABLE self_assessments (
           '09:00:00', '17:00:00', 'Mid-Week Core', '{2,3,4}', CURRENT_TIMESTAMP - INTERVAL '2 hours'
         ),
         (
-          'EMP-1004', 'Diyar Karwan', 'Diyar', 'Backend Engineer', 'Engineering', 'Full-Time', 'Sarah Jenkins', '2021-11-20',
+          'EMP-1004', 'Diyar Karwan', 'Diyar', 'Backend Engineer', 'Engineering', 'Full-Time', ${sarahId}, '2021-11-20',
           'Engineering', 'HQ - Sulaymaniyah',
           '1995-11-04', 30, 'Male', 'Iraqi', 'Married', 'O-',
           'diyar@company.com', 'diyar.karwan@gmail.com', '+964 770 444 5566',
@@ -469,7 +505,7 @@ CREATE TABLE self_assessments (
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP - INTERVAL '1 day'
         ),
         (
-          'EMP-1005', 'Sara Omar', 'Sara', 'QA Engineer', 'Engineering', 'Full-Time', 'Sarah Jenkins', '2024-01-05',
+          'EMP-1005', 'Sara Omar', 'Sara', 'QA Engineer', 'Engineering', 'Full-Time', ${sarahId}, '2024-01-05',
           'Engineering', 'HQ - Sulaymaniyah',
           '1999-01-28', 27, 'Female', 'Iraqi', 'Single', 'AB+',
           'sara@company.com', 'sara.omar@gmail.com', '+964 770 555 6677',
@@ -478,9 +514,10 @@ CREATE TABLE self_assessments (
           'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP - INTERVAL '5 minutes'
         )
-      
-      RETURNING id, role, name, manager_name;
-      `;
+      RETURNING id, role, name, manager_id;
+    `;
+
+    const seededUsers = [...seededManagers, ...seededEmployees];
 
     await db`
         CREATE TABLE leave_requests (
@@ -548,15 +585,10 @@ CREATE TABLE self_assessments (
     const adminId = seededUsers.find((user) => user.role === "admin")?.id;
     if (!adminId) throw new Error("Admin user not found");
 
-    const managers = seededUsers.filter(
-      (user) => user.role === "admin" || user.role === "manager",
-    );
     const employees = seededUsers.filter((user) => user.role === "employee");
 
     for (const emp of employees) {
-      const employeeManager =
-        managers.find((m) => m.name === emp.manager_name) || managers[0];
-      const managerId = employeeManager.id;
+      const managerId = emp.manager_id || adminId;
 
       await db`
         INSERT INTO leave_balances (
@@ -690,7 +722,7 @@ CREATE TABLE self_assessments (
             'Completed'
         );
 `;
- 
+
       await db`
     INSERT INTO career_development (
         user_id,
@@ -964,13 +996,6 @@ VALUES
           'png', 
           'https://example.com/docs/national_identity_card.png'
         ),
-        (
-          ${emp.id}, 
-          'Degree Certificate', 
-          'bachelors_degree_certificate.pdf', 
-          'pdf', 
-          'https://example.com/docs/bachelors_degree_certificate.pdf'
-        );
 `;
 
       await db`

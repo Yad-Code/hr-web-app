@@ -6,7 +6,7 @@ import {
   fetchEmployeePayStubs,
   fetchPayStubItems,
   fetchEmployeePaymentMethods,
-  fetchEmployeeDocuments,
+  fetchPayrollDocuments,
 } from "@/app/lib/admin/payroll/data";
 import { addPaymentMethod } from "@/app/lib/employee/payroll/data";
 import { getCurrentUserId } from "@/app/lib/employeeDashboard/performance/actions/utils";
@@ -18,7 +18,7 @@ export default async function Page() {
 
   const rawStubs = await fetchEmployeePayStubs(userId);
   const rawMethods = await fetchEmployeePaymentMethods(userId);
-  const rawDocs = await fetchEmployeeDocuments(userId);
+  const rawDocs = await fetchPayrollDocuments(userId);
 
   const documents = rawDocs.map((doc) => ({
     id: doc.id,

@@ -57,7 +57,7 @@ export async function getLanguageData(userId: string): Promise<LanguageItem[]> {
 }
 
 export async function getEmployeeDocumentsData(
-  userId: string
+  userId: string,
 ): Promise<EmployeeDocument[]> {
   try {
     const documents = await db<EmployeeDocument[]>`
@@ -69,7 +69,8 @@ export async function getEmployeeDocumentsData(
         file_url,
         created_at::text AS uploaded_at
       FROM employee_documents
-      WHERE user_id = ${userId}
+      WHERE user_id = ${userId} 
+      AND document_type NOT IN ('Employment Contract', 'Tax Form', 'Compensation Letter', 'Policy Agreement', 'Degree Certificate')
       ORDER BY created_at DESC
     `;
 

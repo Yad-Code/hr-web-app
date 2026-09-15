@@ -14,7 +14,7 @@ import {
   UserPen,
   GraduationCap,
   Languages,
-  FileText,
+  FileText, 
 } from "lucide-react";
 import {
   ProfileTabsProps,
