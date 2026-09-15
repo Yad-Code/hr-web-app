@@ -11,32 +11,61 @@ export async function updateLeaveRequestStatus(
 ) {
   try {
     const session = await auth();
-    if (!session?.user?.isAdmin && !session?.user?.canApproveLeaves)
-      if (!session?.user) return { success: false, error: "Unauthorized" };
+    if (!session?.user) return { success: false, error: "Unauthorized" };
     if (!requestId) return { success: false, error: "Request ID is required." };
 
     const isAdmin = session.user.isAdmin;
+    const canApproveLeaves = session.user.canApproveLeaves;
     const managerName = session.user.name as string;
 
-    if (!isAdmin) {
-      const authCheck = await db`
-        SELECT r.id FROM leave_requests r
-        JOIN users u ON r.user_id = u.id
-        WHERE r.id = ${requestId} AND u.manager_name = ${managerName}
-      `;
-      if (authCheck.length === 0) {
-        return {
-          success: false,
-          error: "Unauthorized to modify this request.",
-        };
-      }
+    // 1. Security Check
+    if (!isAdmin && !canApproveLeaves) {
+      return { success: false, error: "Unauthorized to approve leaves." };
     }
 
+    // 2. Fetch the request details to deduct the correct balances
+    const requestData = await db`
+      SELECT r.*, u.manager_name 
+      FROM leave_requests r
+      JOIN users u ON r.user_id = u.id
+      WHERE r.id = ${requestId}
+    `;
+
+    if (requestData.length === 0)
+      return { success: false, error: "Request not found." };
+    const request = requestData[0];
+
+    // Manager scope check
+    if (!isAdmin && request.manager_name !== managerName) {
+      return {
+        success: false,
+        error: "Unauthorized to modify this employee's request.",
+      };
+    }
+
+    // 3. Update the request status
     await db`
       UPDATE leave_requests
       SET status = ${newStatus}, updated_at = NOW()
       WHERE id = ${requestId}
     `;
+
+    // 4. Automatically deduct balances if Approved!
+    if (newStatus === "Approved") {
+      const userId = request.user_id;
+
+      if (request.type === "dayoff") {
+        const days = Number(request.total_days);
+        if (request.leave_category?.toLowerCase() === "sick") {
+          await db`UPDATE leave_balances SET sick_remaining = sick_remaining - ${days} WHERE user_id = ${userId}`;
+        } else {
+          await db`UPDATE leave_balances SET annual_remaining = annual_remaining - ${days} WHERE user_id = ${userId}`;
+        }
+      } else if (request.type === "timeoff") {
+        const hours = Number(request.hours);
+        await db`UPDATE leave_balances SET monthly_remaining_hours = monthly_remaining_hours - ${hours} WHERE user_id = ${userId}`;
+      }
+    }
 
     revalidatePath("/dashboard/attendance");
     return { success: true };

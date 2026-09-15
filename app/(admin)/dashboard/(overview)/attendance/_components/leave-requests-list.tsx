@@ -51,7 +51,6 @@ export function LeaveRequestsList({
             const isCurrentlyProcessing =
               isPending && processingId === request.id;
 
-            // Check if start and end dates are identical for cleaner UI
             const isSingleDay = request.startDate === request.endDate;
 
             return (
@@ -100,6 +99,23 @@ export function LeaveRequestsList({
                     </span>
                   )}
                 </div>
+
+                {request.reason && (
+                  <div className="px-1 py-0.5">
+                    <p className="text-[11px] text-slate-600 dark:text-slate-300 italic border-l-2 border-indigo-200 dark:border-indigo-900/50 pl-2">
+                      &quot;{request.reason}&quot;
+                    </p>
+                  </div>
+                )}
+
+                {request.leaveType === "Shift Exchange" &&
+                  request.helperName && (
+                    <div className="px-1 py-1">
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200/50 dark:border-amber-800/50">
+                        Covered by: {request.helperName}
+                      </span>
+                    </div>
+                  )}
 
                 <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700/50">
                   <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">

@@ -32,6 +32,8 @@ export interface LeaveRequestRow {
   endDate: string;
   days: number;
   status: "Pending" | "Approved" | "Rejected";
+  reason?: string;
+  helperName?: string | null;
 }
 
 export interface ShiftRule {

@@ -21,6 +21,22 @@ async function authorizeManagerAction(targetUserId: string) {
   return false;
 }
 
+const ReviewSchema = z.object({
+  userId: z.string().min(1, "Please select an employee."),
+  period: z.string().min(1, "Review period is required."),
+  date: z.string().min(1, "Date is required."),
+  reviewer: z.string().min(1, "Reviewer name is required."),
+  rating: z.coerce.number().min(1).max(5),
+  productivity: z.coerce.number().min(1).max(100),
+  quality: z.coerce.number().min(1).max(100),
+  teamwork: z.coerce.number().min(1).max(100),
+  strengths: z.string().optional(),
+  improvements: z.string().optional(),
+  managerComments: z.string().optional(),
+  employeeComments: z.string().optional(),
+  goalsForNextCycle: z.string().optional(),
+});
+
 const GoalSchema = z.object({
   userId: z.string().min(1, "Please select an employee."),
   title: z.string().min(3, "Title must be at least 3 characters."),
@@ -79,19 +95,6 @@ export async function createNewGoal(formData: FormData): Promise<void> {
   redirect("/dashboard/performance");
 }
 
-const ReviewSchema = z.object({
-  userId: z.string().min(1, "Please select an employee."),
-  period: z.string().min(1, "Review period is required."),
-  date: z.string().min(1, "Date is required."),
-  reviewer: z.string().min(1, "Reviewer name is required."),
-  rating: z.coerce.number().min(1).max(5),
-  strengths: z.string().optional(),
-  improvements: z.string().optional(),
-  managerComments: z.string().optional(),
-  employeeComments: z.string().optional(),
-  goalsForNextCycle: z.string().optional(),
-});
-
 export async function createNewReview(formData: FormData): Promise<void> {
   const validatedFields = ReviewSchema.safeParse({
     userId: formData.get("userId"),
@@ -99,6 +102,9 @@ export async function createNewReview(formData: FormData): Promise<void> {
     date: formData.get("date"),
     reviewer: formData.get("reviewer"),
     rating: formData.get("rating"),
+    productivity: formData.get("productivity"),
+    quality: formData.get("quality"),
+    teamwork: formData.get("teamwork"),
     strengths: formData.get("strengths"),
     improvements: formData.get("improvements"),
     managerComments: formData.get("managerComments"),
@@ -106,6 +112,7 @@ export async function createNewReview(formData: FormData): Promise<void> {
     goalsForNextCycle: formData.get("goalsForNextCycle"),
   });
 
+  // ... (Keep existing validation and authorization checks)
   if (!validatedFields.success) {
     console.error(
       "Validation Error:",
@@ -120,6 +127,9 @@ export async function createNewReview(formData: FormData): Promise<void> {
     date,
     reviewer,
     rating,
+    productivity,
+    quality,
+    teamwork, // 👈 ADDED
     strengths,
     improvements,
     managerComments,
@@ -127,7 +137,7 @@ export async function createNewReview(formData: FormData): Promise<void> {
     goalsForNextCycle,
   } = validatedFields.data;
 
-  // SECURITY CHECK
+  // ... (Keep existing auth check)
   const isAuthorized = await authorizeManagerAction(userId);
   if (!isAuthorized) {
     console.error("Unauthorized to review this employee.");
@@ -140,8 +150,11 @@ export async function createNewReview(formData: FormData): Promise<void> {
   evalDate.setMonth(evalDate.getMonth() + 6);
   const nextReviewDate = evalDate.toISOString().split("T")[0];
 
+  // 👈 ADDED: Format the date to YYYY-MM-01 to match the cron job snapshot format
+  const targetMonth = `${new Date(date).getFullYear()}-${String(new Date(date).getMonth() + 1).padStart(2, "0")}-01`;
+
   try {
-    // STRICT TYPING: || null guarantees undefined is stripped for the SQL driver
+    // 1. Update the Formal Review Log
     await db`
       INSERT INTO performance_reviews (
         user_id, period, date, reviewer, rating, 
@@ -154,6 +167,7 @@ export async function createNewReview(formData: FormData): Promise<void> {
       )
     `;
 
+    // 2. Update the Master Profile
     await db`
       INSERT INTO user_performance (user_id, rating, cycle, next_review, status)
       VALUES (${userId}, ${rating}, ${period}, ${nextReviewDate}, ${status})
@@ -164,6 +178,18 @@ export async function createNewReview(formData: FormData): Promise<void> {
         status = EXCLUDED.status
     `;
 
+    // 3. 👈 ADDED: Inject subjective metrics into the Monthly Dashboard Snapshot
+    await db`
+      INSERT INTO performance_history (user_id, month, productivity, quality, teamwork)
+      VALUES (${userId}, ${targetMonth}, ${productivity}, ${quality}, ${teamwork})
+      ON CONFLICT (user_id, month) 
+      DO UPDATE SET 
+        productivity = EXCLUDED.productivity,
+        quality = EXCLUDED.quality,
+        teamwork = EXCLUDED.teamwork
+    `;
+
+    // 4. Send Notification
     const notificationDesc = `A new performance review for ${period} has been published by ${reviewer}.`;
     await db`
       INSERT INTO performance_notifications (user_id, title, description, type, is_read)

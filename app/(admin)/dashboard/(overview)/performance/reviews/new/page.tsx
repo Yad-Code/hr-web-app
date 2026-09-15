@@ -9,10 +9,10 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 
 export default async function NewReviewPage() {
-    const session = await auth();
-    if (!session?.user?.isAdmin && !session?.user?.canStartReviews) {
-      redirect("/dashboard/performance/reviews");
-    }
+  const session = await auth();
+  if (!session?.user?.isAdmin && !session?.user?.canStartReviews) {
+    redirect("/dashboard/performance/reviews");
+  }
 
   const employees = await getEmployeesList();
 
@@ -137,6 +137,68 @@ export default async function NewReviewPage() {
             </div>
           </div>
         </div>
+        
+        <div className="col-span-1 md:col-span-2 pt-2">
+          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
+            Dashboard Analytics (1-100)
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <label
+                htmlFor="productivity"
+                className="text-sm font-semibold text-slate-900 block"
+              >
+                Productivity Score
+              </label>
+              <input
+                type="number"
+                id="productivity"
+                name="productivity"
+                min="1"
+                max="100"
+                placeholder="85"
+                required
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all"
+              />
+            </div>
+            <div className="space-y-2">
+              <label
+                htmlFor="quality"
+                className="text-sm font-semibold text-slate-900 block"
+              >
+                Quality of Work
+              </label>
+              <input
+                type="number"
+                id="quality"
+                name="quality"
+                min="1"
+                max="100"
+                placeholder="90"
+                required
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all"
+              />
+            </div>
+            <div className="space-y-2">
+              <label
+                htmlFor="teamwork"
+                className="text-sm font-semibold text-slate-900 block"
+              >
+                Teamwork & Culture
+              </label>
+              <input
+                type="number"
+                id="teamwork"
+                name="teamwork"
+                min="1"
+                max="100"
+                placeholder="95"
+                required
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all"
+              />
+            </div>
+          </div>
+        </div> 
 
         <hr className="border-slate-100" />
 

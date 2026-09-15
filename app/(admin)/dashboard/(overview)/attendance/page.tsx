@@ -29,7 +29,6 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
   const todayString = new Date().toISOString().split("T")[0];
   const targetDate = resolvedParams.date || todayString;
 
-  // Unify all database calls into a single, high-performance Promise.all block
   const [
     kpiStatsResult,
     rawLogsResult,
@@ -80,9 +79,11 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
       SELECT 
         r.id, u.name AS employee_name, u.image_url, u.job_title,       
         r.created_at, r.type, r.leave_category, r.start_date, r.end_date,
-        r.total_days, r.hours, r.status
+        r.total_days, r.hours, r.status, r.reason,
+        h.name AS helper_name
       FROM leave_requests r
       JOIN users u ON r.user_id = u.id
+      LEFT JOIN users h ON r.helper_id = h.id
       WHERE (${isAdmin}::boolean OR u.manager_name = ${managerName})
       ORDER BY r.created_at DESC
     `,
@@ -141,6 +142,8 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
       hours: Number(row.hours),
       jobTitle: row.job_title as string | null,
       createdAt: row.created_at as Date,
+      reason: row.reason as string,
+      helperName: row.helper_name as string | null,
       status: ((row.status as string).charAt(0).toUpperCase() +
         (row.status as string).slice(1)) as "Pending" | "Approved" | "Rejected",
     };
