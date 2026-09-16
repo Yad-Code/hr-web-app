@@ -88,8 +88,7 @@ export default function PaymentMethodsTab({
           </div>
         ))}
       </div>
-
-      {/* Add Account Modal */}
+ 
       {showAddModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
           <div className="bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-200 p-6 space-y-5">

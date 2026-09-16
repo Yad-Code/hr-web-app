@@ -104,8 +104,7 @@ export async function getAttendanceData(
     let totalDaysPresent = 0;
     let lateArrivals = 0;
     let totalMinutes = 0;
-
-    // Calculate matching schedule vs actual attendance for the rate
+ 
     for (let i = 1; i <= limitDate; i++) {
       const dObj = new Date(targetY, targetM, i);
 

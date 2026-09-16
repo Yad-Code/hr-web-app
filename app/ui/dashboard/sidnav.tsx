@@ -9,7 +9,7 @@ interface SideNavProps {
   hasEmployeeView: boolean;
 }
 
-export default async function SideNav({
+export default async function SideNav({ 
   isAdmin,
   isManager,
   hasEmployeeView,

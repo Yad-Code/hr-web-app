@@ -1,8 +1,10 @@
 // app/lib/employeeDashboard/employee/data.ts
-import { sql } from "@/app/lib/employeeDashboard/employee/db";
-import { formatDistanceToNow } from "date-fns";
+
 import { auth } from "@/auth";
+import { sql } from "@/app/lib/employeeDashboard/employee/db";
+
 import { Employee } from "@/app/lib/employeeList/definitions";
+import { formatDistanceToNow } from "date-fns";
 
 export interface PendingRequest {
   id: string;
@@ -28,9 +30,10 @@ export interface AttendanceRecord {
 export async function getProfileData(email: string) {
   try {
     const users = await sql`
-      SELECT * 
-      FROM users 
-      WHERE email = ${email}
+      SELECT u.*, m.name as fetched_manager_name 
+      FROM users u
+      LEFT JOIN users m ON u.manager_id = m.id
+      WHERE u.email = ${email}
     `;
 
     if (!users[0]) return null;
@@ -59,6 +62,7 @@ export async function getProfileData(email: string) {
       role: user.role || "employee",
       status: user.status || "Active",
       image_url: user.image_url || null,
+      managerName: user.fetched_manager_name || null,
     };
   } catch (error) {
     console.error("Failed to fetch employee profile:", error);
@@ -68,21 +72,21 @@ export async function getProfileData(email: string) {
 
 export async function fetchEmployeeStatusList(): Promise<Employee[]> {
   try {
-    const session = await auth(); 
+    const session = await auth();
     if (!session?.user?.id) return [];
 
-    const isAdmin = session.user.isAdmin; 
-    const managerId = session.user.id; 
+    const isAdmin = session.user.isAdmin;
+    const managerId = session.user.id;
 
     let rows;
 
-    if (isAdmin) { 
+    if (isAdmin) {
       rows = await sql`
         SELECT id, name, email, role, image_url, last_seen_at, department
         FROM users
         ORDER BY name ASC
       `;
-    } else { 
+    } else {
       rows = await sql`
         SELECT id, name, email, role, image_url, last_seen_at, department
         FROM users 
@@ -130,7 +134,6 @@ export function getRelativeTimeString(date: Date): string {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
- 
 export async function getCurrentUserRole() {
   const session = await auth();
   return session?.user?.role || "employee";
@@ -191,7 +194,7 @@ export function getFormattedTime(): string {
   let hours = now.getHours();
   const minutes = String(now.getMinutes()).padStart(2, "0");
   const ampm = hours >= 12 ? "PM" : "AM";
-  hours = hours % 12 || 12;  
+  hours = hours % 12 || 12;
   const formattedHours = String(hours).padStart(2, "0");
 
   return `${formattedHours}:${minutes} ${ampm}`;

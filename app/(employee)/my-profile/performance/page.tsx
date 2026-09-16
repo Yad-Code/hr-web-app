@@ -5,7 +5,7 @@ import PerformanceDashboard from "@/app/ui/employee/performance/performance-dash
 
 export default async function PerformancePage() { 
   const userId = await getCurrentUserId();
- 
+  
   const dashboardData = await getPerformanceDashboard(userId);
 
   return (
@@ -13,5 +13,5 @@ export default async function PerformancePage() {
       <h1 className="text-2xl font-bold mb-6">My Performance Dashboard</h1> 
       <PerformanceDashboard initialData={dashboardData} />
     </div>
-  );
+  );  
 } 

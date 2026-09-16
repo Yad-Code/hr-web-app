@@ -12,6 +12,11 @@ import {
 export async function requestOneOnOne(data: RequestMeetingData) {
   try {
     const userId = await getCurrentUserId();
+ 
+    const userQuery = await sql`
+      SELECT manager_id FROM users WHERE id = ${userId} LIMIT 1
+    `;
+    const managerId = userQuery[0]?.manager_id || null;
 
     await sql`
       INSERT INTO one_on_one_meetings (
@@ -25,7 +30,7 @@ export async function requestOneOnOne(data: RequestMeetingData) {
       )
       VALUES (
         ${userId},
-        (SELECT id FROM users WHERE is_admin = true LIMIT 1),
+        ${managerId},  
         ${data.topic},
         ${data.meeting_date},
         ${data.notes || null},

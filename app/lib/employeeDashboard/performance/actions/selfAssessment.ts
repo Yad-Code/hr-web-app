@@ -1,3 +1,4 @@
+// @/app/lib/performance/actions/selfAssessment.ts
 "use server";
 
 import { sql } from "@/app/lib/employeeDashboard/employee/db";
@@ -24,11 +25,11 @@ export async function submitSelfAssessment(formData: FormData) {
 
   const { achievements, challenges, future_goals } = parsed.data;
 
-  try {
+  try { 
     const userQuery =
-      await sql`SELECT manager_name FROM users WHERE id = ${userId}`;
-    const managerName = userQuery[0]?.manager_name;
- 
+      await sql`SELECT manager_id FROM users WHERE id = ${userId}`;
+    const managerId = userQuery[0]?.manager_id;
+
     await sql`
       UPDATE self_assessments
       SET
@@ -39,22 +40,18 @@ export async function submitSelfAssessment(formData: FormData) {
         submitted_at = NOW()
       WHERE user_id = ${userId} AND cycle = ${cycle}
     `;
- 
+
     await sql`
       UPDATE performance_notifications 
       SET is_read = true 
       WHERE user_id = ${userId} AND type = 'Assessment' AND is_read = false
     `;
  
-    if (managerName) {
-      const managerQuery =
-        await sql`SELECT id FROM users WHERE name = ${managerName} LIMIT 1`;
-      if (managerQuery.length > 0) {
-        await sql`
-          INSERT INTO performance_notifications (user_id, requester_id, title, description, type, is_read)
-          VALUES (${managerQuery[0].id}, ${userId}, 'Assessment Submitted', 'An employee has submitted their self-assessment for review.', 'Review', false)
-        `;
-      }
+    if (managerId) {
+      await sql`
+        INSERT INTO performance_notifications (user_id, requester_id, title, description, type, is_read)
+        VALUES (${managerId}, ${userId}, 'Assessment Submitted', 'An employee has submitted their self-assessment for review.', 'Review', false)
+      `;
     }
 
     revalidatePath("/my-profile/performance");
@@ -89,14 +86,12 @@ export async function reopenSelfAssessment() {
 export async function saveSelfAssessmentDraft(formData: FormData) {
   try {
     const userId = await getCurrentUserId();
-
-    // Extract fields from the form
+ 
     const cycle = formData.get("cycle") as string;
     const achievements = formData.get("achievements") as string;
     const challenges = formData.get("challenges") as string;
     const futureGoals = formData.get("future_goals") as string;
-
-    // Update the record without changing the submitted status to true
+ 
     await sql`
       UPDATE self_assessments
       SET 

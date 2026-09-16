@@ -7,11 +7,7 @@ import bcrypt from "bcrypt";
 import postgres from "postgres";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
-
-// ==========================================
-// SCHEMAS & HELPERS
-// ==========================================
-
+ 
 const LoginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
   password: z
@@ -20,8 +16,7 @@ const LoginSchema = z.object({
 });
 
 async function getUser(email: string) {
-  try {
-    // UPDATED: Fetch the new granular boolean flags
+  try { 
     const user = await sql`
       SELECT 
         id, name, email, password_hash, role, image_url,
@@ -58,13 +53,12 @@ export async function verifyUserCredentials(email: string, password: string) {
     user.password_hash,
   );
 
-  if (passwordsMatch) {
-    // UPDATED: Return the booleans to NextAuth so they can be injected into the session token
+  if (passwordsMatch) { 
     return {
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role, // Cosmetic title
+      role: user.role,  
       image: user.image_url,
       isAdmin: user.isAdmin,
       isManager: user.isManager,
@@ -78,18 +72,12 @@ export async function verifyUserCredentials(email: string, password: string) {
 
   return null;
 }
-
-// ==========================================
-// AUTHENTICATION SERVER ACTIONS
-// ==========================================
+ 
 
 export async function handleSignOut() {
   await signOut({ redirectTo: "/login" });
 }
-
-/**
- * Server Action to securely authenticate users.
- */
+ 
 export async function authenticate(
   prevState: string | undefined,
   formData: FormData,
@@ -103,8 +91,7 @@ export async function authenticate(
     }
 
     const { email, password } = validatedFields.data;
-
-    // UPDATED: Redirect logic now uses absolute structural flags instead of cosmetic strings
+ 
     const user = await getUser(email);
     const destination =
       user?.isAdmin || user?.isManager ? "/dashboard" : "/my-profile";

@@ -10,7 +10,7 @@ export async function getEducationData(userId: string) {
     const educationRecords = await db`
       SELECT 
         id,
-        level,
+        level, 
         subject,
         institution,
         location,

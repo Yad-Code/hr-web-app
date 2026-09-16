@@ -33,7 +33,7 @@ interface TopNavbarProps {
   };
 }
 
-export function TopNavbar({ user }: TopNavbarProps) {
+export default function TopNavbar({ user }: TopNavbarProps) {
   const isManagement = user.isAdmin || user.isManager;
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);

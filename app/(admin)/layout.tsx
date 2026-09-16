@@ -1,7 +1,7 @@
 // @/app/(admin)/layout.tsx
 
 import SideNav from "../ui/dashboard/sidnav";
-import { TopNavbar } from "@/app/ui/dashboard/top-navbar";
+import TopNavbar from "@/app/ui/dashboard/top-navbar";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { PresenceHeartbeat } from "@/app/providers/PresenceHeartbeat";

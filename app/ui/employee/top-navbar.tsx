@@ -32,7 +32,7 @@ interface TopNavbarProps {
   };
 }
 
-export function TopNavbar({ user }: TopNavbarProps) {
+export default function TopNavbar({ user }: TopNavbarProps) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);

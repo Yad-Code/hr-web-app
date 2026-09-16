@@ -29,8 +29,7 @@ export default function OverviewTab({
     latestStub?.items.filter((item) => item.type === "deduction") ?? [];
 
   return (
-    <div className="space-y-6">
-      {/* Key Metrics */}
+    <div className="space-y-6"> 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="p-5 bg-white border border-slate-200 rounded-xl shadow-xs space-y-1">
           <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
