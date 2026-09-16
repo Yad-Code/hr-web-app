@@ -5,17 +5,27 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Search, X } from "lucide-react";
+
+import { Search, X, ShieldAlert } from "lucide-react";
+
 import { Employee } from "@/app/lib/employeeList/definitions";
+import ManagePermissionsModal from "@/app/ui/employee/modals/manage-permissions-modal";
 
 interface EmployeeSearchListClientProps {
   initialEmployees: Employee[];
+  isAdmin?: boolean;
 }
 
 export function EmployeeSearchListClient({
   initialEmployees,
+  isAdmin = false,
 }: EmployeeSearchListClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
+    null,
+  );
+
   const router = useRouter();
 
   useEffect(() => {
@@ -41,7 +51,6 @@ export function EmployeeSearchListClient({
 
   return (
     <div className="w-full space-y-6">
-      {/* Unified Command Bar */}
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-2 sm:pr-4 rounded-2xl border border-slate-200/80 shadow-xs">
         <div className="relative w-full sm:max-w-md flex-1">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -76,7 +85,6 @@ export function EmployeeSearchListClient({
         </div>
       </div>
 
-      {/* Floating Employee Cards */}
       {filteredEmployees.length === 0 ? (
         <div className="text-center py-16 border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50 flex flex-col items-center justify-center">
           <Search className="w-8 h-8 text-slate-300 mb-3" />
@@ -153,17 +161,43 @@ export function EmployeeSearchListClient({
                     {employee.last_seen_text}
                   </span>
 
-                  <Link
-                    href={`/dashboard/employees/${employee.id}/edit`}
-                    className="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-xs"
-                  >
-                    View Profile
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedEmployee(employee);
+                          setIsModalOpen(true);
+                        }}
+                        className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl hover:bg-rose-100 transition-all shadow-xs cursor-pointer"
+                      >
+                        <ShieldAlert className="w-3.5 h-3.5" />
+                        Manage Access
+                      </button>
+                    )}
+
+                    <Link
+                      href={`/dashboard/employees/${employee.id}/edit`}
+                      className="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-xs"
+                    >
+                      View Profile
+                    </Link>
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
+      )}
+      {isModalOpen && selectedEmployee && (
+        <ManagePermissionsModal
+          isOpen={isModalOpen}
+          employee={selectedEmployee}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedEmployee(null);
+          }}
+        />
       )}
     </div>
   );

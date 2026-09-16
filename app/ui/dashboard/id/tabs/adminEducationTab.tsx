@@ -25,8 +25,7 @@ export default function AdminEducationTab({
 }: AdminEducationTabProps) {
   const [isPending, startTransition] = useTransition();
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  // Modal states
+ 
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [docModalItem, setDocModalItem] = useState<{
     id: string;
@@ -37,8 +36,7 @@ export default function AdminEducationTab({
   const [selectedItem, setSelectedItem] = useState<
     AdminEducationTabProps["educationHistory"][number] | null
   >(null);
-
-  // 👇 FIX 1: Accept FormData directly so the physical file is preserved
+ 
   const handleAddEducation = (formData: FormData) => {
     startTransition(async () => {
       try {
@@ -66,8 +64,7 @@ export default function AdminEducationTab({
       }
     });
   };
-
-  // 👇 FIX 2: Accept FormData instead of a string URL
+ 
   const handleSaveDocument = (formData: FormData) => {
     if (!docModalItem) return;
 
