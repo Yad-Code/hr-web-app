@@ -4,16 +4,15 @@
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
- 
+
 async function authorizeManagerAction(targetUserId: string) {
   const session = await auth();
-  if (!session?.user) return false;
-  if (session.user.isAdmin) return true;  
-  
-  if (session.user.isManager) {  
-    const managerName = session.user.name as string;
+  if (!session?.user?.id) return false;
+  if (session.user.isAdmin) return true;
+  if (session.user.isManager) {
+    const managerId = session.user.id;
     const check =
-      await db`SELECT id FROM users WHERE id = ${targetUserId} AND manager_name = ${managerName}`;
+      await db`SELECT id FROM users WHERE id = ${targetUserId} AND manager_id = ${managerId}`;
     return check.length > 0;
   }
   return false;
@@ -91,7 +90,7 @@ export async function overrideAttendanceRecord(formData: FormData) {
 
 export async function createShiftRule(formData: FormData) {
   try {
-    const session = await auth(); 
+    const session = await auth();
     if (!session?.user?.isAdmin) {
       return {
         success: false,

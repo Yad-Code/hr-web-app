@@ -27,11 +27,11 @@ interface ReviewRow {
 }
 
 export default async function PerformanceReviewsPage() {
-  const session = await auth();
-  if (!session?.user) return null;
+ const session = await auth();
+  if (!session?.user?.id) return null;  
 
   const isAdmin = session.user.isAdmin;
-  const managerName = session.user.name as string;
+  const managerId = session.user.id;
 
   let reviews;
 
@@ -42,10 +42,10 @@ export default async function PerformanceReviewsPage() {
       ORDER BY pr.date DESC
     `) as unknown as ReviewRow[];
   } else {
-    reviews = (await db`
+   reviews = (await db`
       SELECT pr.id, pr.user_id, pr.period, pr.date, pr.reviewer, pr.rating, pr.status, u.name as employee_name, u.department, u.job_title, u.image_url
       FROM performance_reviews pr JOIN users u ON pr.user_id = u.id
-      WHERE u.manager_name = ${managerName}
+      WHERE u.manager_id = ${managerId}  
       ORDER BY pr.date DESC
     `) as unknown as ReviewRow[];
   }

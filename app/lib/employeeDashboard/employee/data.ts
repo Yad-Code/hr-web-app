@@ -68,11 +68,11 @@ export async function getProfileData(email: string) {
 
 export async function fetchEmployeeStatusList(): Promise<Employee[]> {
   try {
-    const session = await auth();
-    if (!session?.user) return [];
+    const session = await auth(); 
+    if (!session?.user?.id) return [];
 
-    const isAdmin = session.user.isAdmin;
-    const managerName = session.user.name as string;
+    const isAdmin = session.user.isAdmin; 
+    const managerId = session.user.id; 
 
     let rows;
 
@@ -82,12 +82,11 @@ export async function fetchEmployeeStatusList(): Promise<Employee[]> {
         FROM users
         ORDER BY name ASC
       `;
-    } else {
-      // Managers only see their direct reports
+    } else { 
       rows = await sql`
         SELECT id, name, email, role, image_url, last_seen_at, department
-        FROM users
-        WHERE manager_name = ${managerName}
+        FROM users 
+        WHERE manager_id = ${managerId} 
         ORDER BY name ASC
       `;
     }
@@ -131,8 +130,7 @@ export function getRelativeTimeString(date: Date): string {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-
-// trying looking at this in the future, but for now, we will just return the role from the session
+ 
 export async function getCurrentUserRole() {
   const session = await auth();
   return session?.user?.role || "employee";
@@ -193,7 +191,7 @@ export function getFormattedTime(): string {
   let hours = now.getHours();
   const minutes = String(now.getMinutes()).padStart(2, "0");
   const ampm = hours >= 12 ? "PM" : "AM";
-  hours = hours % 12 || 12; // 12-hour format
+  hours = hours % 12 || 12;  
   const formattedHours = String(hours).padStart(2, "0");
 
   return `${formattedHours}:${minutes} ${ampm}`;

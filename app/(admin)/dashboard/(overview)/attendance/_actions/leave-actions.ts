@@ -11,21 +11,19 @@ export async function updateLeaveRequestStatus(
 ) {
   try {
     const session = await auth();
-    if (!session?.user) return { success: false, error: "Unauthorized" };
+    if (!session?.user?.id) return { success: false, error: "Unauthorized" };
     if (!requestId) return { success: false, error: "Request ID is required." };
 
     const isAdmin = session.user.isAdmin;
     const canApproveLeaves = session.user.canApproveLeaves;
-    const managerName = session.user.name as string;
+    const managerId = session.user.id;
 
-    // 1. Security Check
     if (!isAdmin && !canApproveLeaves) {
       return { success: false, error: "Unauthorized to approve leaves." };
     }
 
-    // 2. Fetch the request details to deduct the correct balances
     const requestData = await db`
-      SELECT r.*, u.manager_name 
+      SELECT r.*, u.manager_id  
       FROM leave_requests r
       JOIN users u ON r.user_id = u.id
       WHERE r.id = ${requestId}
@@ -35,22 +33,19 @@ export async function updateLeaveRequestStatus(
       return { success: false, error: "Request not found." };
     const request = requestData[0];
 
-    // Manager scope check
-    if (!isAdmin && request.manager_name !== managerName) {
+    if (!isAdmin && request.manager_id !== managerId) {
       return {
         success: false,
         error: "Unauthorized to modify this employee's request.",
       };
     }
 
-    // 3. Update the request status
     await db`
       UPDATE leave_requests
       SET status = ${newStatus}, updated_at = NOW()
       WHERE id = ${requestId}
     `;
 
-    // 4. Automatically deduct balances if Approved!
     if (newStatus === "Approved") {
       const userId = request.user_id;
 

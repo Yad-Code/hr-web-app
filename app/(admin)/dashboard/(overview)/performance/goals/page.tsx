@@ -1,9 +1,10 @@
 // @/app/(admin)/dashboard/(overview)/performance/goals/page.tsx
 
-import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import Link from "next/link";
-import { ArrowLeft, Target, Calendar, Plus } from "lucide-react";
+import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { auth } from "@/auth";
+
+import { ArrowLeft, Target, Calendar, Plus } from "lucide-react";
 
 interface FullGoalRow {
   id: string;
@@ -18,10 +19,10 @@ interface FullGoalRow {
 
 export default async function FullGoalsPage() {
   const session = await auth();
-  if (!session?.user) return null;
+  if (!session?.user?.id) return null;  
 
   const isAdmin = session.user.isAdmin;
-  const managerName = session.user.name as string;
+  const managerId = session.user.id;  
   let allGoals;
 
   if (isAdmin) {
@@ -34,7 +35,7 @@ export default async function FullGoalsPage() {
     allGoals = (await db`
       SELECT ug.id, ug.title, ug.progress, ug.priority, ug.due_date, ug.status, u.name as employee_name, u.department
       FROM user_goals ug JOIN users u ON ug.user_id = u.id
-      WHERE u.manager_name = ${managerName}
+      WHERE u.manager_id = ${managerId} 
       ORDER BY CASE WHEN ug.status = 'In Progress' THEN 1 WHEN ug.status = 'Pending' THEN 2 ELSE 3 END, ug.due_date ASC
     `) as unknown as FullGoalRow[];
   }

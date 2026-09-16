@@ -19,11 +19,13 @@ interface PageProps {
 
 export default async function AdminAttendancePage({ searchParams }: PageProps) {
   const session = await auth();
-  if (!session?.user) return null;
+  if (!session?.user?.id) return null; // 👈 Ensure ID exists
 
   const isAdmin = session.user.isAdmin as boolean;
   const canApproveLeaves = session.user.canApproveLeaves as boolean;
-  const managerName = session.user.name as string;
+
+  // 👇 FIX 1: Grab the Manager's UUID instead of their name
+  const managerId = session.user.id;
 
   const resolvedParams = await searchParams;
   const todayString = new Date().toISOString().split("T")[0];
@@ -46,17 +48,20 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
           JOIN users u ON lr.user_id = u.id
           WHERE lr.status = 'Approved' 
             AND ${targetDate}::date BETWEEN lr.start_date AND lr.end_date
-            AND (${isAdmin}::boolean OR u.manager_name = ${managerName})
+            -- 👇 FIX 2: Filter by u.manager_id
+            AND (${isAdmin}::boolean OR u.manager_id = ${managerId})
         ) as on_leave_today,
         (
           SELECT COUNT(*) FROM users 
           WHERE status = 'Active' AND role = 'employee'
-            AND (${isAdmin}::boolean OR manager_name = ${managerName})
+            -- 👇 FIX 3: Filter by manager_id
+            AND (${isAdmin}::boolean OR manager_id = ${managerId})
         ) as total_employees
       FROM attendance a
       JOIN users u ON a.user_id = u.id
       WHERE a.date = ${targetDate}::date
-        AND (${isAdmin}::boolean OR u.manager_name = ${managerName})
+        -- 👇 FIX 4: Filter by u.manager_id
+        AND (${isAdmin}::boolean OR u.manager_id = ${managerId})
     `,
     db`
       SELECT 
@@ -71,7 +76,8 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
       FROM attendance a
       JOIN users u ON a.user_id = u.id
       WHERE a.date = ${targetDate}::date
-        AND (${isAdmin}::boolean OR u.manager_name = ${managerName})
+        -- 👇 FIX 5: Filter by u.manager_id
+        AND (${isAdmin}::boolean OR u.manager_id = ${managerId})
       ORDER BY a.created_at DESC
     `,
 
@@ -84,7 +90,8 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
       FROM leave_requests r
       JOIN users u ON r.user_id = u.id
       LEFT JOIN users h ON r.helper_id = h.id
-      WHERE (${isAdmin}::boolean OR u.manager_name = ${managerName})
+      -- 👇 FIX 6: Filter by u.manager_id
+      WHERE (${isAdmin}::boolean OR u.manager_id = ${managerId})
       ORDER BY r.created_at DESC
     `,
 
@@ -98,7 +105,8 @@ export default async function AdminAttendancePage({ searchParams }: PageProps) {
       SELECT id, name, department, shift_type 
       FROM users 
       WHERE status = 'Active' AND role = 'employee'
-        AND (${isAdmin}::boolean OR manager_name = ${managerName})
+        -- 👇 FIX 7: Filter by manager_id
+        AND (${isAdmin}::boolean OR manager_id = ${managerId})
     `,
   ]);
 

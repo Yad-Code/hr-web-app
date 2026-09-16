@@ -40,12 +40,12 @@ export default async function ReviewDetailsPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
+ const { id } = await params;
   const session = await auth();
-  if (!session?.user) return null;
+  if (!session?.user?.id) return null;  
 
   const isAdmin = session.user.isAdmin;
-  const managerName = session.user.name as string;
+  const managerId = session.user.id;
 
   let result;
 
@@ -56,10 +56,10 @@ export default async function ReviewDetailsPage({
       WHERE pr.id = ${id}
     `;
   } else {
-    result = await db`
+   result = await db`
       SELECT pr.*, u.name as employee_name, u.department, u.job_title, u.image_url
       FROM performance_reviews pr JOIN users u ON pr.user_id = u.id
-      WHERE pr.id = ${id} AND u.manager_name = ${managerName}
+      WHERE pr.id = ${id} AND u.manager_id = ${managerId}  
     `;
   }
 

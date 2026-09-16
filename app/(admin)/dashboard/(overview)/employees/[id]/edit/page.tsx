@@ -1,8 +1,10 @@
+// @/app/(admin)/dashboard/(overview)/employees/[id]/edit/page.tsx
+
+import { Suspense } from "react";
 import { auth } from "@/auth";
 import { getProfileById } from "@/app/lib/employeeList/data";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Suspense } from "react";
 
 import ProfileHeader from "@/app/ui/dashboard/id/profileHeader";
 import AdminProfileTabs from "@/app/ui/dashboard/id/tabs/adminProfileTabs";
@@ -11,7 +13,7 @@ import {
   ProfileHeaderSkeleton,
 } from "@/app/ui/employee/skeleton";
 
-import {
+import { 
   getEducationData,
   getLanguageData,
   getEmployeeDocumentsData,

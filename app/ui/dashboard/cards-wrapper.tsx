@@ -9,8 +9,8 @@ export default async function AdminCardsWrapper() {
   if (!session?.user) return null;
 
   const isAdmin = session.user.isAdmin;
-  const managerName = (session.user.name as string) || "";
- 
+  const managerId = session.user.id;
+
   const [
     headcountResult,
     openPositionsResult,
@@ -18,27 +18,27 @@ export default async function AdminCardsWrapper() {
     attendanceResult,
   ] = await Promise.all([
     db`
-      SELECT COUNT(*) FROM users 
-      WHERE status = 'Active' 
-      AND (${isAdmin}::boolean OR manager_name = ${managerName})
+     SELECT COUNT(*) FROM users 
+      WHERE status = 'Active'  
+      AND (${isAdmin}::boolean OR manager_id = ${managerId})
     `,
     db`
       SELECT COUNT(*) FROM job_postings 
       WHERE status = 'Open'
     `,
     db`
-      SELECT COUNT(*) as total 
+    SELECT COUNT(*) as total 
       FROM leave_requests lr 
       LEFT JOIN users u ON lr.user_id = u.id 
-      WHERE lr.status ILIKE 'pending' 
-      AND (${isAdmin}::boolean OR u.manager_name = ${managerName})
+      WHERE lr.status ILIKE 'pending'  
+      AND (${isAdmin}::boolean OR u.manager_id = ${managerId})
     `,
     db`
-      WITH target_users AS (
+     WITH target_users AS (
         SELECT id, COALESCE(working_days, '{1,2,3,4,5}'::int[]) as working_days 
         FROM users 
-        WHERE status = 'Active' 
-        AND (${isAdmin}::boolean OR manager_name = ${managerName})
+        WHERE status = 'Active'  
+        AND (${isAdmin}::boolean OR manager_id = ${managerId})
       ),
       past_days AS (
         SELECT date::date FROM generate_series(DATE_TRUNC('month', CURRENT_DATE), CURRENT_DATE, '1 day'::interval) AS date
@@ -68,7 +68,7 @@ export default async function AdminCardsWrapper() {
       LEFT JOIN actual_attendance a ON s.user_id = a.user_id AND s.date = a.date;
     `,
   ]);
- 
+
   const headcount = Number(headcountResult[0]?.count || 0);
   const openPositions = Number(openPositionsResult[0]?.count || 0);
   const pendingRequests = Number(pendingRequestsResult[0]?.total || 0);

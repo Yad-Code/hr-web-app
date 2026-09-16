@@ -1,6 +1,9 @@
 // @/app/(admin)/dashboard/(overview)/payroll/[id]/page.tsx
 
 import Link from "next/link";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+
 import {
   fetchPayStubDetails,
   fetchPayStubItems,
@@ -10,8 +13,6 @@ import {
   verifyPaymentMethod,
   deletePayStub,
 } from "@/app/lib/admin/payroll/actions";
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
 
 interface PageProps {
   params: Promise<{ id: string }>;

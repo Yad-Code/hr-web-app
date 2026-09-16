@@ -12,10 +12,12 @@ async function authorizeManagerAction(targetUserId: string) {
   if (!session?.user) return false;
 
   if (session.user.isAdmin) return true;
+
   if (session.user.isManager) {
-    const managerName = session.user.name as string;
+    const managerId = session.user.id;
     const check =
-      await db`SELECT id FROM users WHERE id = ${targetUserId} AND manager_name = ${managerName}`;
+      await db`SELECT id FROM users WHERE id = ${targetUserId} AND manager_id = ${managerId}`;
+
     return check.length > 0;
   }
   return false;

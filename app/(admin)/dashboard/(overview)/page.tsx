@@ -8,7 +8,7 @@ import { lusitana } from "@/app/ui/fonts";
 import { auth } from "@/auth";
 import {
   RetentionEngagementChartSkeleton,
-  EmployeeActivitySkeleton,
+  EmployeeActivitySkeleton, 
   CardsGridSkeleton,
 } from "@/app/ui/skeletons";
 

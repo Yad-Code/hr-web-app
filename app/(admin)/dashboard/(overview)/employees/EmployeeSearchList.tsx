@@ -2,11 +2,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
-import { Employee } from "@/app/lib/employeeList/definitions";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
+import { Employee } from "@/app/lib/employeeList/definitions";
 
 interface EmployeeSearchListClientProps {
   initialEmployees: Employee[];

@@ -5,12 +5,10 @@ import { auth } from "@/auth";
 
 export default async function AdminChartWrapper() {
   const session = await auth();
- 
-  if (!session?.user) return null;
+  if (!session?.user?.id) return null;
 
   const isAdmin = session.user.isAdmin;
- 
-  const managerName = session.user.name as string;
+  const managerId = session.user.id;
 
   let rawData;
 
@@ -28,18 +26,14 @@ export default async function AdminChartWrapper() {
     `;
   } else {
     rawData = await db`
-      SELECT 
-        TO_CHAR(p.month, 'Mon') AS month,
-        EXTRACT(MONTH FROM p.month) AS month_num,
-        ROUND(AVG(p.teamwork)) AS engagement,   
-        ROUND(AVG(p.attendance)) AS retention    
+     SELECT TO_CHAR(p.month, 'Mon') AS month, EXTRACT(MONTH FROM p.month) AS month_num,
+      ROUND(AVG(p.teamwork)) AS engagement, ROUND(AVG(p.attendance)) AS retention    
       FROM performance_history p
       JOIN users u ON p.user_id = u.id
-      WHERE p.month >= DATE_TRUNC('year', CURRENT_DATE)
-        AND u.manager_name = ${managerName}
-      GROUP BY TO_CHAR(p.month, 'Mon'), EXTRACT(MONTH FROM p.month)
-      ORDER BY month_num ASC
-    `;
+      WHERE p.month >= DATE_TRUNC('year', CURRENT_DATE) 
+        AND u.manager_id = ${managerId}
+      GROUP BY TO_CHAR(p.month, 'Mon'), EXTRACT(MONTH FROM p.month) ORDER BY month_num ASC
+      `;
   }
 
   const chartData = rawData.map((row) => ({

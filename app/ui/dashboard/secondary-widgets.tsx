@@ -6,18 +6,18 @@ import { UserMinus, Users, AlertCircle, Wallet } from "lucide-react";
 
 export async function SecondaryWidgets() {
   const session = await auth();
-  if (!session?.user) return null;
+  if (!session?.user?.id) return null;
 
-  const isAdmin = session.user.isAdmin;
-  const managerName = (session.user.name as string) || "";
+const isAdmin = session.user.isAdmin;
+  const managerId = session.user.id;
  
  const outToday = await db` 
     SELECT u.name, 'On Leave' as status, lr.type as detail
     FROM leave_requests lr
     JOIN users u ON lr.user_id = u.id
     WHERE lr.status = 'Approved' 
-      AND CURRENT_DATE BETWEEN lr.start_date AND lr.end_date
-      AND (${isAdmin}::boolean OR u.manager_name = ${managerName})
+      AND CURRENT_DATE BETWEEN lr.start_date AND lr.end_date 
+      AND (${isAdmin}::boolean OR u.manager_id = ${managerId})
     
     UNION
      
@@ -25,8 +25,8 @@ export async function SecondaryWidgets() {
     FROM attendance a
     JOIN users u ON a.user_id = u.id
     WHERE a.date = CURRENT_DATE 
-      AND a.status IN ('Late', 'Absent')
-      AND (${isAdmin}::boolean OR u.manager_name = ${managerName})
+      AND a.status IN ('Late', 'Absent') 
+      AND (${isAdmin}::boolean OR u.manager_id = ${managerId})
   `;
   
   const complianceAlerts = await db`
@@ -34,7 +34,7 @@ export async function SecondaryWidgets() {
     FROM users
     WHERE status = 'Active' 
       AND join_date + INTERVAL '90 days' BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '14 days'
-      AND (${isAdmin}::boolean OR manager_name = ${managerName})
+      AND (${isAdmin}::boolean OR manager_id = ${managerId})
   `;
 
   const payrollRun = await db`

@@ -1,8 +1,13 @@
 // @/app/lib/admin/feedback/data.ts
 import { sql } from "@/app/lib/employeeDashboard/employee/db";
-import { Feedback, OneOnOneMeeting } from "@/app/lib/employeeDashboard/performance/definitions";
+import {
+  Feedback,
+  OneOnOneMeeting,
+} from "@/app/lib/employeeDashboard/performance/definitions";
 
-export async function getEmployeeFeedback(employeeId: string): Promise<Feedback[]> {
+export async function getEmployeeFeedback(
+  employeeId: string,
+): Promise<Feedback[]> {
   try {
     const feedback = await sql<Feedback[]>`
       SELECT * FROM user_feedback
@@ -16,11 +21,13 @@ export async function getEmployeeFeedback(employeeId: string): Promise<Feedback[
   }
 }
 
-export async function getEmployeeMeetings(employeeId: string): Promise<OneOnOneMeeting[]> {
+export async function getEmployeeMeetings(
+  employeeId: string,
+): Promise<OneOnOneMeeting[]> {
   try {
     const meetings = await sql<OneOnOneMeeting[]>`
-      SELECT * FROM one_on_one_meetings
-      WHERE user_id = ${employeeId}
+      SELECT * FROM one_on_one_meetings 
+      WHERE employee_id = ${employeeId} 
       ORDER BY meeting_date DESC
     `;
     return meetings;

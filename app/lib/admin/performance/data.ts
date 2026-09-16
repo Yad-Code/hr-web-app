@@ -30,10 +30,10 @@ export interface EmployeeOption {
 export async function getAdminUpcomingSyncs(): Promise<MeetingRow[]> {
   try {
     const session = await auth();
-    if (!session?.user) return [];
+    if (!session?.user?.id) return [];  
 
     const isAdmin = session.user.isAdmin;
-    const managerName = session.user.name as string;
+    const managerId = session.user.id; 
 
     if (isAdmin) {
       return await sql<MeetingRow[]>`
@@ -46,7 +46,7 @@ export async function getAdminUpcomingSyncs(): Promise<MeetingRow[]> {
       return await sql<MeetingRow[]>`
         SELECT m.id, m.meeting_date, m.topic, m.status, u.name AS employee_name, COALESCE(u.department, 'General') AS department
         FROM one_on_one_meetings m JOIN users u ON m.employee_id = u.id
-        WHERE m.meeting_date >= CURRENT_DATE AND u.manager_name = ${managerName}
+        WHERE m.meeting_date >= CURRENT_DATE AND u.manager_id = ${managerId} 
         ORDER BY m.meeting_date ASC LIMIT 5
       `;
     }
@@ -59,10 +59,10 @@ export async function getAdminUpcomingSyncs(): Promise<MeetingRow[]> {
 export async function getAllAdminMeetings(): Promise<MeetingRow[]> {
   try {
     const session = await auth();
-    if (!session?.user) return [];
+    if (!session?.user?.id) return []; 
 
     const isAdmin = session.user.isAdmin;
-    const managerName = session.user.name as string;
+    const managerId = session.user.id; 
 
     if (isAdmin) {
       return await sql<MeetingRow[]>`
@@ -74,7 +74,7 @@ export async function getAllAdminMeetings(): Promise<MeetingRow[]> {
       return await sql<MeetingRow[]>`
         SELECT m.id, m.meeting_date, m.topic, m.status, u.name AS employee_name, COALESCE(u.department, 'General') AS department
         FROM one_on_one_meetings m JOIN users u ON m.employee_id = u.id
-        WHERE u.manager_name = ${managerName}
+        WHERE u.manager_id = ${managerId} 
         ORDER BY m.meeting_date DESC
       `;
     }
@@ -89,10 +89,10 @@ export async function getMeetingDetailsById(
 ): Promise<AdminMeetingDetail | null> {
   try {
     const session = await auth();
-    if (!session?.user) return null;
+    if (!session?.user?.id) return null;  
 
     const isAdmin = session.user.isAdmin;
-    const managerName = session.user.name as string;
+    const managerId = session.user.id; 
 
     let rows;
     if (isAdmin) {
@@ -115,7 +115,7 @@ export async function getMeetingDetailsById(
         FROM one_on_one_meetings m
         JOIN users emp ON m.employee_id = emp.id
         LEFT JOIN users mgr ON m.manager_id = mgr.id
-        WHERE m.id = ${id} AND emp.manager_name = ${managerName}
+        WHERE m.id = ${id} AND emp.manager_id = ${managerId} 
       `;
     }
 
@@ -129,10 +129,10 @@ export async function getMeetingDetailsById(
 export async function getEmployeesList(): Promise<EmployeeOption[]> {
   try {
     const session = await auth();
-    if (!session?.user) return [];
+    if (!session?.user?.id) return []; 
 
     const isAdmin = session.user.isAdmin;
-    const managerName = session.user.name as string;
+    const managerId = session.user.id; 
 
     if (isAdmin) {
       return await sql<EmployeeOption[]>`
@@ -144,7 +144,7 @@ export async function getEmployeesList(): Promise<EmployeeOption[]> {
       return await sql<EmployeeOption[]>`
         SELECT id, name, COALESCE(department, 'General') AS department 
         FROM users 
-        WHERE manager_name = ${managerName}
+        WHERE manager_id = ${managerId} 
         ORDER BY name ASC
       `;
     }
@@ -160,10 +160,10 @@ export async function getEmployeeSelfAssessment(
 ): Promise<SelfAssessment | null> {
   try {
     const session = await auth();
-    if (!session?.user) return null;
+    if (!session?.user?.id) return null; 
 
     const isAdmin = session.user.isAdmin;
-    const managerName = session.user.name as string;
+    const managerId = session.user.id;  
 
     let data;
     if (isAdmin) {
@@ -176,7 +176,7 @@ export async function getEmployeeSelfAssessment(
       data = await sql<SelfAssessment[]>`
         SELECT sa.* FROM self_assessments sa
         JOIN users u ON sa.user_id = u.id
-        WHERE sa.user_id = ${employeeId} AND sa.cycle = ${cycle} AND u.manager_name = ${managerName}
+        WHERE sa.user_id = ${employeeId} AND sa.cycle = ${cycle} AND u.manager_id = ${managerId} -- 👈 FIX
         LIMIT 1
       `;
     }
@@ -190,13 +190,14 @@ export async function getEmployeeSelfAssessment(
 
 export async function getCompanyFeedback() {
   const session = await auth();
-  if (!session?.user) return [];
+  if (!session?.user?.id) return [];  
   const isAdmin = session.user.isAdmin;
-  const managerName = session.user.name as string;
+  const managerId = session.user.id;  
 
   if (isAdmin) {
     return await sql`SELECT uf.*, u.name as recipient_name, u.image_url as recipient_image FROM user_feedback uf JOIN users u ON uf.user_id = u.id ORDER BY uf.date DESC`;
   } else {
-    return await sql`SELECT uf.*, u.name as recipient_name, u.image_url as recipient_image FROM user_feedback uf JOIN users u ON uf.user_id = u.id WHERE u.manager_name = ${managerName} ORDER BY uf.date DESC`;
+    // 👇 FIX: Check manager_id
+    return await sql`SELECT uf.*, u.name as recipient_name, u.image_url as recipient_image FROM user_feedback uf JOIN users u ON uf.user_id = u.id WHERE u.manager_id = ${managerId} ORDER BY uf.date DESC`;
   }
 }

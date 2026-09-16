@@ -7,7 +7,7 @@ import { ModalWrapper } from "@/app/ui/components/modal-wrapper";
 import { initiateSelfAssessmentCycle } from "@/app/lib/admin/performance/actions";
 
 interface ModalProps {
-  isOpen: boolean;
+  isOpen: boolean; 
   onClose: () => void;
 }
 

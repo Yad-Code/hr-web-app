@@ -1,10 +1,12 @@
 // @/app/(admin)/dashboard/(overview)/performance/goals/new/page.tsx
+
+import Link from "next/link";
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { createNewGoal } from "@/app/lib/admin/performance/actions";
 import { SubmitButton } from "./submit-button";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { auth } from "@/auth";
+
+import { ArrowLeft } from "lucide-react";
 
 interface EmployeeRow {
   id: string;
@@ -13,11 +15,11 @@ interface EmployeeRow {
 }
 
 export default async function NewGoalPage() {
-  const session = await auth();
-  if (!session?.user) return null;
+const session = await auth();
+  if (!session?.user?.id) return null; 
 
   const isAdmin = session.user.isAdmin;
-  const managerName = session.user.name as string;
+  const managerId = session.user.id;  
   let employees;
 
   if (isAdmin) {
@@ -25,8 +27,9 @@ export default async function NewGoalPage() {
       SELECT id, name, department FROM users WHERE status = 'Active' ORDER BY name ASC
     `) as unknown as EmployeeRow[];
   } else {
-    employees = (await db`
-      SELECT id, name, department FROM users WHERE status = 'Active' AND manager_name = ${managerName} ORDER BY name ASC
+   employees = (await db`
+      
+      SELECT id, name, department FROM users WHERE status = 'Active' AND manager_id = ${managerId} ORDER BY name ASC
     `) as unknown as EmployeeRow[];
   }
 

@@ -3,8 +3,7 @@ import { PerformanceKpiData } from "../types";
 
 export function PerformanceKpiCards({ stats }: { stats: PerformanceKpiData }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {/* Avg Rating */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"> 
       <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs flex items-center gap-4">
         <div className="p-3 bg-emerald-50 text-[#009473] rounded-xl">
           <Award className="w-6 h-6" />
