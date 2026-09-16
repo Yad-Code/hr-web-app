@@ -6,8 +6,10 @@ export interface Employee {
   name: string;
   email: string;
   department?: string;
-  role: "admin" | "employee";
-  status: "active" | "offline";
+  branch?: string;           
+  preferred_name?: string;   
+  role: string;              
+  status: string;           
   image_url: string | null;
   last_seen_text: string;
 }

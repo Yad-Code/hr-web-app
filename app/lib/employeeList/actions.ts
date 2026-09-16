@@ -125,7 +125,10 @@ export async function updateEmployeeDetails(
     const jobTitle = formData.get("jobTitle")?.toString() || null;
     const jobFamily = formData.get("jobFamily")?.toString() || null;
     const employmentType = formData.get("employmentType")?.toString() || null;
-    const managerName = formData.get("managerName")?.toString() || null;
+    
+    // 👇 FIX 1: Fetch the UUID for managerId instead of managerName
+    const managerId = formData.get("managerId")?.toString() || null;
+    
     const joinDate = formData.get("joinDate")?.toString() || null;
     const publicOrg = formData.get("publicOrg")?.toString() || null;
     const privateOrg = formData.get("privateOrg")?.toString() || null;
@@ -135,13 +138,7 @@ export async function updateEmployeeDetails(
     const rawSalary = formData.get("baseSalary");
     const baseSalary = rawSalary ? Number(rawSalary) : null;
 
-    const isPermissionsForm = formData.has("isPermissionsForm");
-  
-    const isAdminFlag = isPermissionsForm ? formData.get("isAdmin") === "true" : null;
-    const isManagerFlag = isPermissionsForm ? formData.get("isManager") === "true" : null;
-    const canApproveLeaves = isPermissionsForm ? formData.get("canApproveLeaves") === "true" : null;
-    const canStartReviews = isPermissionsForm ? formData.get("canStartReviews") === "true" : null;
-    const hasEmployeeViewFlag = isPermissionsForm ? formData.get("hasEmployeeView") === "true" : null;
+    // 👇 FIX 2: We completely removed the `isPermissionsForm` and boolean column checks!
 
     if (isAdmin) {
       await sql`
@@ -159,12 +156,8 @@ export async function updateEmployeeDetails(
           status = COALESCE(${status}, status),
           role = COALESCE(${role}, role),
           
-          is_admin = COALESCE(${isAdminFlag}::boolean, is_admin),
-          is_manager = COALESCE(${isManagerFlag}::boolean, is_manager),
-          can_approve_leaves = COALESCE(${canApproveLeaves}::boolean, can_approve_leaves),
-          can_start_reviews = COALESCE(${canStartReviews}::boolean, can_start_reviews),
-          has_employee_view = COALESCE(${hasEmployeeViewFlag}::boolean, has_employee_view),
-
+          -- 👇 FIX 3: Removed the old boolean permission flags and updated manager_id
+          
           preferred_name = COALESCE(${preferredName}, preferred_name),
           marital_status = COALESCE(${maritalStatus}, marital_status),
           blood_group = COALESCE(${bloodGroup}, blood_group),
@@ -174,7 +167,9 @@ export async function updateEmployeeDetails(
           job_title = COALESCE(${jobTitle}, job_title),
           job_family = COALESCE(${jobFamily}, job_family),
           employment_type = COALESCE(${employmentType}, employment_type),
-          manager_name = COALESCE(${managerName}, manager_name),
+          
+          manager_id = COALESCE(${managerId}::uuid, manager_id),
+          
           join_date = COALESCE(${joinDate}, join_date),
           public_org = COALESCE(${publicOrg}, public_org),
           private_org = COALESCE(${privateOrg}, private_org),

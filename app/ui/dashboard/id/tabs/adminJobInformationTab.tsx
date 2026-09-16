@@ -8,8 +8,7 @@ import {
   Save,
   Loader2,
   Check,
-  AlertCircle,
-  ShieldAlert,
+  AlertCircle, 
 } from "lucide-react";
 import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
 import { updateEmployeeDetails } from "@/app/lib/employeeList/actions";
@@ -67,17 +66,6 @@ export default function AdminJobInformationTab({
 
         <CurrentPositionSection profile={profile} />
         <OrganizationDetailsSection profile={profile} />
-
-        <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xs space-y-5">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-            <div className="w-7 h-7 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
-              <ShieldAlert className="w-4 h-4" />
-            </div>
-            <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-              System Permissions
-            </h2>
-          </div>
-        </div>
 
         <div className="flex items-center justify-end gap-3">
           <button

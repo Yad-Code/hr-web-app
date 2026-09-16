@@ -9,7 +9,7 @@ import {
   Languages,
   FileText,
   TrendingUp,
-  Wrench, 
+  Wrench,
   ShieldAlert,
 } from "lucide-react";
 import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
@@ -30,7 +30,6 @@ import AdminLanguageTab from "./adminLanguageTab";
 import AdminDocumentsTab from "./adminDocumentsTab";
 import AdminPerformanceTab from "./adminPerformanceTab";
 import AdminSkillsTab from "./adminSkillsTab";
-import AdminPermissionsTab from "./adminPermissionsTab";
 
 export type AdminTabType =
   | "profile"
@@ -104,10 +103,6 @@ export default function AdminProfileTabs({
         {activeTab === "profile" && <ProfileForm profile={profile} />}
 
         {activeTab === "job" && <AdminJobInformationTab profile={profile} />}
-
-        {activeTab === "permissions" && (
-          <AdminPermissionsTab profile={profile} />
-        )}
 
         {activeTab === "education" && (
           <AdminEducationTab
