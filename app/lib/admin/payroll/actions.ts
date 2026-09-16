@@ -48,28 +48,24 @@ export async function generateMonthlyPayroll() {
     await db.begin(async (tx) => {
       for (const user of users) {
         const grossPay = Number(user.base_salary);
-
-        // 1. Tax Logic: 5% on amounts exceeding 1,000,000
+ 
         const taxThreshold = 1000000;
         let tax = 0;
         if (grossPay > taxThreshold) {
           tax = (grossPay - taxThreshold) * 0.05;
         }
-
-        // 2. Insurance Logic (Assuming a standard total cost of 150,000 split 50/50)
+ 
         let totalInsurance = 0;
         if (user.insurance) {
           totalInsurance = user.insurance.toLowerCase().includes("premium")
             ? 150000
             : 75000;
         }
-        const employeeInsuranceShare = totalInsurance * 0.5; // Deducted from pay
-        const companyInsuranceShare = totalInsurance * 0.5; // Paid by company
-
-        // 3. Subscription Logic
+        const employeeInsuranceShare = totalInsurance * 0.5; 
+        const companyInsuranceShare = totalInsurance * 0.5;  
+ 
         const subscriptionDeduction = user.subscription ? 25000 : 0;
-
-        // 4. Calculate Net
+ 
         const netPay =
           grossPay - tax - employeeInsuranceShare - subscriptionDeduction;
 

@@ -19,8 +19,7 @@ export function ExportPayrollButton() {
           byteNumbers[i] = byteCharacters.charCodeAt(i);
         }
         const byteArray = new Uint8Array(byteNumbers);
-
-        // Create the .xlsx file Blob
+ 
         const blob = new Blob([byteArray], {
           type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         });

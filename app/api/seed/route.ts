@@ -40,10 +40,18 @@ export async function GET() {
     await db`DROP TABLE IF EXISTS education_history`;
     await db`DROP TABLE IF EXISTS employment_history`;
 
+    await db`DROP TABLE IF EXISTS user_permissions CASCADE`;
+    await db`DROP TABLE IF EXISTS permissions CASCADE`;
+    await db`DROP TYPE IF EXISTS access_scope CASCADE`;
+
     await db`DROP TABLE IF EXISTS requests`;
     await db`DROP TABLE IF EXISTS schedules`;
     await db`DROP TABLE IF EXISTS wfh_requests`;
     await db`DROP TYPE IF EXISTS user_role`;
+
+    await db`
+    CREATE TYPE access_scope AS ENUM ('global', 'branch', 'department', 'team', 'self');
+    `;
 
     await db`
      CREATE TABLE users (
@@ -71,16 +79,7 @@ export async function GET() {
         password_hash TEXT NOT NULL,
 
         role VARCHAR(50) DEFAULT 'Staff' NOT NULL,
-
-        is_admin BOOLEAN DEFAULT false NOT NULL,          
-        is_manager BOOLEAN DEFAULT false NOT NULL,        
-        has_employee_view BOOLEAN DEFAULT true NOT NULL,
-
-        can_edit_profile BOOLEAN DEFAULT true NOT NULL,   
-        can_start_reviews BOOLEAN DEFAULT false NOT NULL,  
-        can_log_feedback BOOLEAN DEFAULT true NOT NULL,    
-        can_approve_leaves BOOLEAN DEFAULT false NOT NULL,
-
+ 
         status VARCHAR(20) DEFAULT 'Active',
         base_salary DECIMAL(10,2) DEFAULT 3500.00 NOT NULL,
         public_org VARCHAR(100),
@@ -93,6 +92,26 @@ export async function GET() {
         shift_type VARCHAR(50) DEFAULT 'Standard' NOT NULL,
         working_days INT[] DEFAULT '{1,2,3,4,5}',  
         last_seen_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )
+    `;
+
+    await db`
+      CREATE TABLE permissions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        action VARCHAR(100) UNIQUE NOT NULL,
+        description TEXT
+      )
+    `;
+
+    await db`
+      CREATE TABLE user_permissions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        permission_id UUID REFERENCES permissions(id) ON DELETE CASCADE,
+        scope access_scope NOT NULL DEFAULT 'self',
+        target_branch VARCHAR(100), 
+        target_department VARCHAR(100),
+        UNIQUE(user_id, permission_id, scope)
       )
     `;
 
@@ -135,7 +154,6 @@ export async function GET() {
      )
     `;
 
-    // --- New Performance Tables ---
     await db`
       CREATE TABLE user_performance (
         user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -403,7 +421,7 @@ CREATE TABLE self_assessments (
         employee_id, name, preferred_name, job_title, job_family, employment_type, manager_id, join_date, 
         department, branch, date_of_birth, age, gender, nationality, marital_status, 
         blood_group, email, personal_email, personal_phone, current_address, 
-        password_hash, role, is_admin, is_manager, has_employee_view, can_approve_leaves, can_start_reviews, status, base_salary, 
+        password_hash, role, status, base_salary, 
         public_org, private_org, insurance, subscription,
         image_url, shift_start, shift_end, shift_type, working_days, last_seen_at
        )
@@ -413,7 +431,7 @@ CREATE TABLE self_assessments (
           'Human Resources', 'HQ - Sulaymaniyah',
           '1988-03-15', 38, 'Female', 'Iraqi', 'Married', 'O+',
           'admin@company.com', 'admin.personal@gmail.com', '+964 770 111 2233',
-          'Main Street, District 101, Sulaymaniyah', ${adminPassword}, 'admin', true, true, false, true, true, 'Active',
+          'Main Street, District 101, Sulaymaniyah', ${adminPassword}, 'admin', 'Active',
           5000.00, NULL, NULL, 'Premium Health', NULL,
           'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
@@ -423,7 +441,7 @@ CREATE TABLE self_assessments (
           'Engineering', 'HQ - Sulaymaniyah',
           '1985-08-22', 40, 'Female', 'American', 'Married', 'A+',
           'sarah.j@company.com', 'sarah.j.personal@gmail.com', '+964 770 999 8877',
-          'Tech Park, Sulaymaniyah', ${adminPassword}, 'manager', false, true, true, true, true, 'Active',
+          'Tech Park, Sulaymaniyah', ${adminPassword}, 'manager','Active',
           6000.00, NULL, NULL, 'Premium Health', NULL,
           'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
@@ -433,7 +451,7 @@ CREATE TABLE self_assessments (
           'Design', 'HQ - Sulaymaniyah',
           '1990-12-05', 35, 'Male', 'British', 'Single', 'B-',
           'alex.s@company.com', 'alex.s.personal@gmail.com', '+964 770 666 5544',
-          'Creative Hub, Sulaymaniyah', ${adminPassword}, 'manager', false, true, true, true, true, 'Active', 
+          'Creative Hub, Sulaymaniyah', ${adminPassword}, 'manager', 'Active', 
           5500.00, NULL, NULL, 'Premium Health', 'Adobe CC',
           'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
@@ -443,7 +461,7 @@ CREATE TABLE self_assessments (
           'Human Resources', 'Erbil Branch',
           '1992-07-14', 34, 'Female', 'Iraqi', 'Married', 'A+',
           'naza.hr@company.com', 'naza.personal@gmail.com', '+964 750 111 2233',
-          'Bakhtiari, Erbil', ${adminPassword}, 'hr', false, true, true, true, false, 'Active', 
+          'Bakhtiari, Erbil', ${adminPassword}, 'hr', 'Active', 
           4500.00, NULL, NULL, 'Standard Health', NULL,
           'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
@@ -453,7 +471,7 @@ CREATE TABLE self_assessments (
           'Human Resources', 'HQ - Sulaymaniyah',
           '1996-11-30', 29, 'Male', 'Iraqi', 'Single', 'O+',
           'saman.hr@company.com', 'saman.personal@gmail.com', '+964 770 888 9900',
-          'Rizgary, Sulaymaniyah', ${adminPassword}, 'hr', false, true, true, true, false, 'Active', 
+          'Rizgary, Sulaymaniyah', ${adminPassword}, 'hr', 'Active', 
           3200.00, NULL, NULL, 'Standard Health', NULL,
           'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
@@ -469,7 +487,7 @@ CREATE TABLE self_assessments (
         employee_id, name, preferred_name, job_title, job_family, employment_type, manager_id, join_date, 
         department, branch, date_of_birth, age, gender, nationality, marital_status, 
         blood_group, email, personal_email, personal_phone, current_address, 
-        password_hash, role, is_admin, is_manager, has_employee_view, can_approve_leaves, can_start_reviews, status, base_salary, 
+        password_hash, role, status, base_salary, 
         public_org, private_org, insurance, subscription,
         image_url, shift_start, shift_end, shift_type, working_days, last_seen_at
        )
@@ -479,7 +497,7 @@ CREATE TABLE self_assessments (
           'Engineering', 'HQ - Sulaymaniyah',
           '2002-05-20', 24, 'Male', 'Iraqi', 'Single', 'A+',
           'yad@company.com', 'yad.dev@gmail.com', '+964 770 222 3344',
-          'Salim Street, Sulaymaniyah', ${employeePassword}, 'employee', false, false, true, false, false, 'Active',
+          'Salim Street, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
           4200.00, NULL, NULL, 'Standard Health', 'GitHub Copilot',
           'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Weekend Flex', '{6,0,1}', CURRENT_TIMESTAMP
@@ -489,7 +507,7 @@ CREATE TABLE self_assessments (
           'Design', 'HQ - Sulaymaniyah',
           '1997-09-12', 28, 'Female', 'Iraqi', 'Single', 'B+',
           'lana@company.com', 'lana.amin@gmail.com', '+964 770 333 4455',
-          'Barty Street, Sulaymaniyah', ${employeePassword}, 'employee', false, false, true, false, false, 'Offline',
+          'Barty Street, Sulaymaniyah', ${employeePassword}, 'employee', 'Offline',
           3800.00, NULL, NULL, 'Standard Health', 'Figma Professional',
           'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Mid-Week Core', '{2,3,4}', CURRENT_TIMESTAMP - INTERVAL '2 hours'
@@ -499,7 +517,7 @@ CREATE TABLE self_assessments (
           'Engineering', 'HQ - Sulaymaniyah',
           '1995-11-04', 30, 'Male', 'Iraqi', 'Married', 'O-',
           'diyar@company.com', 'diyar.karwan@gmail.com', '+964 770 444 5566',
-          'Sarchinar Way, Sulaymaniyah', ${employeePassword}, 'employee', false, false, true, false, false, 'Offline',
+          'Sarchinar Way, Sulaymaniyah', ${employeePassword}, 'employee', 'Offline',
           4000.00, NULL, NULL, 'Standard Health', 'AWS Builder',
           'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP - INTERVAL '1 day'
@@ -509,7 +527,7 @@ CREATE TABLE self_assessments (
           'Engineering', 'HQ - Sulaymaniyah',
           '1999-01-28', 27, 'Female', 'Iraqi', 'Single', 'AB+',
           'sara@company.com', 'sara.omar@gmail.com', '+964 770 555 6677',
-          'Rapakarin Quarter, Sulaymaniyah', ${employeePassword}, 'employee', false, false, true, false, false, 'Active',
+          'Rapakarin Quarter, Sulaymaniyah', ${employeePassword}, 'employee', 'Active',
           3500.00, NULL, NULL, 'Standard Health', NULL,
           'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80',
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP - INTERVAL '5 minutes'
@@ -1018,8 +1036,6 @@ VALUES
         'Jan 2022 → Feb 2024'
       )
 `;
-
-      //----------------------------------
     }
 
     await db`
@@ -1027,6 +1043,39 @@ VALUES
         VALUES
           ('Senior Frontend Engineer', 'Software Engineering', 'Full-time', 'Remote', 'Open'),
           ('Product Designer', 'UI/UX Design', 'Full-time', 'HQ - Sulaymaniyah', 'Open')
+    `;
+
+    await db`
+      INSERT INTO permissions (action, description) VALUES
+      ('manage_system', 'Full global access to all settings and payroll'),
+      ('approve_leaves', 'Can approve or reject time-off requests'),
+      ('start_reviews', 'Can initiate formal performance reviews'),
+      ('log_feedback', 'Can log continuous feedback for employees'),
+      ('view_dashboard', 'Can view team or branch analytics')
+    `;
+
+    await db`
+      INSERT INTO user_permissions (user_id, permission_id, scope)
+      SELECT u.id, p.id, 'global'::access_scope
+      FROM users u CROSS JOIN permissions p
+      WHERE u.role = 'admin' 
+      AND p.action IN ('manage_system', 'approve_leaves', 'start_reviews', 'log_feedback', 'view_dashboard')
+    `;
+
+    await db`
+      INSERT INTO user_permissions (user_id, permission_id, scope)
+      SELECT u.id, p.id, 'team'::access_scope
+      FROM users u CROSS JOIN permissions p
+      WHERE u.role = 'manager' 
+      AND p.action IN ('approve_leaves', 'start_reviews', 'log_feedback', 'view_dashboard')
+    `;
+
+    await db`
+      INSERT INTO user_permissions (user_id, permission_id, scope, target_branch)
+      SELECT u.id, p.id, 'branch'::access_scope, u.branch
+      FROM users u CROSS JOIN permissions p
+      WHERE u.role = 'hr' 
+      AND p.action IN ('approve_leaves', 'view_dashboard')
     `;
 
     return NextResponse.json(
