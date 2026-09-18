@@ -6,22 +6,7 @@ import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-
-async function authorizeManagerAction(targetUserId: string) {
-  const session = await auth();
-  if (!session?.user) return false;
-
-  if (session.user.isAdmin) return true;
-
-  if (session.user.isManager) {
-    const managerId = session.user.id;
-    const check =
-      await db`SELECT id FROM users WHERE id = ${targetUserId} AND manager_id = ${managerId}`;
-
-    return check.length > 0;
-  }
-  return false;
-}
+import { verifyAccess } from "@/app/lib/auth/access-control";
 
 const ReviewSchema = z.object({
   userId: z.string().min(1, "Please select an employee."),
@@ -48,17 +33,11 @@ const GoalSchema = z.object({
   dueDate: z.string().min(1, "Please select a due date."),
 });
 
-export type GoalFormState = {
-  errors?: {
-    userId?: string[];
-    title?: string[];
-    priority?: string[];
-    dueDate?: string[];
-  };
-  message?: string | null;
-};
-
 export async function createNewGoal(formData: FormData): Promise<void> {
+  const session = await auth();
+  const actorId = session?.user?.id;
+  if (!actorId) return;
+
   const validatedFields = GoalSchema.safeParse({
     userId: formData.get("userId"),
     title: formData.get("title"),
@@ -66,27 +45,20 @@ export async function createNewGoal(formData: FormData): Promise<void> {
     dueDate: formData.get("dueDate"),
   });
 
-  if (!validatedFields.success) {
-    console.error(
-      "Validation Error:",
-      validatedFields.error.flatten().fieldErrors,
-    );
-    return;
-  }
-
+  if (!validatedFields.success) return;
   const { userId, title, priority, dueDate } = validatedFields.data;
 
-  // SECURITY CHECK
-  const isAuthorized = await authorizeManagerAction(userId);
+  // ABAC Check
+  const isAuthorized = await verifyAccess(actorId, "start_reviews", userId);
   if (!isAuthorized) {
-    console.error("Unauthorized to assign goal to this employee.");
+    console.error("Forbidden: You lack permission to assign goals.");
     return;
   }
 
   try {
     await db`
       INSERT INTO user_goals (user_id, title, priority, due_date, progress, status)
-      VALUES (${userId}, ${title}, ${priority}, ${dueDate}, 0, 'In Progress')
+      VALUES (${userId}::uuid, ${title}, ${priority}, ${dueDate}, 0, 'In Progress')
     `;
   } catch (error) {
     console.error("Database Error:", error);
@@ -98,30 +70,14 @@ export async function createNewGoal(formData: FormData): Promise<void> {
 }
 
 export async function createNewReview(formData: FormData): Promise<void> {
-  const validatedFields = ReviewSchema.safeParse({
-    userId: formData.get("userId"),
-    period: formData.get("period"),
-    date: formData.get("date"),
-    reviewer: formData.get("reviewer"),
-    rating: formData.get("rating"),
-    productivity: formData.get("productivity"),
-    quality: formData.get("quality"),
-    teamwork: formData.get("teamwork"),
-    strengths: formData.get("strengths"),
-    improvements: formData.get("improvements"),
-    managerComments: formData.get("managerComments"),
-    employeeComments: formData.get("employeeComments"),
-    goalsForNextCycle: formData.get("goalsForNextCycle"),
-  });
+  const session = await auth();
+  const actorId = session?.user?.id;
+  if (!actorId) return;
 
-  // ... (Keep existing validation and authorization checks)
-  if (!validatedFields.success) {
-    console.error(
-      "Validation Error:",
-      validatedFields.error.flatten().fieldErrors,
-    );
-    return;
-  }
+  const validatedFields = ReviewSchema.safeParse(
+    Object.fromEntries(formData.entries()),
+  );
+  if (!validatedFields.success) return;
 
   const {
     userId,
@@ -131,7 +87,7 @@ export async function createNewReview(formData: FormData): Promise<void> {
     rating,
     productivity,
     quality,
-    teamwork, // 👈 ADDED
+    teamwork,
     strengths,
     improvements,
     managerComments,
@@ -139,63 +95,38 @@ export async function createNewReview(formData: FormData): Promise<void> {
     goalsForNextCycle,
   } = validatedFields.data;
 
-  // ... (Keep existing auth check)
-  const isAuthorized = await authorizeManagerAction(userId);
-  if (!isAuthorized) {
-    console.error("Unauthorized to review this employee.");
-    return;
-  }
+  // ABAC Check
+  const isAuthorized = await verifyAccess(actorId, "start_reviews", userId);
+  if (!isAuthorized) return;
 
   const status =
     rating >= 4.5 ? "Excellent" : rating >= 3.5 ? "Good" : "Needs Improvement";
   const evalDate = new Date(date);
   evalDate.setMonth(evalDate.getMonth() + 6);
   const nextReviewDate = evalDate.toISOString().split("T")[0];
-
-  // 👈 ADDED: Format the date to YYYY-MM-01 to match the cron job snapshot format
   const targetMonth = `${new Date(date).getFullYear()}-${String(new Date(date).getMonth() + 1).padStart(2, "0")}-01`;
 
   try {
-    // 1. Update the Formal Review Log
     await db`
-      INSERT INTO performance_reviews (
-        user_id, period, date, reviewer, rating, 
-        strengths, improvements, manager_comments, employee_comments, goals_for_next_cycle, status
-      )
-      VALUES (
-        ${userId}, ${period}, ${date}, ${reviewer}, ${rating}, 
-        ${strengths || null}, ${improvements || null}, ${managerComments || null}, 
-        ${employeeComments || null}, ${goalsForNextCycle || null}, 'Completed'
-      )
+      INSERT INTO performance_reviews (user_id, period, date, reviewer, rating, strengths, improvements, manager_comments, employee_comments, goals_for_next_cycle, status)
+      VALUES (${userId}::uuid, ${period}, ${date}, ${reviewer}, ${rating}, ${strengths || null}, ${improvements || null}, ${managerComments || null}, ${employeeComments || null}, ${goalsForNextCycle || null}, 'Completed')
     `;
 
-    // 2. Update the Master Profile
     await db`
       INSERT INTO user_performance (user_id, rating, cycle, next_review, status)
-      VALUES (${userId}, ${rating}, ${period}, ${nextReviewDate}, ${status})
-      ON CONFLICT (user_id) DO UPDATE SET
-        rating = EXCLUDED.rating,
-        cycle = EXCLUDED.cycle,
-        next_review = EXCLUDED.next_review,
-        status = EXCLUDED.status
+      VALUES (${userId}::uuid, ${rating}, ${period}, ${nextReviewDate}, ${status})
+      ON CONFLICT (user_id) DO UPDATE SET rating = EXCLUDED.rating, cycle = EXCLUDED.cycle, next_review = EXCLUDED.next_review, status = EXCLUDED.status
     `;
 
-    // 3. 👈 ADDED: Inject subjective metrics into the Monthly Dashboard Snapshot
     await db`
       INSERT INTO performance_history (user_id, month, productivity, quality, teamwork)
-      VALUES (${userId}, ${targetMonth}, ${productivity}, ${quality}, ${teamwork})
-      ON CONFLICT (user_id, month) 
-      DO UPDATE SET 
-        productivity = EXCLUDED.productivity,
-        quality = EXCLUDED.quality,
-        teamwork = EXCLUDED.teamwork
+      VALUES (${userId}::uuid, ${targetMonth}, ${productivity}, ${quality}, ${teamwork})
+      ON CONFLICT (user_id, month) DO UPDATE SET productivity = EXCLUDED.productivity, quality = EXCLUDED.quality, teamwork = EXCLUDED.teamwork
     `;
 
-    // 4. Send Notification
-    const notificationDesc = `A new performance review for ${period} has been published by ${reviewer}.`;
     await db`
       INSERT INTO performance_notifications (user_id, title, description, type, is_read)
-      VALUES (${userId}, 'New Performance Review', ${notificationDesc}, 'Review', false)
+      VALUES (${userId}::uuid, 'New Performance Review', ${`A new review for ${period} was published by${reviewer}.`}, 'Review', false)
     `;
   } catch (error) {
     console.error("Database Error:", error);
@@ -207,26 +138,27 @@ export async function createNewReview(formData: FormData): Promise<void> {
 }
 
 export async function updateMeetingStatus(meetingId: string, status: string) {
+  const session = await auth();
+  const actorId = session?.user?.id;
+  if (!actorId) return { success: false, message: "Unauthorized." };
+
   try {
     const meetingData =
-      await db`SELECT employee_id FROM one_on_one_meetings WHERE id = ${meetingId}`;
+      await db`SELECT employee_id FROM one_on_one_meetings WHERE id = ${meetingId}::uuid`;
     if (meetingData.length === 0)
       return { success: false, message: "Meeting not found." };
 
-    // SECURITY CHECK
     const employeeId = meetingData[0].employee_id as string;
-    const isAuthorized = await authorizeManagerAction(employeeId);
-    if (!isAuthorized)
-      return {
-        success: false,
-        message: "Unauthorized to update this meeting.",
-      };
 
-    await db`
-      UPDATE one_on_one_meetings 
-      SET status = ${status} 
-      WHERE id = ${meetingId}
-    `;
+    // ABAC Check
+    const isAuthorized = await verifyAccess(
+      actorId,
+      "start_reviews",
+      employeeId,
+    );
+    if (!isAuthorized) return { success: false, message: "Forbidden." };
+
+    await db`UPDATE one_on_one_meetings SET status = ${status} WHERE id = ${meetingId}::uuid`;
 
     revalidatePath(`/dashboard/performance/meetings/${meetingId}`);
     revalidatePath(`/dashboard/performance/meetings`);
@@ -241,6 +173,10 @@ export async function updateMeetingStatus(meetingId: string, status: string) {
 export async function scheduleOneOnOneMeeting(
   formData: FormData,
 ): Promise<void> {
+  const session = await auth();
+  const actorId = session?.user?.id;
+  if (!actorId) return;
+
   const employee_id = formData.get("employee_id") as string;
   const manager_id = formData.get("manager_id") as string;
   const meeting_date = formData.get("meeting_date") as string;
@@ -250,68 +186,61 @@ export async function scheduleOneOnOneMeeting(
 
   if (!employee_id || !manager_id || !meeting_date) return;
 
-  // SECURITY CHECK
-  const isAuthorized = await authorizeManagerAction(employee_id);
-  if (!isAuthorized) {
-    console.error("Unauthorized to schedule a meeting with this employee.");
-    return;
-  }
+  const isAuthorized = await verifyAccess(
+    actorId,
+    "start_reviews",
+    employee_id,
+  );
+  if (!isAuthorized) return;
 
   try {
     await db`
-      INSERT INTO one_on_one_meetings (
-        employee_id, manager_id, meeting_date, topic, notes, action_items, status
-      ) VALUES (
-        ${employee_id}, ${manager_id}, ${meeting_date}, 
-        ${topic || "1-on-1 Sync"}, ${notes || null}, ${action_items || null}, 'Scheduled'
-      )
+      INSERT INTO one_on_one_meetings (employee_id, manager_id, meeting_date, topic, notes, action_items, status) 
+      VALUES (${employee_id}::uuid, ${manager_id}::uuid, ${meeting_date}, ${topic || "1-on-1 Sync"}, ${notes || null}, ${action_items || null}, 'Scheduled')
     `;
-
     revalidatePath("/dashboard/performance/meetings");
     revalidatePath("/dashboard/performance");
   } catch (error) {
     console.error("Failed to schedule meeting:", error);
     return;
   }
-
   redirect("/dashboard/performance/meetings");
 }
 
 export async function approveLeaveRequest(requestId: string) {
+  const session = await auth();
+  const actorId = session?.user?.id;
+  if (!actorId) return { success: false, error: "Unauthorized." };
+
   try {
     const requestResult =
-      await db`SELECT * FROM leave_requests WHERE id = ${requestId}`;
+      await db`SELECT * FROM leave_requests WHERE id = ${requestId}::uuid`;
     if (requestResult.length === 0)
       return { success: false, error: "Request not found." };
 
     const request = requestResult[0];
     const userId = request.user_id as string;
 
-    // SECURITY CHECK
-    const isAuthorized = await authorizeManagerAction(userId);
+    const isAuthorized = await verifyAccess(actorId, "approve_leaves", userId);
     if (!isAuthorized)
-      return { success: false, error: "Unauthorized to approve this request." };
+      return {
+        success: false,
+        error: "Forbidden: You lack permission to approve leaves.",
+      };
 
-    await db`UPDATE leave_requests SET status = 'Approved' WHERE id = ${requestId}`;
+    await db`UPDATE leave_requests SET status = 'Approved' WHERE id = ${requestId}::uuid`;
 
     if (request.type === "exchange" && request.helper_id) {
-      const helperId = request.helper_id as string;
-      const originalDate = request.original_date;
-      const exchangeDate = request.exchange_date;
-
       await db`
         INSERT INTO schedule_overrides (user_id, target_date, is_working, notes)
-        VALUES 
-          (${userId}, ${originalDate}, false, 'Shift given to helper'),
-          (${userId}, ${exchangeDate}, true, 'Shift taken from helper')
+        VALUES (${userId}::uuid, ${request.original_date}, false, 'Shift given to helper'),
+               (${userId}::uuid, ${request.exchange_date}, true, 'Shift taken from helper')
         ON CONFLICT (user_id, target_date) DO UPDATE SET is_working = EXCLUDED.is_working
       `;
-
       await db`
         INSERT INTO schedule_overrides (user_id, target_date, is_working, notes)
-        VALUES 
-          (${helperId}, ${originalDate}, true, 'Covering requester shift'),
-          (${helperId}, ${exchangeDate}, false, 'Shift given to requester')
+        VALUES (${request.helper_id}::uuid, ${request.original_date}, true, 'Covering requester shift'),
+               (${request.helper_id}::uuid, ${request.exchange_date}, false, 'Shift given to requester')
         ON CONFLICT (user_id, target_date) DO UPDATE SET is_working = EXCLUDED.is_working
       `;
     }
@@ -324,54 +253,31 @@ export async function approveLeaveRequest(requestId: string) {
   }
 }
 
-const FeedbackSchema = z.object({
-  userId: z.string().min(1, "Please select an employee."),
-  type: z.enum(["Positive", "Constructive", "Recognition", "Other"]),
-  text: z.string().min(3, "Feedback text must be at least 3 characters."),
-});
-
 export async function createNewFeedback(formData: FormData): Promise<void> {
-  const validatedFields = FeedbackSchema.safeParse({
-    userId: formData.get("userId"),
-    type: formData.get("type"),
-    text: formData.get("text"),
-  });
-
-  if (!validatedFields.success) {
-    console.error(
-      "Validation Error:",
-      validatedFields.error.flatten().fieldErrors,
-    );
-    return;
-  }
-
-  const { userId, type, text } = validatedFields.data;
-
-  const isAuthorized = await authorizeManagerAction(userId);
-  if (!isAuthorized) {
-    console.error("Unauthorized to log feedback for this employee.");
-    return;
-  }
-
   const session = await auth();
-  const senderName = session?.user?.name as string;
+  const actorId = session?.user?.id;
+  if (!actorId) return;
 
-  let senderRole = "Manager";
-  if (session?.user?.isAdmin) senderRole = "HR Admin";
+  const userId = formData.get("userId") as string;
+  const type = formData.get("type") as string;
+  const text = formData.get("text") as string;
 
-  const todayDate = new Date().toISOString().split("T")[0];
+  const isAuthorized = await verifyAccess(actorId, "log_feedback", userId);
+  if (!isAuthorized) return;
+
+  const senderName = session.user.name as string;
+  const senderRole = (await verifyAccess(actorId, "manage_system", actorId))
+    ? "HR Admin"
+    : "Manager";
 
   try {
     await db`
       INSERT INTO user_feedback (user_id, sender, role, date, type, text, is_read)
-      VALUES (${userId}, ${senderName}, ${senderRole}, ${todayDate}, ${type}, ${text}, false)
+      VALUES (${userId}::uuid, ${senderName}, ${senderRole}, NOW(), ${type}, ${text}, false)
     `;
-
-    // Optional: Send a notification to the employee
-    const notificationDesc = `You received new ${type.toLowerCase()} feedback from ${senderName}.`;
     await db`
       INSERT INTO performance_notifications (user_id, title, description, type, is_read)
-      VALUES (${userId}, 'New Feedback Received', ${notificationDesc}, 'Feedback', false)
+      VALUES (${userId}::uuid, 'New Feedback Received', ${`You received new ${type.toLowerCase()} feedback from${senderName}.`}, 'Feedback', false)
     `;
   } catch (error) {
     console.error("Database Error logging feedback:", error);
@@ -385,32 +291,30 @@ export async function createNewFeedback(formData: FormData): Promise<void> {
 
 export async function initiateSelfAssessmentCycle(formData: FormData) {
   const session = await auth();
+  const actorId = session?.user?.id;
+  if (!actorId) return { success: false, error: "Unauthorized." };
 
-  if (!session?.user || !session.user.isAdmin) {
+  const isAuthorized = await verifyAccess(actorId, "manage_system", actorId);
+  if (!isAuthorized)
     return {
       success: false,
-      error: "Unauthorized: Only Admins can initiate company-wide cycles.",
+      error: "Forbidden: Only System Administrators can initiate cycles.",
     };
-  }
 
   const cycleName = formData.get("cycleName") as string;
-  if (!cycleName || cycleName.trim() === "") {
+  if (!cycleName || cycleName.trim() === "")
     return { success: false, error: "Cycle name is required." };
-  }
 
   try {
-    const employees = await db`
-      SELECT id FROM users 
-      WHERE role IN ('employee', 'manager') AND status = 'Active'
-    `;
-
+    const employees =
+      await db`SELECT id FROM users WHERE role IN ('employee', 'manager') AND status = 'Active'`;
     if (employees.length === 0)
       return { success: false, error: "No active employees found." };
 
     for (const emp of employees) {
       const insertResult = await db`
         INSERT INTO self_assessments (user_id, cycle, submitted)
-        VALUES (${emp.id}, ${cycleName}, false)
+        VALUES (${emp.id}::uuid, ${cycleName}, false)
         ON CONFLICT (user_id, cycle) DO NOTHING
         RETURNING id
       `;
@@ -418,13 +322,7 @@ export async function initiateSelfAssessmentCycle(formData: FormData) {
       if (insertResult.length > 0) {
         await db`
           INSERT INTO performance_notifications (user_id, title, description, type, is_read)
-          VALUES (
-            ${emp.id}, 
-            'New Self-Assessment Cycle', 
-            ${`The ${cycleName} self-assessment cycle is now open. Please complete your evaluation.`}, 
-            'Assessment', 
-            false
-          )
+          VALUES (${emp.id}::uuid, 'New Self-Assessment Cycle', ${`The ${cycleName} self-assessment cycle is now open.`}, 'Assessment', false)
         `;
       }
     }
@@ -438,30 +336,24 @@ export async function initiateSelfAssessmentCycle(formData: FormData) {
 }
 
 export async function resetAllLeaveBalances() {
+  const session = await auth();
+  const actorId = session?.user?.id;
+  if (!actorId) return { success: false, message: "Unauthorized." };
+
+  const isAuthorized = await verifyAccess(actorId, "manage_system", actorId);
+  if (!isAuthorized)
+    return {
+      success: false,
+      message: "Forbidden: Only admins can perform this action.",
+    };
+
   try {
-    const session = await auth();
-    if (!session?.user?.isAdmin) {
-      return {
-        success: false,
-        message: "Forbidden: Only admins can perform this action.",
-      };
-    }
-
-    await db`
-      UPDATE leave_balances 
-      SET 
-        annual_remaining = annual_total,
-        sick_remaining = sick_total,
-        monthly_remaining_hours = monthly_total_hours
-    `;
-
+    await db`UPDATE leave_balances SET annual_remaining = annual_total, sick_remaining = sick_total, monthly_remaining_hours = monthly_total_hours`;
     revalidatePath("/dashboard/attendance");
     revalidatePath("/dashboard/employees");
-
     return {
       success: true,
-      message:
-        "All employee leave balances have been reset to their annual maximums.",
+      message: "All employee leave balances have been reset.",
     };
   } catch (error) {
     console.error("Failed to reset leave balances:", error);

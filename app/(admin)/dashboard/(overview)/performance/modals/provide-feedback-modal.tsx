@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { FeedbackRequestRow } from "../types";
+import { FeedbackRequestRow } from "@/app/lib/employeeDashboard/performance/definitions";
 import { submitFeedbackResponse } from "@/app/lib/employeeDashboard/performance/actions/feedback";
 
 interface ModalProps {
@@ -17,7 +17,7 @@ export default function ProvideFeedbackModal({ request, onClose }: ModalProps) {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
-    const formData = new FormData(e.currentTarget); 
+    const formData = new FormData(e.currentTarget);
     formData.append("requestId", request.id);
 
     startTransition(async () => {

@@ -1,6 +1,6 @@
 // @/app/(admin)/dashboard/(overview)/performance/_components/upcoming-syncs-list.tsx
 import { Calendar, ArrowRight } from "lucide-react";
-import { MeetingRow } from "../types";
+import { MeetingRow } from "@/app/lib/employeeDashboard/performance/definitions";
 import Link from "next/link";
 
 export function UpcomingSyncsList({ meetings }: { meetings: MeetingRow[] }) {

@@ -5,7 +5,10 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { MessageSquare, Bell, CheckCircle, ArrowRight } from "lucide-react";
-import { FeedbackRequestRow, FeedbackRow } from "../types";
+import {
+  FeedbackRow,
+  FeedbackRequestRow,
+} from "@/app/lib/employeeDashboard/performance/definitions";
 import ProvideFeedbackModal from "../modals/provide-feedback-modal";
 
 interface FeedbackWidgetProps {
@@ -18,7 +21,6 @@ export function FeedbackWidget({
   requests,
   isAdmin = true,
 }: FeedbackWidgetProps) {
-  
   const [activeTab, setActiveTab] = useState<"feed" | "requests">(
     requests.length > 0 ? "requests" : "feed",
   );

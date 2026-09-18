@@ -1,6 +1,6 @@
 // @/app/(admin)/dashboard/(overview)/performance/_components/goal-tracker-list.tsx
 import { Target, Calendar, Flag, ArrowRight } from "lucide-react";
-import { GoalRow } from "../types";
+import { GoalRow } from "@/app/lib/employeeDashboard/performance/definitions";
 import Link from "next/link";
 
 export function GoalTrackerList({ goals }: { goals: GoalRow[] }) {

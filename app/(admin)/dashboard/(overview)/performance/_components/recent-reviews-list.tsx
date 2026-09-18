@@ -1,9 +1,9 @@
 // @/app/(admin)/dashboard/(overview)/performance/_components/recent-reviews-list.tsx
 import { TrendingUp, ArrowRight } from "lucide-react";
-import { ReviewRow } from "../types";
+import { ReviewRow } from "@/app/lib/employeeDashboard/performance/definitions";
 import Link from "next/link";
 
-export function RecentReviewsList({ reviews }: { reviews: ReviewRow[] }) { 
+export function RecentReviewsList({ reviews }: { reviews: ReviewRow[] }) {
   const getRatingColor = (rating: string | number) => {
     const num = Number(rating);
     if (num >= 4.0) return "text-emerald-600";

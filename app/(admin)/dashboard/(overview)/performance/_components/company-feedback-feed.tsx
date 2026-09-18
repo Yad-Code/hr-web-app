@@ -1,7 +1,7 @@
 // @/app/(admin)/dashboard/(overview)/performance/_components/company-feedback-feed.tsx
 
 import { MessageSquare, ArrowRight } from "lucide-react";
-import { FeedbackRow } from "../types";
+import { FeedbackRow } from "@/app/lib/employeeDashboard/performance/definitions";
 import Link from "next/link";
 import Image from "next/image";
 
