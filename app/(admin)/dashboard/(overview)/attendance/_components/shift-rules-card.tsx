@@ -5,7 +5,7 @@
 import { useState, useTransition } from "react";
 import { ShieldAlert, Plus, X, Loader2 } from "lucide-react";
 import { ShiftRule } from "../types";
-import { createShiftRule } from "../_actions/attendance-actions";
+import { createShiftRule } from "@/app/lib/attendance/actions";
 
 export function ShiftRulesCard({ shifts }: { shifts: ShiftRule[] }) {
   const [isModalOpen, setIsModalOpen] = useState(false);

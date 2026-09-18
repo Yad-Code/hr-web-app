@@ -13,7 +13,7 @@ import {
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { DailyAttendanceRow, ShiftRule } from "../types";
-import { assignEmployeeShift } from "../_actions/attendance-actions";
+import { assignEmployeeShift } from "@/app/lib/attendance/actions";
 import { ResetLeavesButton } from "./reset-leaves-button";
 
 export function AttendanceHeaderActions({

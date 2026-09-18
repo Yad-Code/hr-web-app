@@ -1,25 +1,16 @@
-// @/app/(admin)/dashboard/(overview)/attendance/_actions/attendance-actions.ts
 "use server";
 
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
-
-async function authorizeManagerAction(targetUserId: string) {
-  const session = await auth();
-  if (!session?.user?.id) return false;
-  if (session.user.isAdmin) return true;
-  if (session.user.isManager) {
-    const managerId = session.user.id;
-    const check =
-      await db`SELECT id FROM users WHERE id = ${targetUserId} AND manager_id = ${managerId}`;
-    return check.length > 0;
-  }
-  return false;
-}
+import { verifyAccess } from "@/app/lib/auth/access-control";
 
 export async function overrideAttendanceRecord(formData: FormData) {
   try {
+    const session = await auth();
+    const actorId = session?.user?.id;
+    if (!actorId) return { success: false, error: "Unauthorized." };
+
     const recordId = formData.get("recordId") as string;
     const targetDate = formData.get("targetDate") as string;
     const status = formData.get("status") as string;
@@ -28,20 +19,27 @@ export async function overrideAttendanceRecord(formData: FormData) {
 
     if (!recordId) return { success: false, error: "Record ID is missing." };
 
-    // Determine target User ID for authorization
+    // Determine target User ID
     let targetUserId = "";
     if (recordId.startsWith("pending-")) {
       targetUserId = recordId.replace("pending-", "");
     } else {
       const rec =
         await db`SELECT user_id FROM attendance WHERE id = ${recordId}`;
-      if (rec.length > 0) targetUserId = rec[0].user_id as string; // STRICT TYPING
+      if (rec.length > 0) targetUserId = rec[0].user_id as string;
     }
 
-    // SECURITY CHECK
-    const isAuthorized = await authorizeManagerAction(targetUserId);
+    // 👇 Dynamic Security Check: Can they update records for this specific user?
+    const isAuthorized = await verifyAccess(
+      actorId,
+      "update_records",
+      targetUserId,
+    );
     if (!isAuthorized)
-      return { success: false, error: "Unauthorized to edit this employee." };
+      return {
+        success: false,
+        error: "Forbidden: You lack permission to override this record.",
+      };
 
     const formatTo12Hr = (time24: string) => {
       if (!time24) return null;
@@ -52,7 +50,6 @@ export async function overrideAttendanceRecord(formData: FormData) {
       return `${String(h12).padStart(2, "0")}:${m} ${ampm}`;
     };
 
-    // STRICT TYPING: Fallback to null instead of undefined
     const checkInTime = formatTo12Hr(rawCheckIn) || null;
     const checkOutTime = formatTo12Hr(rawCheckOut) || null;
 
@@ -69,18 +66,17 @@ export async function overrideAttendanceRecord(formData: FormData) {
     if (recordId.startsWith("pending-")) {
       await db`
         INSERT INTO attendance (user_id, date, check_in, check_out, work_hours, status, work_location)
-        VALUES (${targetUserId}, ${targetDate}, ${checkInTime}, ${checkOutTime}, ${workHours}, ${status}, 'Office')
+        VALUES (${targetUserId}::uuid, ${targetDate}, ${checkInTime}, ${checkOutTime}, ${workHours}, ${status}, 'Office')
       `;
     } else {
       await db`
         UPDATE attendance
         SET status = ${status}, check_in = ${checkInTime}, check_out = ${checkOutTime}, work_hours = ${workHours}
-        WHERE id = ${recordId}
+        WHERE id = ${recordId}::uuid
       `;
     }
 
     revalidatePath("/dashboard/attendance");
-    revalidatePath("/my-profile/attendance");
     return { success: true };
   } catch (error) {
     console.error("[ATTENDANCE_OVERRIDE_ERROR]", error);
@@ -91,12 +87,21 @@ export async function overrideAttendanceRecord(formData: FormData) {
 export async function createShiftRule(formData: FormData) {
   try {
     const session = await auth();
-    if (!session?.user?.isAdmin) {
+    const actorId = session?.user?.id;
+    if (!actorId) return { success: false, error: "Unauthorized." };
+
+    // 👇 Dynamic Security Check: Creating global shifts requires System Security access
+    const isAuthorized = await verifyAccess(
+      actorId,
+      "manage_security_policies",
+      actorId,
+    );
+    if (!isAuthorized)
       return {
         success: false,
-        error: "Only Admins can create global shift rules.",
+        error:
+          "Forbidden: Only System Administrators can create global shift rules.",
       };
-    }
 
     const shiftName = formData.get("shiftName") as string;
     const startTime = formData.get("startTime") as string;
@@ -121,26 +126,34 @@ export async function createShiftRule(formData: FormData) {
 
 export async function assignEmployeeShift(formData: FormData) {
   try {
+    const session = await auth();
+    const actorId = session?.user?.id;
+    if (!actorId) return { success: false, error: "Unauthorized." };
+
     const employeeId = formData.get("employeeId") as string;
     const shiftRuleId = formData.get("shiftRuleId") as string;
 
     if (!employeeId || !shiftRuleId)
       return { success: false, error: "Employee and Shift Rule are required." };
 
-    // SECURITY CHECK
-    const isAuthorized = await authorizeManagerAction(employeeId);
+    // 👇 Dynamic Security Check: Can they update records for this specific user?
+    const isAuthorized = await verifyAccess(
+      actorId,
+      "update_records",
+      employeeId,
+    );
     if (!isAuthorized)
       return {
         success: false,
-        error: "Unauthorized to assign shifts to this employee.",
+        error:
+          "Forbidden: You lack permission to assign shifts to this employee.",
       };
 
     const shiftData =
-      await db`SELECT shift_name, start_time, end_time FROM shift_rules WHERE id = ${shiftRuleId}`;
+      await db`SELECT shift_name, start_time, end_time FROM shift_rules WHERE id = ${shiftRuleId}::uuid`;
     if (!shiftData.length)
       return { success: false, error: "Shift rule not found." };
 
-    // STRICT TYPING: Pull from the un-typed Row array and explicitly cast as strings
     const shiftName = shiftData[0].shift_name as string;
     const startTime = shiftData[0].start_time as string;
     const endTime = shiftData[0].end_time as string;
@@ -148,7 +161,7 @@ export async function assignEmployeeShift(formData: FormData) {
     await db`
       UPDATE users 
       SET shift_type = ${shiftName}, shift_start = ${startTime}, shift_end = ${endTime}
-      WHERE id = ${employeeId}
+      WHERE id = ${employeeId}::uuid
     `;
 
     revalidatePath("/dashboard/attendance");
@@ -156,5 +169,60 @@ export async function assignEmployeeShift(formData: FormData) {
   } catch (error) {
     console.error("[ASSIGN_SHIFT_ERROR]", error);
     return { success: false, error: "Failed to assign shift to employee." };
+  }
+}
+
+export async function updateLeaveRequestStatus(
+  requestId: string,
+  newStatus: "Approved" | "Rejected",
+) {
+  try {
+    const session = await auth();
+    const actorId = session?.user?.id;
+    if (!actorId) return { success: false, error: "Unauthorized" };
+    if (!requestId) return { success: false, error: "Request ID is required." };
+
+    const requestData =
+      await db`SELECT user_id, type, total_days, leave_category, hours FROM leave_requests WHERE id = ${requestId}::uuid`;
+    if (requestData.length === 0)
+      return { success: false, error: "Request not found." };
+
+    const request = requestData[0];
+    const targetUserId = request.user_id as string;
+
+    // 👇 Dynamic Security Check: Can they approve leaves for this specific user?
+    const isAuthorized = await verifyAccess(
+      actorId,
+      "approve_leaves",
+      targetUserId,
+    );
+    if (!isAuthorized)
+      return {
+        success: false,
+        error:
+          "Forbidden: You lack permission to modify this employee's request.",
+      };
+
+    await db`UPDATE leave_requests SET status = ${newStatus}, updated_at = NOW() WHERE id = ${requestId}::uuid`;
+
+    if (newStatus === "Approved") {
+      if (request.type === "dayoff") {
+        const days = Number(request.total_days);
+        if (request.leave_category?.toLowerCase() === "sick") {
+          await db`UPDATE leave_balances SET sick_remaining = sick_remaining - ${days} WHERE user_id = ${targetUserId}::uuid`;
+        } else {
+          await db`UPDATE leave_balances SET annual_remaining = annual_remaining - ${days} WHERE user_id = ${targetUserId}::uuid`;
+        }
+      } else if (request.type === "timeoff") {
+        const hours = Number(request.hours);
+        await db`UPDATE leave_balances SET monthly_remaining_hours = monthly_remaining_hours - ${hours} WHERE user_id = ${targetUserId}::uuid`;
+      }
+    }
+
+    revalidatePath("/dashboard/attendance");
+    return { success: true };
+  } catch (error) {
+    console.error(`[LEAVE_ACTION_ERROR]`, error);
+    return { success: false, error: "Failed to update leave request." };
   }
 }

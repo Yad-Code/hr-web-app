@@ -1,8 +1,6 @@
-// @/app/ui/dashboard/id/profileHeader.tsx
 "use client";
 
 import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
-
 import { useTransition, useRef } from "react";
 import Image from "next/image";
 import { uploadProfilePicture } from "@/app/lib/employeeList/actions";
@@ -10,9 +8,13 @@ import { Camera, Loader2, ShieldAlert } from "lucide-react";
 
 interface ProfileHeaderProps {
   profile: FullEmployeeProfile;
+  canUpdateOfficialRecords?: boolean;
 }
 
-export default function ProfileHeader({ profile }: ProfileHeaderProps) {
+export default function ProfileHeader({
+  profile,
+  canUpdateOfficialRecords,
+}: ProfileHeaderProps) {
   const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -34,11 +36,9 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
 
   const displayName = profile.preferred_name || profile.name;
   const initial = displayName ? displayName.charAt(0).toUpperCase() : "U";
-  const isAdmin = profile.role?.toLowerCase() === "admin";
 
   return (
     <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
-      {/* Admin-Styled Banner Background */}
       <div className="h-28 sm:h-36 w-full bg-linear-to-r from-slate-900 via-slate-800 to-blue-950 relative">
         <div
           className="absolute inset-0 opacity-10 pointer-events-none"
@@ -47,14 +47,16 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
             backgroundSize: "24px 24px",
           }}
         />
-        <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/15 text-white text-[11px] font-medium">
-          <ShieldAlert className="w-3.5 h-3.5 text-blue-400" />
-          <span>Admin Profile Management</span>
-        </div>
+        {/* Render banner dynamically based on ABAC scoped permission */}
+        {canUpdateOfficialRecords && (
+          <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/15 text-white text-[11px] font-medium">
+            <ShieldAlert className="w-3.5 h-3.5 text-blue-400" />
+            <span>Admin Profile Management</span>
+          </div>
+        )}
       </div>
 
       <div className="px-6 pb-6 pt-0 relative">
-        {/* Avatar Container with Upload Overlay */}
         <div className="absolute -top-12 left-6 group">
           <div className="w-24 h-24 rounded-full bg-linear-to-tr from-blue-600 to-indigo-600 text-white font-bold text-2xl flex items-center justify-center border-4 border-white shadow-md overflow-hidden relative">
             {profile.image_url ? (
@@ -69,8 +71,6 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
             ) : (
               <span>{initial}</span>
             )}
-
-            {/* Hover Camera Overlay & Loading State */}
             <button
               type="button"
               disabled={isPending}
@@ -87,7 +87,6 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
               )}
             </button>
           </div>
-
           <input
             ref={fileInputRef}
             type="file"
@@ -97,7 +96,6 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
           />
         </div>
 
-        {/* Profile Info */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-14">
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -105,20 +103,12 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
                 {displayName}
               </h1>
               <span
-                className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${
-                  isAdmin
-                    ? "bg-rose-50 text-rose-700 border-rose-200"
-                    : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                }`}
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border bg-slate-100 text-slate-600 border-slate-200`}
               >
                 {profile.role || "Employee"}
               </span>
               <span
-                className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${
-                  profile.status?.toLowerCase() === "active"
-                    ? "bg-blue-50 text-blue-700 border-blue-200"
-                    : "bg-slate-100 text-slate-600 border-slate-200"
-                }`}
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${profile.status?.toLowerCase() === "active" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-slate-100 text-slate-600 border-slate-200"}`}
               >
                 {profile.status || "Active"}
               </span>

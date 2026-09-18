@@ -2,6 +2,7 @@
 
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { auth } from "@/auth";
+import { verifyAccess } from "@/app/lib/auth/access-control";
 
 export type AdminPayrollRecord = {
   id: string;
@@ -20,13 +21,19 @@ export type AdminPayrollRecord = {
 export async function fetchAllPayStubs(): Promise<AdminPayrollRecord[]> {
   try {
     const session = await auth();
-    if (!session?.user?.isAdmin) throw new Error("Unauthorized");
+    const actorId = session?.user?.id;
+    if (!actorId) throw new Error("Unauthorized");
+
+    // Dynamic ABAC Check: Only God Mode (manage_system) can view all payrolls
+    const isAuthorized = await verifyAccess(actorId, "manage_system", actorId);
+    if (!isAuthorized)
+      throw new Error("Forbidden: You lack permission to view global payroll.");
 
     return await db<AdminPayrollRecord[]>`
-    SELECT p.id, p.user_id, p.pay_period_start, p.pay_period_end, p.pay_date, p.gross_pay, p.net_pay, p.status, u.name as employee_name, u.email as employee_email, u.image_url
-    FROM pay_stubs p JOIN users u ON p.user_id = u.id
-    ORDER BY p.pay_date DESC, u.name ASC
-  `;
+      SELECT p.id, p.user_id, p.pay_period_start, p.pay_period_end, p.pay_date, p.gross_pay, p.net_pay, p.status, u.name as employee_name, u.email as employee_email, u.image_url
+      FROM pay_stubs p JOIN users u ON p.user_id = u.id
+      ORDER BY p.pay_date DESC, u.name ASC
+    `;
   } catch (error) {
     console.error("Database Error:", error);
     throw new Error("Failed to fetch payroll records.");
@@ -34,11 +41,11 @@ export async function fetchAllPayStubs(): Promise<AdminPayrollRecord[]> {
 }
 
 export async function fetchPayStubDetails(id: string) {
-  const session = await auth();
-
-  if (!session?.user?.isAdmin) return null;
-
   try {
+    const session = await auth();
+    const actorId = session?.user?.id;
+    if (!actorId) return null;
+
     const result = await db`
       SELECT 
         p.*, u.name as employee_name, u.email, u.department, 
@@ -46,12 +53,21 @@ export async function fetchPayStubDetails(id: string) {
       FROM pay_stubs p 
       JOIN users u ON p.user_id = u.id 
       LEFT JOIN payment_methods pm ON u.id = pm.user_id
-      WHERE p.id = ${id} 
+      WHERE p.id = ${id}::uuid 
       ORDER BY pm.is_primary DESC, pm.id DESC 
       LIMIT 1
     `;
 
-    return result[0] || null;
+    if (!result || result.length === 0) return null;
+    const payStub = result[0];
+
+    // Dynamic ABAC Check: Must be System Admin OR the owner of the pay stub
+    const isSystemAdmin = await verifyAccess(actorId, "manage_system", actorId);
+    if (!isSystemAdmin && actorId !== String(payStub.user_id)) {
+      return null;
+    }
+
+    return payStub;
   } catch (error) {
     console.error("Database Error:", error);
     throw new Error("Failed to fetch pay stub details.");
@@ -59,11 +75,11 @@ export async function fetchPayStubDetails(id: string) {
 }
 
 export async function fetchPayStubItems(payStubId: string) {
-  return await db`SELECT * FROM pay_stub_items WHERE pay_stub_id = ${payStubId} ORDER BY type DESC, amount DESC`;
+  return await db`SELECT * FROM pay_stub_items WHERE pay_stub_id = ${payStubId}::uuid ORDER BY type DESC, amount DESC`;
 }
 
 export async function fetchEmployeePayStubs(userId: string) {
-  return await db`SELECT * FROM pay_stubs WHERE user_id = ${userId} ORDER BY pay_date DESC`;
+  return await db`SELECT * FROM pay_stubs WHERE user_id = ${userId}::uuid ORDER BY pay_date DESC`;
 }
 
 export async function fetchEmployeePaymentMethods(userId: string) {
@@ -71,7 +87,7 @@ export async function fetchEmployeePaymentMethods(userId: string) {
     return await db`
       SELECT pm.*, u.name as account_holder 
       FROM payment_methods pm JOIN users u ON pm.user_id = u.id
-      WHERE pm.user_id = ${userId}
+      WHERE pm.user_id = ${userId}::uuid
     `;
   } catch (error) {
     console.error("Database Error:", error);
@@ -84,7 +100,7 @@ export async function fetchPayrollDocuments(userId: string) {
     return await db`
       SELECT id, document_type, file_name, file_extension, file_url, created_at 
       FROM employee_documents 
-      WHERE user_id = ${userId} 
+      WHERE user_id = ${userId}::uuid 
       AND document_type IN ('Employment Contract', 'Tax Form', 'Compensation Letter', 'Policy Agreement')
       ORDER BY created_at DESC
     `;

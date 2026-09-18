@@ -1,8 +1,11 @@
+// @/app/ui/employee/permissions-data-grid.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { Trash2, Lock, Settings2, Globe, Loader2 } from "lucide-react";
 import { Employee } from "@/app/lib/employeeList/definitions";
-import ManagePermissionsModal from "./modals/manage-permissions-modal";
+import ManagePermissionsModal from "./modals/manage-permissions-modal"; 
+import { deleteEmployeeAction } from "@/app/lib/employeeList/actions";
 
 interface PermissionsDataGridProps {
   employees: Employee[];
@@ -19,6 +22,9 @@ export default function PermissionsDataGrid({
   >("standard");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // 👇 Add transition state for the delete action
+  const [isPending, startTransition] = useTransition();
+
   const openModal = (
     employee: Employee,
     tab: "private" | "standard" | "public",
@@ -28,91 +34,115 @@ export default function PermissionsDataGrid({
     setIsModalOpen(true);
   };
 
-  const handleDelete = (name: string) => {
-    if (confirm(`Are you sure you want to delete ${name}?`)) { 
-      alert("Delete action triggered for " + name);
+  // 👇 Hook up the real database action
+  const handleDelete = (id: string, name: string) => {
+    if (
+      confirm(
+        `Are you absolutely sure you want to permanently delete ${name} from the system?`,
+      )
+    ) {
+      startTransition(async () => {
+        const res = await deleteEmployeeAction(id);
+        if (!res.success) {
+          alert(res.error);
+        }
+      });
     }
   };
 
   return (
-    <div className="w-full overflow-x-auto bg-white border border-slate-200 shadow-sm">
-      <table className="w-full text-left border-collapse whitespace-nowrap text-sm"> 
-        <thead className="bg-slate-100 text-slate-800 font-bold border-b-2 border-slate-300">
-          <tr>
-            <th className="p-2 border-r border-slate-300 w-16 text-center">
-              Delete
-            </th>
-            <th className="p-2 border-r border-slate-300">
-              User Private Permissions
-            </th>
-            <th className="p-2 border-r border-slate-300">Permissions</th>
-            <th className="p-2 border-r border-slate-300">
-              Public Permissions
-            </th>
-            <th className="p-2 border-r border-slate-300">Id</th>
-            <th className="p-2 border-r border-slate-300">User Name</th>
-            <th className="p-2 border-r border-slate-300">User Full Name</th>
-            <th className="p-2">User Group</th>
-          </tr>
-        </thead>
- 
-        <tbody className="divide-y divide-slate-200 text-slate-700">
-          {employees.map((emp, index) => (
-            <tr key={emp.id} className="hover:bg-slate-50 transition-colors"> 
-              <td className="p-2 border-r border-slate-200 text-center">
-                <button
-                  onClick={() => handleDelete(emp.name)}
-                  className="px-2 py-1 bg-slate-100 border border-slate-300 hover:bg-slate-200 text-slate-800 font-medium text-xs shadow-xs"
-                >
-                  Delete
-                </button>
-              </td>
- 
-              <td className="p-2 border-r border-slate-200">
-                <button
-                  onClick={() => openModal(emp, "private")}
-                  className="px-3 py-1 w-full text-left bg-slate-100 border border-slate-300 hover:bg-slate-200 text-slate-800 font-medium text-xs shadow-xs"
-                >
-                  User Private Permissions
-                </button>
-              </td>
- 
-              <td className="p-2 border-r border-slate-200">
-                <button
-                  onClick={() => openModal(emp, "standard")}
-                  className="px-3 py-1 w-full text-left bg-slate-100 border border-slate-300 hover:bg-slate-200 text-slate-800 font-medium text-xs shadow-xs"
-                >
-                  Permissions
-                </button>
-              </td>
-              
-              <td className="p-2 border-r border-slate-200">
-                <button
-                  onClick={() => openModal(emp, "public")}
-                  className="px-3 py-1 w-full text-left bg-slate-100 border border-slate-300 hover:bg-slate-200 text-slate-800 font-medium text-xs shadow-xs"
-                >
-                  Public Permissions
-                </button>
-              </td>
- 
-              <td className="p-2 border-r border-slate-200 font-mono text-xs">
-                {index + 1}
-              </td>
-              <td className="p-2 border-r border-slate-200">
-                {emp.preferred_name || emp.email.split("@")[0]}
-              </td>
-              <td className="p-2 border-r border-slate-200 font-medium text-slate-900">
-                {emp.name}
-              </td>
- 
-              <td className="p-2 text-xs">
-                {emp.department ? `${emp.department} - ${emp.role}` : emp.role}
-              </td>
+    <div className="w-full bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden animate-fadeIn">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse whitespace-nowrap text-sm">
+          <thead className="bg-slate-50/80 border-b border-slate-200/80">
+            <tr>
+              <th className="px-5 py-4 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                User Name
+              </th>
+              <th className="px-5 py-4 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                Full Name
+              </th>
+              <th className="px-5 py-4 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                User Group
+              </th>
+              <th className="px-5 py-4 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                Private Access
+              </th>
+              <th className="px-5 py-4 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                Dynamic Permissions
+              </th>
+              <th className="px-5 py-4 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                Public Access
+              </th>
+              <th className="px-5 py-4 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-right">
+                Action
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
- 
+          </thead>
+
+          <tbody className="divide-y divide-slate-100 text-slate-700">
+            {employees.map((emp) => (
+              <tr
+                key={emp.id}
+                className="hover:bg-slate-50/50 transition-colors group"
+              >
+                <td className="px-5 py-3 font-bold text-slate-900">
+                  {emp.preferred_name || emp.email.split("@")[0]}
+                </td>
+                <td className="px-5 py-3 text-slate-600 font-medium">
+                  {emp.name}
+                </td>
+                <td className="px-5 py-3">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200/60 shadow-xs">
+                    {emp.department
+                      ? `${emp.department} - ${emp.role}`
+                      : emp.role}
+                  </span>
+                </td>
+                <td className="px-5 py-3">
+                  <button
+                    onClick={() => openModal(emp, "private")}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-all shadow-xs"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-slate-400" /> Private
+                  </button>
+                </td>
+                <td className="px-5 py-3">
+                  <button
+                    onClick={() => openModal(emp, "standard")}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200/80 rounded-lg hover:bg-indigo-100 transition-all shadow-xs"
+                  >
+                    <Settings2 className="w-3.5 h-3.5" /> Manage
+                  </button>
+                </td>
+                <td className="px-5 py-3">
+                  <button
+                    onClick={() => openModal(emp, "public")}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-all shadow-xs"
+                  >
+                    <Globe className="w-3.5 h-3.5 text-slate-400" /> Public
+                  </button>
+                </td>
+                <td className="px-5 py-3 text-right">
+                  <button
+                    onClick={() => handleDelete(emp.id, emp.name)}
+                    disabled={isPending}
+                    title={`Delete ${emp.name}`}
+                    className="inline-flex p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 disabled:opacity-50"
+                  >
+                    {isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
       {isModalOpen && selectedEmployee && (
         <ManagePermissionsModal
           isOpen={isModalOpen}

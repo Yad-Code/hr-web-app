@@ -1,6 +1,61 @@
-// app/lib/employeeList/data.ts
-import { sql } from "@/app/lib/employeeDashboard/employee/db";
+// @/app/lib/employeeList/data.ts
+import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
+
+export async function getDirectoryEmployees(actorId: string) {
+  try {
+    // Check if the user has Administrative Data Grid powers
+    const adminCheck = await db`
+      SELECT 1 FROM user_permissions up
+      JOIN permissions p ON p.id = up.permission_id
+      WHERE up.user_id = ${actorId}::uuid AND p.action IN ('manage_system_access', 'update_records')
+      LIMIT 1
+    `;
+    const hasAdminView = adminCheck.length > 0;
+
+    // Fetch only the employees the current user is authorized to see
+    const users = await db`
+      WITH auth_users AS (
+        SELECT DISTINCT u.id FROM users u
+        JOIN user_permissions up ON up.user_id = ${actorId}::uuid
+        JOIN permissions p ON p.id = up.permission_id
+        WHERE p.action IN ('view_directory', 'view_dashboard', 'update_records')
+          AND (
+            up.scope = 'global' OR
+            (up.scope = 'branch' AND u.branch = up.target_branch) OR
+            (up.scope = 'department' AND u.department = up.target_department) OR
+            (up.scope = 'team' AND u.manager_id = ${actorId}::uuid) OR
+            (up.scope = 'self' AND u.id = ${actorId}::uuid)
+          )
+      )
+      SELECT 
+        id, name, preferred_name, email, department, branch, role, status, image_url
+      FROM users 
+      WHERE id IN (SELECT id FROM auth_users)
+      ORDER BY name ASC
+    `;
+
+    const employees = users.map((user) => ({
+      id: String(user.id),
+      name: String(user.name),
+      preferred_name: user.preferred_name
+        ? String(user.preferred_name)
+        : undefined,
+      email: String(user.email),
+      department: user.department ? String(user.department) : undefined,
+      branch: user.branch ? String(user.branch) : undefined,
+      role: String(user.role),
+      status: String(user.status),
+      image_url: user.image_url ? String(user.image_url) : null,
+      last_seen_text: user.status === "Active" ? "Online" : "Offline",
+    }));
+
+    return { employees, hasAdminView };
+  } catch (error) {
+    console.error("Failed to fetch directory:", error);
+    return { employees: [], hasAdminView: false };
+  }
+}
 
 export async function getProfileById(
   id: string,
@@ -8,27 +63,15 @@ export async function getProfileById(
   if (!id) return null;
 
   try {
-    const users = await sql`
-      SELECT * 
-      FROM users 
-      WHERE id::text = ${id} OR employee_id = ${id}
-      LIMIT 1
+    const users = await db`
+      SELECT * FROM users WHERE id::text = ${id} OR employee_id = ${id} LIMIT 1
     `;
 
-    if (!users || users.length === 0) {
-      console.warn(
-        `⚠️ [getProfileById] No user matched ID/employee_id '${id}'`,
-      );
-      return null;
-    }
+    if (!users || users.length === 0) return null;
 
     const user = users[0];
-
-    const historyRows = await sql`
-      SELECT title, company, period 
-      FROM employment_history 
-      WHERE user_id = ${user.id}::uuid
-      ORDER BY created_at DESC
+    const historyRows = await db`
+      SELECT title, company, period FROM employment_history WHERE user_id = ${user.id}::uuid ORDER BY created_at DESC
     `;
 
     return {
@@ -50,13 +93,6 @@ export async function getProfileById(
       department: user.department || "General",
       branch: user.branch || "Main Branch",
       role: user.role || "employee",
-      isAdmin: user.is_admin,
-      isManager: user.is_manager,
-      hasEmployeeView: user.has_employee_view,
-      canApproveLeaves: user.can_approve_leaves,
-      canStartReviews: user.can_start_reviews,
-      canEditProfile: user.can_edit_profile,
-      canLogFeedback: user.can_log_feedback,
       status: user.status || "Active",
       base_salary: user.base_salary ? Number(user.base_salary) : 3500.0,
       image_url: user.image_url || null,
@@ -74,6 +110,7 @@ export async function getProfileById(
       privateOrg: user.private_org || null,
       insurance: user.insurance || null,
       subscription: user.subscription || null,
+      last_seen_text: user.status === 'Active' ? 'Online' : 'Offline',
       history: historyRows.map((row) => ({
         title: row.title,
         company: row.company || "Company",
@@ -81,7 +118,7 @@ export async function getProfileById(
       })),
     };
   } catch (error) {
-    console.error("❌ [getProfileById] SQL Error:", error);
+    console.error("SQL Error in getProfileById:", error);
     return null;
   }
 }

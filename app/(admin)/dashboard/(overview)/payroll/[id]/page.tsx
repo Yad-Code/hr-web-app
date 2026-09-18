@@ -3,16 +3,16 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-
 import {
   fetchPayStubDetails,
   fetchPayStubItems,
 } from "@/app/lib/admin/payroll/data";
-import { 
+import {
   markAsPaid,
   verifyPaymentMethod,
   deletePayStub,
 } from "@/app/lib/admin/payroll/actions";
+import { verifyAccess } from "@/app/lib/auth/access-control";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -20,23 +20,31 @@ interface PageProps {
 
 export default async function PayStubDetailsPage({ params }: PageProps) {
   const session = await auth();
+  const actorId = session?.user?.id;
 
-  if (!session?.user?.isAdmin) {
-    redirect("/dashboard");
-  }
+  // Dynamic ABAC Check: System Administrator God Mode
+  const isAuthorized = actorId
+    ? await verifyAccess(actorId, "manage_system", actorId)
+    : false;
+
+  if (!isAuthorized) redirect("/dashboard");
 
   const resolvedParams = await params;
   const payStub = await fetchPayStubDetails(resolvedParams.id);
-  const items = await fetchPayStubItems(resolvedParams.id);
 
   if (!payStub)
-    return <div className="p-8 text-slate-500">Pay stub not found.</div>;
+    return (
+      <div className="p-8 text-slate-500">
+        Pay stub not found or access denied.
+      </div>
+    );
 
+  const items = await fetchPayStubItems(resolvedParams.id);
   const earnings = items.filter((i) => i.type === "earning");
   const deductions = items.filter((i) => i.type === "deduction");
 
   return (
-    <main className="max-w-4xl mx-auto w-full p-4 sm:p-6 lg:p-8">
+    <main className="max-w-4xl mx-auto w-full p-4 sm:p-6 lg:p-8 animate-fadeIn">
       <div className="flex items-center justify-between mb-8">
         <div>
           <Link
@@ -60,7 +68,7 @@ export default async function PayStubDetailsPage({ params }: PageProps) {
             >
               <button
                 type="submit"
-                className="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 shadow-xs transition-all"
+                className="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 shadow-xs transition-all cursor-pointer"
               >
                 Mark as Paid
               </button>
@@ -71,21 +79,19 @@ export default async function PayStubDetailsPage({ params }: PageProps) {
               ✓ Payment Cleared
             </span>
           )}
-          {
-            <form
-              action={async () => {
-                "use server";
-                await deletePayStub(payStub.id);
-              }}
+          <form
+            action={async () => {
+              "use server";
+              await deletePayStub(payStub.id);
+            }}
+          >
+            <button
+              type="submit"
+              className="px-4 py-2 text-sm font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-lg hover:bg-rose-100 transition-all shadow-xs cursor-pointer"
             >
-              <button
-                type="submit"
-                className="px-4 py-2 text-sm font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-lg hover:bg-rose-100 transition-all shadow-xs"
-              >
-                Delete
-              </button>
-            </form>
-          }
+              Delete
+            </button>
+          </form>
         </div>
       </div>
 
@@ -145,7 +151,7 @@ export default async function PayStubDetailsPage({ params }: PageProps) {
               >
                 <button
                   type="submit"
-                  className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-xs"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-xs cursor-pointer"
                 >
                   Verify Bank Details
                 </button>

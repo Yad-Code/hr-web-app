@@ -5,7 +5,7 @@
 import { useState, useTransition } from "react";
 import { Check, X, Loader2 } from "lucide-react";
 import { LeaveRequestRow } from "../types";
-import { updateLeaveRequestStatus } from "../_actions/leave-actions";
+import { updateLeaveRequestStatus } from "@/app/lib/attendance/actions";
 import Image from "next/image";
 
 export function LeaveRequestsList({

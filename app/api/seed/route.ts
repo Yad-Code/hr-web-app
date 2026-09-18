@@ -1047,11 +1047,22 @@ VALUES
 
     await db`
       INSERT INTO permissions (action, description) VALUES
-      ('manage_system', 'Full global access to all settings and payroll'),
-      ('approve_leaves', 'Can approve or reject time-off requests'),
-      ('start_reviews', 'Can initiate formal performance reviews'),
-      ('log_feedback', 'Can log continuous feedback for employees'),
-      ('view_dashboard', 'Can view team or branch analytics')
+      ('edit_personal_profile', 'Can edit own personal details and avatar'),
+      ('submit_requests', 'Can submit time-off and WFH requests'),
+      ('view_payroll', 'Can view own payslips and salary data'),
+      
+      ('view_directory', 'Can view global company directory'),
+      ('view_policies', 'Can view global company policies'),
+      
+      ('create_records', 'Can add new data records to the system'),
+      ('update_records', 'Can modify existing data records'),
+      ('delete_records', 'Can delete data records from the system'),
+      ('export_system_data', 'Can export data grids to Excel/CSV'),
+      ('manage_reports', 'Can create, save, and edit reports'),
+      
+      ('manage_security_policies', 'Full administrative access to security settings'),
+      ('manage_user_credentials', 'Can view or change user passwords'),
+      ('manage_system_access', 'Can modify user permissions and roles')
     `;
 
     await db`
@@ -1059,23 +1070,41 @@ VALUES
       SELECT u.id, p.id, 'global'::access_scope
       FROM users u CROSS JOIN permissions p
       WHERE u.role = 'admin' 
-      AND p.action IN ('manage_system', 'approve_leaves', 'start_reviews', 'log_feedback', 'view_dashboard')
+      AND p.action IN ('manage_security_policies', 'manage_user_credentials', 'manage_system_access', 'create_records', 'update_records', 'delete_records', 'export_system_data', 'manage_reports')
     `;
 
+    // 2. Manager privileges (Scoped to Team)
     await db`
       INSERT INTO user_permissions (user_id, permission_id, scope)
       SELECT u.id, p.id, 'team'::access_scope
       FROM users u CROSS JOIN permissions p
       WHERE u.role = 'manager' 
-      AND p.action IN ('approve_leaves', 'start_reviews', 'log_feedback', 'view_dashboard')
+      AND p.action IN ('create_records', 'update_records', 'export_system_data', 'manage_reports')
     `;
 
+    // 3. HR privileges (Scoped to Branch)
     await db`
       INSERT INTO user_permissions (user_id, permission_id, scope, target_branch)
       SELECT u.id, p.id, 'branch'::access_scope, u.branch
       FROM users u CROSS JOIN permissions p
       WHERE u.role = 'hr' 
-      AND p.action IN ('approve_leaves', 'view_dashboard')
+      AND p.action IN ('create_records', 'update_records', 'export_system_data', 'manage_reports')
+    `;
+
+    // 4. INHERENT PRIVATE PERMISSIONS (Auto-assigned to everyone)
+    await db`
+      INSERT INTO user_permissions (user_id, permission_id, scope)
+      SELECT u.id, p.id, 'self'::access_scope
+      FROM users u CROSS JOIN permissions p
+      WHERE p.action IN ('edit_personal_profile', 'submit_requests', 'view_payroll')
+    `;
+
+    // 5. INHERENT PUBLIC PERMISSIONS (Auto-assigned to everyone)
+    await db`
+      INSERT INTO user_permissions (user_id, permission_id, scope)
+      SELECT u.id, p.id, 'global'::access_scope
+      FROM users u CROSS JOIN permissions p
+      WHERE p.action IN ('view_directory', 'view_policies')
     `;
 
     return NextResponse.json(

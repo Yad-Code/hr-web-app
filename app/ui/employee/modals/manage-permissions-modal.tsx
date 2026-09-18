@@ -12,7 +12,6 @@ import {
   Globe,
   Settings2,
 } from "lucide-react";
-import { Employee } from "@/app/lib/employeeList/definitions";
 import {
   getUserPermissions,
   grantPermission,
@@ -31,7 +30,12 @@ export interface PermissionRecord {
 interface ManagePermissionsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  employee: Employee;
+  employee: {
+    id: string;
+    name: string;
+    department?: string | null;
+    branch?: string | null;
+  };
   initialTab?: "private" | "standard" | "public";
 }
 
@@ -41,6 +45,11 @@ const actionLabels: Record<string, string> = {
   start_reviews: "Initiate Performance Reviews",
   log_feedback: "Log Continuous Feedback",
   manage_system: "System Administrator",
+  edit_personal_profile: "Edit Personal Profile",
+  submit_requests: "Submit Leave Requests",
+  view_payroll: "View Personal Payslips",
+  view_directory: "View Company Directory",
+  view_policies: "Access Company Policies",
 };
 
 export default function ManagePermissionsModal({
@@ -49,7 +58,6 @@ export default function ManagePermissionsModal({
   employee,
   initialTab = "standard",
 }: ManagePermissionsModalProps) {
-  // initialTab is already set on mount right here!
   const [activeTab, setActiveTab] = useState<"private" | "standard" | "public">(
     initialTab,
   );
@@ -58,12 +66,10 @@ export default function ManagePermissionsModal({
   >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
-  const [selectedScope, setSelectedScope] = useState("self");
+  const [selectedScope, setSelectedScope] = useState("team");
 
   useEffect(() => {
     if (!isOpen || !employee?.id) return;
-
-    // 👇 FIX: Deleted the synchronous setActiveTab(initialTab) call that caused the error!
 
     let isMounted = true;
     const loadPermissions = async () => {
@@ -114,6 +120,72 @@ export default function ManagePermissionsModal({
     });
   };
 
+  const privatePerms = activePermissions.filter((p) => p.scope === "self");
+  const publicPerms = activePermissions.filter((p) => p.scope === "global");
+  const standardPerms = activePermissions.filter((p) =>
+    ["team", "department", "branch"].includes(p.scope),
+  );
+
+  const renderTable = (perms: PermissionRecord[]) => {
+    if (isLoading) {
+      return (
+        <div className="py-8 flex justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-slate-300" />
+        </div>
+      );
+    }
+    if (perms.length === 0) {
+      return (
+        <div className="py-6 text-center border-2 border-dashed border-slate-200 rounded-xl text-slate-400 text-xs font-medium">
+          No permissions assigned in this category.
+        </div>
+      );
+    }
+    return (
+      <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-slate-50 text-xs text-slate-500 border-b border-slate-200">
+            <tr>
+              <th className="px-4 py-3">Permission Action</th>
+              <th className="px-4 py-3">Scope Boundary</th>
+              <th className="px-4 py-3 text-center">Revoke</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {perms.map((perm) => (
+              <tr key={perm.record_id} className="hover:bg-slate-50">
+                <td className="px-4 py-3 font-semibold text-slate-800">
+                  {actionLabels[perm.action] || perm.action}
+                </td>
+                <td className="px-4 py-3">
+                  <span
+                    className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${perm.scope === "global" ? "bg-purple-50 text-purple-700 border-purple-200" : perm.scope === "branch" || perm.scope === "department" ? "bg-blue-50 text-blue-700 border-blue-200" : perm.scope === "team" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-700 border-slate-200"}`}
+                  >
+                    {perm.scope}
+                  </span>
+                  {(perm.target_branch || perm.target_department) && (
+                    <span className="block text-[10px] text-slate-500 mt-1.5 font-medium">
+                      Target: {perm.target_branch || perm.target_department}
+                    </span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-center">
+                  <button
+                    onClick={() => handleRevoke(perm.record_id)}
+                    disabled={isPending}
+                    className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
@@ -144,31 +216,19 @@ export default function ManagePermissionsModal({
         <div className="flex border-b border-slate-200 px-5">
           <button
             onClick={() => setActiveTab("private")}
-            className={`px-4 py-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 ${
-              activeTab === "private"
-                ? "border-slate-900 text-slate-900"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
+            className={`px-4 py-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 ${activeTab === "private" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-700"}`}
           >
             <Lock className="w-3.5 h-3.5" /> Private
           </button>
           <button
             onClick={() => setActiveTab("standard")}
-            className={`px-4 py-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 ${
-              activeTab === "standard"
-                ? "border-rose-600 text-rose-600"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
+            className={`px-4 py-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 ${activeTab === "standard" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}
           >
             <Settings2 className="w-3.5 h-3.5" /> Standard
           </button>
           <button
             onClick={() => setActiveTab("public")}
-            className={`px-4 py-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 ${
-              activeTab === "public"
-                ? "border-slate-900 text-slate-900"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
+            className={`px-4 py-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 ${activeTab === "public" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-700"}`}
           >
             <Globe className="w-3.5 h-3.5" /> Public
           </button>
@@ -176,12 +236,71 @@ export default function ManagePermissionsModal({
 
         {/* Content Body */}
         <div className="p-5 overflow-y-auto">
+          {/* PRIVATE PERMISSIONS TAB */}
+          {activeTab === "private" && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Lock className="w-4 h-4 text-slate-700" />
+                  <h4 className="text-sm font-bold text-slate-800">
+                    Inherent Private Access
+                  </h4>
+                </div>
+                <p className="text-xs text-slate-500">
+                  These baseline permissions are granted to all active employees
+                  by default, but can be manually revoked or overridden by an
+                  Administrator.
+                </p>
+              </div>
+              <form
+                onSubmit={handleGrant}
+                className="bg-slate-50 border border-slate-200 rounded-xl p-4"
+              >
+                <input type="hidden" name="scope" value="self" />
+                <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+                  <div className="space-y-1.5 flex-1">
+                    <label className="text-[11px] font-bold text-slate-600">
+                      Assign Action for Personal Data
+                    </label>
+                    <select
+                      name="actionName"
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-500/20 bg-white"
+                    >
+                      <option value="edit_personal_profile">
+                        Edit Personal Profile
+                      </option>
+                      <option value="submit_requests">
+                        Submit Leave Requests
+                      </option>
+                      <option value="view_payroll">
+                        View Personal Payslips
+                      </option>
+                    </select>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isPending}
+                    className="flex items-center justify-center gap-1.5 px-4 py-2 h-[38px] text-xs font-bold text-white bg-slate-800 hover:bg-slate-900 rounded-lg transition-colors shadow-xs disabled:opacity-50 cursor-pointer w-full sm:w-auto"
+                  >
+                    {isPending ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Plus className="w-3.5 h-3.5" />
+                    )}
+                    Assign Private Role
+                  </button>
+                </div>
+              </form>
+              {renderTable(privatePerms)}
+            </div>
+          )}
+
           {/* STANDARD PERMISSIONS TAB */}
           {activeTab === "standard" && (
             <div className="space-y-6 animate-fadeIn">
               <form
                 onSubmit={handleGrant}
-                className="bg-rose-50/50 border border-rose-100 rounded-xl p-4 space-y-4"
+                className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 space-y-4"
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
@@ -190,23 +309,23 @@ export default function ManagePermissionsModal({
                     </label>
                     <select
                       name="actionName"
-                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-rose-500/20 bg-white"
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white"
                     >
-                      <option value="view_dashboard">
-                        View Analytics & Dashboard
-                      </option>
-                      <option value="approve_leaves">
-                        Approve Time-Off Requests
-                      </option>
-                      <option value="start_reviews">
-                        Initiate Performance Reviews
-                      </option>
-                      <option value="log_feedback">
-                        Log Continuous Feedback
-                      </option>
-                      <option value="manage_system">
-                        System Administrator
-                      </option>
+                      <optgroup label="Data & Reporting">
+                        <option value="create_records">
+                          Create System Records
+                        </option>
+                        <option value="update_records">
+                          Update System Records
+                        </option>
+                        <option value="delete_records">
+                          Delete System Records
+                        </option>
+                        <option value="export_system_data">
+                          Export System Data
+                        </option>
+                        <option value="manage_reports">Manage Reports</option>
+                      </optgroup>
                     </select>
                   </div>
                   <div className="space-y-1.5">
@@ -217,22 +336,11 @@ export default function ManagePermissionsModal({
                       name="scope"
                       value={selectedScope}
                       onChange={(e) => setSelectedScope(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-rose-500/20 bg-white"
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white"
                     >
-                      <optgroup label="Management">
-                        <option value="team">
-                          Team Level (Direct Reports)
-                        </option>
-                      </optgroup>
-                      <optgroup label="Organizational">
-                        <option value="department">Department-Wide</option>
-                        <option value="branch">Branch / Location-Wide</option>
-                      </optgroup>
-                      <optgroup label="Enterprise">
-                        <option value="global">
-                          Global (Full System Access)
-                        </option>
-                      </optgroup>
+                      <option value="team">Team Level (Direct Reports)</option>
+                      <option value="department">Department-Wide</option>
+                      <option value="branch">Branch / Location-Wide</option>
                     </select>
                   </div>
                 </div>
@@ -244,12 +352,9 @@ export default function ManagePermissionsModal({
                     <input
                       type="text"
                       name="targetBranch"
-                      defaultValue={
-                        (employee as Employee & { branch?: string }).branch ||
-                        ""
-                      }
+                      defaultValue={employee.branch || ""}
                       required
-                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-rose-500/20"
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/20"
                     />
                   </div>
                 )}
@@ -263,7 +368,7 @@ export default function ManagePermissionsModal({
                       name="targetDepartment"
                       defaultValue={employee.department || ""}
                       required
-                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-rose-500/20"
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/20"
                     />
                   </div>
                 )}
@@ -271,138 +376,87 @@ export default function ManagePermissionsModal({
                   <button
                     type="submit"
                     disabled={isPending}
-                    className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors shadow-xs disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
                   >
                     {isPending ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
                       <Plus className="w-3.5 h-3.5" />
                     )}
-                    Grant Dynamic Access
+                    Grant Standard Access
                   </button>
                 </div>
               </form>
-
-              {/* Dynamic Overrides Table */}
-              {isLoading ? (
-                <div className="py-8 flex justify-center">
-                  <Loader2 className="w-6 h-6 animate-spin text-slate-300" />
-                </div>
-              ) : activePermissions.length === 0 ? (
-                <div className="py-6 text-center border-2 border-dashed border-slate-200 rounded-xl text-slate-400 text-xs font-medium">
-                  No dynamic permissions assigned.
-                </div>
-              ) : (
-                <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-                  <table className="w-full text-left text-sm">
-                    <thead className="bg-slate-50 text-xs text-slate-500 border-b border-slate-200">
-                      <tr>
-                        <th className="px-4 py-3">Permission Action</th>
-                        <th className="px-4 py-3">Scope Boundary</th>
-                        <th className="px-4 py-3 text-center">Revoke</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {activePermissions.map((perm) => (
-                        <tr key={perm.record_id} className="hover:bg-slate-50">
-                          <td className="px-4 py-3 font-semibold text-slate-800">
-                            {actionLabels[perm.action] || perm.action}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span
-                              className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${perm.scope === "global" ? "bg-purple-50 text-purple-700 border-purple-200" : perm.scope === "branch" || perm.scope === "department" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}`}
-                            >
-                              {perm.scope}
-                            </span>
-                            {(perm.target_branch || perm.target_department) && (
-                              <span className="block text-[10px] text-slate-500 mt-1.5 font-medium">
-                                Target:{" "}
-                                {perm.target_branch || perm.target_department}
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <button
-                              onClick={() => handleRevoke(perm.record_id)}
-                              disabled={isPending}
-                              className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-50"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
- 
-          {activeTab === "private" && (
-            <div className="animate-fadeIn p-4 rounded-xl border border-slate-200 bg-white shadow-sm flex flex-col">
-              <div className="flex items-center gap-2 mb-3">
-                <Lock className="w-4 h-4 text-slate-700" />
-                <h4 className="text-sm font-bold text-slate-800">
-                  Inherent Private Access
-                </h4>
-              </div>
-              <p className="text-xs text-slate-500 mb-4">
-                These permissions are automatically granted to the user for
-                their own data. They cannot be revoked.
-              </p>
-              <ul className="space-y-3 text-sm text-slate-700 font-medium bg-slate-50 p-4 rounded-lg border border-slate-100">
-                <li className="flex items-center gap-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />{" "}
-                  View personal payslips & salary
-                </li>
-                <li className="flex items-center gap-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />{" "}
-                  Submit leave & WFH requests
-                </li>
-                <li className="flex items-center gap-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />{" "}
-                  Manage personal goals & skills
-                </li>
-                <li className="flex items-center gap-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />{" "}
-                  Complete self-assessments
-                </li>
-              </ul>
+              {renderTable(standardPerms)}
             </div>
           )}
 
           {/* PUBLIC PERMISSIONS TAB */}
           {activeTab === "public" && (
-            <div className="animate-fadeIn p-4 rounded-xl border border-slate-200 bg-white shadow-sm flex flex-col">
-              <div className="flex items-center gap-2 mb-3">
-                <Globe className="w-4 h-4 text-slate-700" />
-                <h4 className="text-sm font-bold text-slate-800">
-                  Inherent Public Access
-                </h4>
+            <div className="space-y-6 animate-fadeIn">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Globe className="w-4 h-4 text-slate-700" />
+                  <h4 className="text-sm font-bold text-slate-800">
+                    Inherent Public Access
+                  </h4>
+                </div>
+                <p className="text-xs text-slate-500">
+                  These baseline permissions are granted to all active employees
+                  by default, but can be manually revoked or overridden by an
+                  Administrator.
+                </p>
               </div>
-              <p className="text-xs text-slate-500 mb-4">
-                These read-only permissions are automatically granted to all
-                active employees company-wide.
-              </p>
-              <ul className="space-y-3 text-sm text-slate-700 font-medium bg-slate-50 p-4 rounded-lg border border-slate-100">
-                <li className="flex items-center gap-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />{" "}
-                  View company directory
-                </li>
-                <li className="flex items-center gap-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />{" "}
-                  Read public job postings
-                </li>
-                <li className="flex items-center gap-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />{" "}
-                  View global shift rules
-                </li>
-                <li className="flex items-center gap-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />{" "}
-                  Access company policies
-                </li>
-              </ul>
+              <form
+                onSubmit={handleGrant}
+                className="bg-purple-50/50 border border-purple-200/60 rounded-xl p-4"
+              >
+                <input type="hidden" name="scope" value="global" />
+                <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+                  <div className="space-y-1.5 flex-1">
+                    <label className="text-[11px] font-bold text-purple-700">
+                      Assign Global Enterprise Action
+                    </label>
+                    <select
+                      name="actionName"
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-purple-500/20 bg-white"
+                    >
+                      <optgroup label="System & Security">
+                        <option value="manage_security_policies">
+                          Manage Security Policies
+                        </option>
+                        <option value="manage_user_credentials">
+                          Manage User Credentials
+                        </option>
+                        <option value="manage_system_access">
+                          Manage System Access
+                        </option>
+                      </optgroup>
+                      <optgroup label="Basic Global Access">
+                        <option value="view_directory">
+                          View Company Directory
+                        </option>
+                        <option value="view_policies">
+                          Access Company Policies
+                        </option>
+                      </optgroup>
+                    </select>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isPending}
+                    className="flex items-center justify-center gap-1.5 px-4 py-2 h-[38px] text-xs font-bold text-white bg-purple-700 hover:bg-purple-800 rounded-lg transition-colors shadow-xs disabled:opacity-50 cursor-pointer w-full sm:w-auto"
+                  >
+                    {isPending ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Plus className="w-3.5 h-3.5" />
+                    )}
+                    Assign Global Role
+                  </button>
+                </div>
+              </form>
+              {renderTable(publicPerms)}
             </div>
           )}
         </div>

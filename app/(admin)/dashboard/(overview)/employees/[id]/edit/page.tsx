@@ -1,10 +1,16 @@
-// @/app/(admin)/dashboard/(overview)/employees/[id]/edit/page.tsx
-
 import { Suspense } from "react";
 import { auth } from "@/auth";
-import { getProfileById } from "@/app/lib/employeeList/data";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { verifyAccess } from "@/app/lib/auth/access-control";
+import { getProfileById } from "@/app/lib/employeeList/data";
+import {
+  getEducationData,
+  getLanguageData,
+  getEmployeeDocumentsData,
+} from "@/app/lib/employee/profile/data";
+import { getEmployeeSelfAssessment } from "@/app/lib/admin/performance/data";
+import { getEmployeeSkills } from "@/app/lib/admin/profile/skills/data";
 
 import ProfileHeader from "@/app/ui/dashboard/id/profileHeader";
 import AdminProfileTabs from "@/app/ui/dashboard/id/tabs/adminProfileTabs";
@@ -13,29 +19,37 @@ import {
   ProfileHeaderSkeleton,
 } from "@/app/ui/employee/skeleton";
 
-import { 
-  getEducationData,
-  getLanguageData,
-  getEmployeeDocumentsData,
-} from "@/app/lib/employee/profile/data";
-import { getEmployeeSelfAssessment } from "@/app/lib/admin/performance/data";
-import { getEmployeeSkills } from "@/app/lib/admin/profile/skills/data";
-
 export default async function AdminEmployeeEditPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const session = await auth();
+  if (!session?.user?.id) redirect("/login");
 
-  if (!session?.user?.isAdmin && !session?.user?.isManager) {
-    redirect("/my-profile");
-  }
-  
-  const isManager = session.user.isManager;
+  const actorId = session.user.id;
+  const { id: targetId } = await params;
 
-  const { id } = await params;
-  const profile = await getProfileById(id);
+  // 1. Core Access Check
+  const requiredAction =
+    actorId === targetId ? "edit_personal_profile" : "update_records";
+  const isAuthorized = await verifyAccess(actorId, requiredAction, targetId);
+
+  if (!isAuthorized) redirect("/my-profile");
+
+  // 2. Resolve Specific ABAC Flags for UI Rendering
+  const canUpdateOfficialRecords = await verifyAccess(
+    actorId,
+    "update_records",
+    targetId,
+  );
+  const canManagePermissions = await verifyAccess(
+    actorId,
+    "manage_system_access",
+    targetId,
+  );
+
+  const profile = await getProfileById(targetId);
 
   if (!profile) {
     return (
@@ -44,21 +58,20 @@ export default async function AdminEmployeeEditPage({
           Employee Profile Not Found
         </h2>
         <p className="text-xs text-rose-600 font-mono">
-          No employee record exists in the database for ID:{" "}
-          <span className="underline">{id}</span>
+          No employee record exists for ID:{" "}
+          <span className="underline">{targetId}</span>
         </p>
         <Link
           href="/dashboard/employees"
           className="inline-block mt-4 px-4 py-2 text-xs font-bold text-white bg-slate-800 rounded-xl hover:bg-slate-900 transition-all shadow-xs"
         >
-          ← Return to Team Presence
+          ← Return to Directory
         </Link>
       </div>
     );
   }
 
   const currentCycle = "Q3 2026";
-
   const [educationHistory, languageHistory, documents, assessment, skills] =
     await Promise.all([
       getEducationData(profile.id),
@@ -67,7 +80,6 @@ export default async function AdminEmployeeEditPage({
       getEmployeeSelfAssessment(profile.id, currentCycle),
       getEmployeeSkills(profile.id),
     ]);
-    
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 p-2 sm:p-4 text-left select-none animate-fadeIn">
@@ -76,22 +88,23 @@ export default async function AdminEmployeeEditPage({
           href="/dashboard/employees"
           className="inline-flex items-center text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
         >
-          ← Back to Team Presence
+          ← Back to Directory
         </Link>
- 
         <span
-          className={`px-2.5 py-1 text-[11px] font-bold rounded-full ${
-            isManager
-              ? "bg-indigo-100 text-indigo-800 border border-indigo-200"
-              : "bg-amber-100 text-amber-800 border border-amber-200"
-          }`}
+          className={`px-2.5 py-1 text-[11px] font-bold rounded-full ${canUpdateOfficialRecords ? "bg-indigo-100 text-indigo-800 border border-indigo-200" : "bg-emerald-100 text-emerald-800 border border-emerald-200"}`}
         >
-          {isManager ? "Manager View" : "Admin Editing Mode"}
+          {canUpdateOfficialRecords
+            ? "Authorized Edit Mode"
+            : "Personal Edit Mode"}
         </span>
       </div>
 
       <Suspense fallback={<ProfileHeaderSkeleton />}>
-        <ProfileHeader profile={profile} />
+        {/* Pass the ABAC flag to dynamically render the Admin Banner */}
+        <ProfileHeader
+          profile={profile}
+          canUpdateOfficialRecords={canUpdateOfficialRecords}
+        />
       </Suspense>
 
       <Suspense fallback={<ProfileFormSkeleton />}>
@@ -102,7 +115,8 @@ export default async function AdminEmployeeEditPage({
           documents={documents}
           assessment={assessment}
           skills={skills}
-          isAdmin={session.user.isAdmin}
+          canUpdateOfficialRecords={canUpdateOfficialRecords}
+          canManagePermissions={canManagePermissions}
         />
       </Suspense>
     </div>

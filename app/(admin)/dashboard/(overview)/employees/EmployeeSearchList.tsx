@@ -1,15 +1,16 @@
-//@/app/(admin)/dashboard/(overview)/employees/EmployeeSearchList.tsx
+// @/app/(admin)/dashboard/(overview)/employees/EmployeeSearchList.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-
-import { Search, X, ShieldAlert } from "lucide-react";
+ 
+import { Search, X, ShieldAlert, Table, LayoutList } from "lucide-react";
 
 import { Employee } from "@/app/lib/employeeList/definitions";
-import ManagePermissionsModal from "@/app/ui/employee/modals/manage-permissions-modal";
+import ManagePermissionsModal from "@/app/ui/employee/modals/manage-permissions-modal"; 
+import PermissionsDataGrid from "@/app/ui/employee/permissions-data-grid";
 
 interface EmployeeSearchListClientProps {
   initialEmployees: Employee[];
@@ -20,7 +21,11 @@ export function EmployeeSearchListClient({
   initialEmployees,
   isAdmin = false,
 }: EmployeeSearchListClientProps) {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(""); 
+  const [viewMode, setViewMode] = useState<"table" | "list">(
+    isAdmin ? "list" : "table",
+  );
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
     null,
@@ -74,14 +79,44 @@ export function EmployeeSearchListClient({
           )}
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto px-4 sm:px-0 pb-2 sm:pb-0">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/50 whitespace-nowrap">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
-            {activeCount} Active
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 ring-1 ring-slate-200/50 whitespace-nowrap">
-            {initialEmployees.length - activeCount} Offline
-          </span>
+        <div className="flex items-center gap-4 w-full sm:w-auto px-4 sm:px-0 pb-2 sm:pb-0">
+          {/* 👇 4. Admin View Toggle */}
+          {isAdmin && (
+            <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
+              <button
+                onClick={() => setViewMode("table")}
+                className={`p-1.5 rounded-md transition-colors ${
+                  viewMode === "table"
+                    ? "bg-white shadow-sm text-slate-900"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+                title="Data Grid View"
+              >
+                <Table className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-1.5 rounded-md transition-colors ${
+                  viewMode === "list"
+                    ? "bg-white shadow-sm text-slate-900"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+                title="Card View"
+              >
+                <LayoutList className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/50 whitespace-nowrap">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+              {activeCount} Active
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 ring-1 ring-slate-200/50 whitespace-nowrap">
+              {initialEmployees.length - activeCount} Offline
+            </span>
+          </div>
         </div>
       </div>
 
@@ -92,7 +127,11 @@ export function EmployeeSearchListClient({
             No team members found matching &quot;{searchQuery}&quot;
           </p>
         </div>
+      ) : viewMode === "table" && isAdmin ? (
+        /* 👇 5. Render the new Data Grid when in Table Mode */
+        <PermissionsDataGrid employees={filteredEmployees} />
       ) : (
+        /* Original Card View Logic */
         <div className="grid grid-cols-1 gap-3">
           {filteredEmployees.map((employee) => {
             const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.name)}&background=f1f5f9&color=64748b`;
@@ -189,7 +228,8 @@ export function EmployeeSearchListClient({
           })}
         </div>
       )}
-      {isModalOpen && selectedEmployee && (
+ 
+      {isModalOpen && selectedEmployee && viewMode === "list" && (
         <ManagePermissionsModal
           isOpen={isModalOpen}
           employee={selectedEmployee}

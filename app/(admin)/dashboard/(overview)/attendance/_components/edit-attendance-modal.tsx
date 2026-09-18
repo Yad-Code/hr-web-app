@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { Clock, X, Loader2, Save } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { DailyAttendanceRow } from "../types";
-import { overrideAttendanceRecord } from "../_actions/attendance-actions";
+import { overrideAttendanceRecord } from "@/app/lib/attendance/actions";
 
 interface EditAttendanceModalProps {
   record: DailyAttendanceRow;

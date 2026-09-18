@@ -1,4 +1,3 @@
-// @/app/ui/dashboard/id/tabs/adminProfileTabs.tsx
 "use client";
 
 import { useState } from "react";
@@ -12,12 +11,13 @@ import {
   Wrench,
   ShieldAlert,
 } from "lucide-react";
-import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
 import {
+  FullEmployeeProfile,
   EducationItem,
   LanguageItem,
   EmployeeDocument,
 } from "@/app/lib/employee/definitions";
+
 import {
   SelfAssessment,
   Skill,
@@ -30,6 +30,7 @@ import AdminLanguageTab from "./adminLanguageTab";
 import AdminDocumentsTab from "./adminDocumentsTab";
 import AdminPerformanceTab from "./adminPerformanceTab";
 import AdminSkillsTab from "./adminSkillsTab";
+import ManagePermissionsModal from "@/app/ui/employee/modals/manage-permissions-modal";
 
 export type AdminTabType =
   | "profile"
@@ -48,7 +49,8 @@ interface AdminProfileTabsProps {
   documents?: EmployeeDocument[];
   assessment?: SelfAssessment | null;
   skills?: Skill[];
-  isAdmin?: boolean;
+  canUpdateOfficialRecords: boolean;
+  canManagePermissions: boolean;
 }
 
 export default function AdminProfileTabs({
@@ -58,15 +60,19 @@ export default function AdminProfileTabs({
   documents = [],
   assessment = null,
   skills = [],
-  isAdmin = false,
+  canUpdateOfficialRecords,
+  canManagePermissions,
 }: AdminProfileTabsProps) {
   const [activeTab, setActiveTab] = useState<AdminTabType>("profile");
 
+  // Dynamically build tabs based on ABAC flags
   const tabs = [
-    { id: "profile", label: "Edit Profile & Official Info", icon: UserPen },
-    { id: "job", label: "Job Details", icon: Briefcase },
-    ...(isAdmin
-      ? [{ id: "permissions", label: "Permissions", icon: ShieldAlert }]
+    { id: "profile", label: "Profile Info", icon: UserPen },
+    ...(canUpdateOfficialRecords
+      ? [{ id: "job", label: "Job Details", icon: Briefcase }]
+      : []),
+    ...(canManagePermissions
+      ? [{ id: "permissions", label: "IAM Access", icon: ShieldAlert }]
       : []),
     { id: "education", label: "Education History", icon: GraduationCap },
     { id: "language", label: "Languages", icon: Languages },
@@ -101,16 +107,24 @@ export default function AdminProfileTabs({
 
       <div>
         {activeTab === "profile" && <ProfileForm profile={profile} />}
-
-        {activeTab === "job" && <AdminJobInformationTab profile={profile} />}
-
+        {activeTab === "job" && canUpdateOfficialRecords && (
+          <AdminJobInformationTab profile={profile} />
+        )}
+        {activeTab === "permissions" && canManagePermissions && (
+          <div className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm text-center">
+            <ManagePermissionsModal
+              isOpen={true}
+              onClose={() => setActiveTab("profile")}
+              employee={profile}
+            />
+          </div>
+        )}
         {activeTab === "education" && (
           <AdminEducationTab
             educationHistory={educationHistory}
             userId={profile.id}
           />
         )}
-
         {activeTab === "language" && (
           <AdminLanguageTab
             languageHistory={languageHistory}
@@ -119,18 +133,15 @@ export default function AdminProfileTabs({
             employeeName={profile.name}
           />
         )}
-
         {activeTab === "documents" && (
           <AdminDocumentsTab documents={documents} userId={profile.id} />
         )}
-
         {activeTab === "performance" && (
           <AdminPerformanceTab
             assessment={assessment}
             employeeName={profile.name}
           />
         )}
-
         {activeTab === "skills" && <AdminSkillsTab skills={skills} />}
       </div>
     </div>

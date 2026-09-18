@@ -5,6 +5,7 @@ import { sql } from "../employeeDashboard/employee/db";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { put, del } from "@vercel/blob";
+import { verifyAccess } from "@/app/lib/auth/access-control";
 
 export type ActionState = {
   success: boolean;
@@ -19,16 +20,32 @@ export interface UpdateJobInfoState {
 export async function uploadProfilePicture(formData: FormData) {
   try {
     const session = await auth();
-    if (!session?.user) {
+    const actorId = session?.user?.id;
+    if (!actorId) {
       return { success: false, error: "Unauthorized. Please log in again." };
     }
 
     const file = formData.get("avatar") as File;
-    const targetUserId =
-      formData.get("employeeId")?.toString() || session.user?.id;
+    const targetUserId = formData.get("employeeId")?.toString() || actorId;
 
     if (!targetUserId) {
       return { success: false, error: "User identifier is missing." };
+    }
+
+    // 👇 2. Dynamic ABAC Security Check
+    const requiredAction =
+      actorId === targetUserId ? "edit_personal_profile" : "update_records";
+    const isAuthorized = await verifyAccess(
+      actorId,
+      requiredAction,
+      targetUserId,
+    );
+
+    if (!isAuthorized) {
+      return {
+        success: false,
+        error: "Forbidden: You do not have permission to update this avatar.",
+      };
     }
 
     if (!file || file.size === 0) {
@@ -90,17 +107,25 @@ export async function updateEmployeeDetails(
 ): Promise<ActionState> {
   try {
     const session = await auth();
-    if (!session?.user) {
+    const actorId = session?.user?.id;
+    if (!actorId) {
       return { success: false, message: "Unauthorized. Please log in again." };
     }
 
-    const isAdmin = session.user.isAdmin;
-    const isEditingSelf = session.user.id === targetUserId;
+    // 👇 3. Dynamic ABAC Check for viewing/saving the edit form
+    const requiredAction =
+      actorId === targetUserId ? "edit_personal_profile" : "update_records";
+    const isAuthorized = await verifyAccess(
+      actorId,
+      requiredAction,
+      targetUserId,
+    );
 
-    if (!isEditingSelf && !isAdmin) {
+    if (!isAuthorized) {
       return {
         success: false,
-        message: "Forbidden: You do not have permission to edit this profile.",
+        message:
+          "Forbidden: You do not have scoped permission to edit this profile.",
       };
     }
 
@@ -125,10 +150,7 @@ export async function updateEmployeeDetails(
     const jobTitle = formData.get("jobTitle")?.toString() || null;
     const jobFamily = formData.get("jobFamily")?.toString() || null;
     const employmentType = formData.get("employmentType")?.toString() || null;
-    
-    // 👇 FIX 1: Fetch the UUID for managerId instead of managerName
     const managerId = formData.get("managerId")?.toString() || null;
-    
     const joinDate = formData.get("joinDate")?.toString() || null;
     const publicOrg = formData.get("publicOrg")?.toString() || null;
     const privateOrg = formData.get("privateOrg")?.toString() || null;
@@ -138,9 +160,14 @@ export async function updateEmployeeDetails(
     const rawSalary = formData.get("baseSalary");
     const baseSalary = rawSalary ? Number(rawSalary) : null;
 
-    // 👇 FIX 2: We completely removed the `isPermissionsForm` and boolean column checks!
+    // 👇 4. Determine if they have Administrative Data powers, or just Personal Edit powers
+    const canUpdateOfficialRecords = await verifyAccess(
+      actorId,
+      "update_records",
+      targetUserId,
+    );
 
-    if (isAdmin) {
+    if (canUpdateOfficialRecords) {
       await sql`
         UPDATE users 
         SET 
@@ -155,9 +182,6 @@ export async function updateEmployeeDetails(
           nationality = COALESCE(${nationality}, nationality),
           status = COALESCE(${status}, status),
           role = COALESCE(${role}, role),
-          
-          -- 👇 FIX 3: Removed the old boolean permission flags and updated manager_id
-          
           preferred_name = COALESCE(${preferredName}, preferred_name),
           marital_status = COALESCE(${maritalStatus}, marital_status),
           blood_group = COALESCE(${bloodGroup}, blood_group),
@@ -167,9 +191,7 @@ export async function updateEmployeeDetails(
           job_title = COALESCE(${jobTitle}, job_title),
           job_family = COALESCE(${jobFamily}, job_family),
           employment_type = COALESCE(${employmentType}, employment_type),
-          
           manager_id = COALESCE(${managerId}::uuid, manager_id),
-          
           join_date = COALESCE(${joinDate}, join_date),
           public_org = COALESCE(${publicOrg}, public_org),
           private_org = COALESCE(${privateOrg}, private_org),
@@ -178,6 +200,7 @@ export async function updateEmployeeDetails(
         WHERE id = ${targetUserId}::uuid
       `;
     } else {
+      // Standard employee editing their own profile
       await sql`
         UPDATE users 
         SET 
@@ -222,12 +245,18 @@ export async function addDocumentAction(
 ) {
   try {
     const session = await auth();
-    if (!session?.user) {
-      throw new Error("Unauthorized");
-    }
+    const actorId = session?.user?.id;
+    if (!actorId) throw new Error("Unauthorized");
 
-    if (!session.user.isAdmin) {
-      throw new Error("Forbidden: Only admins can perform this action.");
+    // 👇 5. Dynamic ABAC Check for Documents
+    const requiredAction =
+      actorId === userId ? "edit_personal_profile" : "create_records";
+    const isAuthorized = await verifyAccess(actorId, requiredAction, userId);
+
+    if (!isAuthorized) {
+      throw new Error(
+        "Forbidden: You do not have scoped permission to add documents.",
+      );
     }
 
     const cleanUrl = newDoc.file_url.split("?")[0];
@@ -261,12 +290,18 @@ export async function addDocumentAction(
 export async function deleteDocumentAction(documentId: string, userId: string) {
   try {
     const session = await auth();
-    if (!session?.user) {
-      throw new Error("Unauthorized");
-    }
+    const actorId = session?.user?.id;
+    if (!actorId) throw new Error("Unauthorized");
 
-    if (!session.user.isAdmin) {
-      throw new Error("Forbidden: Only admins can perform this action.");
+    // 👇 6. Dynamic ABAC Check for Deleting Documents
+    const requiredAction =
+      actorId === userId ? "edit_personal_profile" : "delete_records";
+    const isAuthorized = await verifyAccess(actorId, requiredAction, userId);
+
+    if (!isAuthorized) {
+      throw new Error(
+        "Forbidden: You do not have scoped permission to delete this document.",
+      );
     }
 
     await sql`
@@ -278,5 +313,43 @@ export async function deleteDocumentAction(documentId: string, userId: string) {
   } catch (error) {
     console.error("Failed to delete document:", error);
     throw error;
+  }
+}
+
+export async function deleteEmployeeAction(targetUserId: string) {
+  try {
+    const session = await auth();
+    const actorId = session?.user?.id;
+    if (!actorId) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    // Dynamic Security Check: Can this user delete records for this specific target?
+    const isAuthorized = await verifyAccess(
+      actorId,
+      "delete_records",
+      targetUserId,
+    );
+
+    if (!isAuthorized) {
+      return {
+        success: false,
+        error:
+          "Forbidden: You do not have scoped permission to delete this employee.",
+      };
+    }
+
+    // Delete the user (Cascading deletes in DB will handle their related records)
+    await sql`DELETE FROM users WHERE id = ${targetUserId}::uuid`;
+
+    revalidatePath(`/dashboard/employees`);
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete employee:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to delete employee.",
+    };
   }
 }

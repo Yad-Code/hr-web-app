@@ -1,4 +1,4 @@
-// app/lib/definitions/performance.ts
+// @/app/lib/employeeDashboard/performance/definitions.ts
 
 export type DateValue = string | Date;
 
@@ -8,7 +8,7 @@ export type PerformanceProfile = {
   next_review: string;
   status: string;
 };
- 
+
 export type KPI = {
   id: string;
   user_id: string;
@@ -34,7 +34,7 @@ export type Goal = {
 
 export interface NewGoalData {
   title: string;
-  description?: string; // Made optional
+  description?: string;
   priority: "Low" | "Medium" | "High";
   due_date: string;
 }
@@ -50,7 +50,6 @@ export type PerformanceReview = {
   improvements: string;
   manager_comments: string;
   employee_comments?: string | null;
-  // new properties ---->
   acknowledged?: boolean;
   acknowledged_at?: string | Date | null;
 };
@@ -74,9 +73,6 @@ export type Feedback = {
   is_read: boolean;
   created_at: DateValue;
 };
-
-// app/lib/employeeDashboard/performance/definitions.ts
-// Add this new interface to your existing definitions:
 
 export interface Colleague {
   name: string;
@@ -135,10 +131,6 @@ export type SelfAssessment = {
   submitted: boolean;
   submitted_at: DateValue | null;
 };
-
-// OneOnOnes
-
-// Add to app/lib/performance/definitions.ts
 
 export interface RequestMeetingData {
   topic: string;
