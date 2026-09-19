@@ -1,6 +1,6 @@
 import { sql } from "@/app/lib/employeeDashboard/employee/db";
 
-import { PerformanceKpiData } from "@/app/(admin)/dashboard/(overview)/performance/types";
+import { PerformanceKpiData } from "@/app/lib/employeeDashboard/performance/definitions";
 
 export async function getPerformanceKPIs(
   isAdmin: boolean,
