@@ -4,7 +4,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Search, Filter } from "lucide-react";
-import { MeetingRow } from "../../types";
+import { MeetingRow } from "@/app/lib/employeeDashboard/performance/definitions";
 
 interface AdminMeetingsTableProps {
   initialMeetings: MeetingRow[];
