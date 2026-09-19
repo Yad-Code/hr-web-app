@@ -4,7 +4,7 @@ import {
   ClipboardDocumentCheckIcon,
   ChartBarIcon,
 } from "@heroicons/react/24/outline";
-import { lusitana } from "../fonts";
+import { lusitana } from "@/app/ui/fonts";
 
 const iconMap = {
   users: {
