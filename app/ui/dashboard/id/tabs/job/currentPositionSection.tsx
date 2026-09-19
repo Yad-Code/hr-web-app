@@ -39,7 +39,8 @@ export function CurrentPositionSection({
     employmentType: profile.employmentType || "Full-Time",
     department: profile.department || "",
     branch: profile.branch || "",
-    managerName: profile.managerName || "",
+    // 👇 FIXED: Changed managerName to managerId to map to the DB action correctly
+    managerId: profile.managerId || "",
     joinDate: profile.joinDate || "",
     baseSalary: profile.base_salary != null ? String(profile.base_salary) : "",
     status: profile.status || "Active",
@@ -52,7 +53,7 @@ export function CurrentPositionSection({
     setFormData((prev) => ({
       ...prev,
       jobFamily,
-      jobTitle: "", // Reset job title when family changes
+      jobTitle: "",
     }));
     setError(null);
   };
@@ -65,7 +66,6 @@ export function CurrentPositionSection({
     setError(null);
   };
 
-  // Optional validation trigger if parent form validates on submit/change
   const validateFields = () => {
     if (formData.baseSalary !== "") {
       const salary = parseFloat(formData.baseSalary);
@@ -142,30 +142,66 @@ export function CurrentPositionSection({
           icon={UserCheck}
           options={["Full-Time", "Part-Time", "Contract", "Internship"]}
         />
-        <InputField
+
+        {/* 👇 FIXED: Converted Department to strict dropdown */}
+        <SelectField
           label="Department"
           name="department"
           value={formData.department}
           onChange={handleChange}
           icon={Building2}
-          placeholder="e.g. Software Engineering"
+          options={[
+            "Engineering",
+            "Human Resources",
+            "Design",
+            "Marketing",
+            "Sales",
+            "Finance",
+            "Operations",
+          ]}
+          placeholder="Select Department..."
         />
-        <InputField
+
+        {/* 👇 FIXED: Converted Branch to strict dropdown */}
+        <SelectField
           label="Branch / Location"
           name="branch"
           value={formData.branch}
           onChange={handleChange}
           icon={MapPin}
-          placeholder="e.g. HQ - Sulaymaniyah"
+          options={[
+            "HQ - Sulaymaniyah",
+            "Erbil Branch",
+            "Duhok Branch",
+            "Basra Branch",
+            "Remote",
+          ]}
+          placeholder="Select Branch..."
         />
-        <InputField
-          label="Direct Manager"
-          name="managerName"
-          value={formData.managerName}
-          onChange={handleChange}
-          icon={UserCheck}
-          placeholder="Manager's Name"
-        />
+
+        {/* 👇 FIXED: Custom Manager Dropdown mapping to managerId */}
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            Direct Manager
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <UserCheck className="h-4 w-4 text-slate-400" />
+            </div>
+            <select
+              name="managerId"
+              value={formData.managerId}
+              onChange={handleChange}
+              className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-all cursor-pointer pl-9"
+            >
+              <option value="">No Manager (Top Level)</option>
+              <option value="EMP-1006">Sarah Jenkins (Engineering)</option>
+              <option value="EMP-1007">Alex Studio (Design)</option>
+              <option value="EMP-1001">Admin Manager (HR)</option>
+            </select>
+          </div>
+        </div>
+
         <InputField
           label="Join Date"
           name="joinDate"

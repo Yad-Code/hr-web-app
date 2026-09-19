@@ -215,3 +215,53 @@ export async function reopenSelfAssessment() {
   revalidatePath("/my-profile/performance");
   return { success: true };
 }
+
+export async function submitFeedbackResponse(formData: FormData) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+
+    const requestId = formData.get("requestId") as string;
+    const type = formData.get("type") as string;
+    const text = formData.get("text") as string;
+
+    if (!requestId || !type || !text) {
+      return { success: false, error: "Missing required fields." };
+    }
+
+    const requestQuery = await db`
+      SELECT requester_id FROM performance_notifications
+      WHERE id = ${requestId}::uuid AND user_id = ${session.user.id}::uuid
+    `;
+
+    if (requestQuery.length === 0) {
+      return {
+        success: false,
+        error: "Feedback request not found or unauthorized.",
+      };
+    }
+
+    const targetUserId = requestQuery[0].requester_id;
+ 
+    const senderName = session.user.name || "Unknown";
+    const senderRole =
+      session.user.role === "admin" || session.user.role === "manager"
+        ? "Manager"
+        : "Colleague";
+
+    await db`
+      INSERT INTO user_feedback (user_id, sender, role, date, type, text, is_read)
+      VALUES (${targetUserId}::uuid, ${senderName}, ${senderRole}, CURRENT_DATE, ${type}, ${text}, false)
+    `;
+
+    await db`
+      UPDATE performance_notifications SET is_read = true WHERE id = ${requestId}::uuid
+    `;
+
+    revalidatePath("/my-profile/performance");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to submit feedback response:", error);
+    return { success: false, error: "A database error occurred." };
+  }
+}

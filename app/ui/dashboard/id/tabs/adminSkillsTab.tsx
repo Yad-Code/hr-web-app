@@ -1,7 +1,7 @@
 // @/app/ui/dashboard/id/tabs/adminSkillsTab.tsx
+
 "use client";
 
-import React from "react";
 import { Skill } from "@/app/lib/employeeDashboard/performance/definitions";
 
 const LEVEL_LABELS: Record<number, string> = {

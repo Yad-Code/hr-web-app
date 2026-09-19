@@ -3,10 +3,18 @@
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
+import { verifyAccess } from "@/app/lib/auth/access-control";
 
 export async function getUserPermissions(targetUserId: string) {
   const session = await auth();
-  if (!session?.user?.isAdmin) throw new Error("Unauthorized");
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const isAuthorized = await verifyAccess(
+    session.user.id,
+    "manage_system_access",
+  );
+  if (!isAuthorized)
+    throw new Error("Forbidden: You lack permission to view access controls.");
 
   try {
     const permissions = await db`
@@ -19,7 +27,7 @@ export async function getUserPermissions(targetUserId: string) {
         up.target_department
       FROM user_permissions up
       JOIN permissions p ON up.permission_id = p.id
-      WHERE up.user_id = ${targetUserId}
+      WHERE up.user_id = ${targetUserId}::uuid
       ORDER BY p.action ASC
     `;
     return permissions;
@@ -31,7 +39,17 @@ export async function getUserPermissions(targetUserId: string) {
 
 export async function grantPermission(formData: FormData) {
   const session = await auth();
-  if (!session?.user?.isAdmin) return { success: false, error: "Unauthorized" };
+  if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+
+  const isAuthorized = await verifyAccess(
+    session.user.id,
+    "manage_system_access",
+  );
+  if (!isAuthorized)
+    return {
+      success: false,
+      error: "Forbidden: You lack permission to grant access.",
+    };
 
   const userId = formData.get("userId") as string;
   const actionName = formData.get("actionName") as string;
@@ -48,7 +66,7 @@ export async function grantPermission(formData: FormData) {
 
     await db`
       INSERT INTO user_permissions (user_id, permission_id, scope, target_branch, target_department)
-      VALUES (${userId}, ${permissionId}, ${scope}, ${targetBranch || null}, ${targetDepartment || null})
+      VALUES (${userId}::uuid, ${permissionId}::uuid, ${scope}::access_scope, ${targetBranch || null}, ${targetDepartment || null})
     `;
 
     revalidatePath("/dashboard/employees");
@@ -66,16 +84,26 @@ export async function revokePermission(recordId: string) {
   const session = await auth();
   const currentUserId = session?.user?.id;
 
-  if (!session?.user?.isAdmin || !currentUserId) {
+  if (!currentUserId) {
     return { success: false, error: "Unauthorized" };
   }
 
-  try { 
+  const isAuthorized = await verifyAccess(
+    currentUserId,
+    "manage_system_access",
+  );
+  if (!isAuthorized)
+    return {
+      success: false,
+      error: "Forbidden: You lack permission to revoke access.",
+    };
+
+  try {
     const targetRecord = await db`
       SELECT up.user_id, p.action 
       FROM user_permissions up
       JOIN permissions p ON up.permission_id = p.id
-      WHERE up.id = ${recordId}
+      WHERE up.id = ${recordId}::uuid
     `;
 
     if (targetRecord.length === 0) {
@@ -83,16 +111,16 @@ export async function revokePermission(recordId: string) {
     }
 
     const { user_id, action } = targetRecord[0];
- 
-    if (user_id === currentUserId && action === "manage_system") {
+
+    if (String(user_id) === currentUserId && action === "manage_system") {
       return {
         success: false,
         error:
           "Action Denied: For security reasons, you cannot revoke your own global admin privileges.",
       };
     }
- 
-    await db`DELETE FROM user_permissions WHERE id = ${recordId}`;
+
+    await db`DELETE FROM user_permissions WHERE id = ${recordId}::uuid`;
     revalidatePath("/dashboard/employees");
 
     return { success: true };

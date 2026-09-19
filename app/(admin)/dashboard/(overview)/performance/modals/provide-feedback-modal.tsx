@@ -3,7 +3,8 @@
 
 import { useState, useTransition } from "react";
 import { FeedbackRequestRow } from "@/app/lib/employeeDashboard/performance/definitions";
-import { submitFeedbackResponse } from "@/app/lib/employeeDashboard/performance/actions/feedback";
+// 👇 FIXED: Pointing to the newly consolidated actions file
+import { submitFeedbackResponse } from "@/app/lib/employeeDashboard/performance/actions";
 
 interface ModalProps {
   request: FeedbackRequestRow;
@@ -33,7 +34,6 @@ export default function ProvideFeedbackModal({ request, onClose }: ModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
       <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        {/* Header */}
         <div className="bg-slate-50 border-b border-slate-100 px-5 py-4 flex justify-between items-center">
           <div>
             <h3 className="font-bold text-slate-900">Provide Feedback</h3>
@@ -46,13 +46,12 @@ export default function ProvideFeedbackModal({ request, onClose }: ModalProps) {
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600"
+            className="text-slate-400 hover:text-slate-600 cursor-pointer"
           >
             ✕
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {error && (
             <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">
@@ -67,7 +66,7 @@ export default function ProvideFeedbackModal({ request, onClose }: ModalProps) {
             <select
               name="type"
               required
-              className="w-full p-2.5 text-sm border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none"
+              className="w-full p-2.5 text-sm border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none cursor-pointer"
             >
               <option value="Positive">Positive / Recognition</option>
               <option value="Constructive">Constructive</option>
@@ -92,14 +91,14 @@ export default function ProvideFeedbackModal({ request, onClose }: ModalProps) {
               type="button"
               onClick={onClose}
               disabled={isPending}
-              className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isPending}
-              className="px-4 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+              className="px-4 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors cursor-pointer shadow-xs"
             >
               {isPending ? "Submitting..." : "Submit Feedback"}
             </button>

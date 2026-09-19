@@ -1,3 +1,4 @@
+// @/app/ui/employee/profile/tabs/educationTab.tsx
 "use client";
 
 import React, { useState, useTransition, useRef } from "react";
@@ -12,7 +13,6 @@ import {
   Building,
   Loader2,
   AlertTriangle,
-  AlertCircle,
   X,
   FileText,
   ExternalLink,
@@ -20,6 +20,7 @@ import {
   Calendar,
   Award,
 } from "lucide-react";
+import { toast } from "sonner";
 import { EducationTabProps } from "@/app/lib/employee/definitions";
 import {
   addEducationAction,
@@ -79,14 +80,11 @@ export default function EducationTab({
 }: ExtendedEducationTabProps) {
   const [isPending, startTransition] = useTransition();
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
- 
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [docModalItem, setDocModalItem] = useState<{
     id: string;
     level: string;
   } | null>(null);
- 
   const [selectedItem, setSelectedItem] = useState<
     ExtendedEducationTabProps["educationHistory"][number] | null
   >(null);
@@ -107,13 +105,7 @@ export default function EducationTab({
   const [formData, setFormData] = useState(initialFormState);
 
   const handleLevelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const level = e.target.value;
-    setFormData((prev) => ({
-      ...prev,
-      level,
-      subject: "",
-    }));
-    setError(null);
+    setFormData((prev) => ({ ...prev, level: e.target.value, subject: "" }));
   };
 
   const handleChange = (
@@ -122,75 +114,58 @@ export default function EducationTab({
     const { name, value } = e.target;
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
-      if (name === "score_type") {
-        updated.score = "";
-      }
+      if (name === "score_type") updated.score = "";
       return updated;
     });
-    setError(null);
   };
 
   const handleReset = () => {
     setFormData(initialFormState);
     if (formRef.current) formRef.current.reset();
-    setError(null);
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError(null);
 
     if (!formData.start_year || !formData.end_year) {
-      setError("Validation Error: Both Start Year and End Year are required.");
-      return;
+      return toast.error("Both Start Year and End Year are required.");
     }
 
     const start = parseInt(formData.start_year, 10);
     const end = parseInt(formData.end_year, 10);
     if (start > end) {
-      setError(
-        "Validation Error: The end year cannot be earlier than the start year.",
-      );
-      return;
+      return toast.error("The end year cannot be earlier than the start year.");
     }
 
     if (formData.score !== "") {
       const numericScore = parseFloat(formData.score);
-      if (isNaN(numericScore)) {
-        setError(
-          "Validation Error: Please enter a valid numeric value for the score.",
-        );
-        return;
-      }
-
+      if (isNaN(numericScore))
+        return toast.error("Please enter a valid numeric value for the score.");
       if (
         formData.score_type === "GPA" &&
         (numericScore < 0 || numericScore > 4.0)
       ) {
-        setError(
-          "Validation Error: GPA must be within the valid range of 0.0 to 4.0.",
-        );
-        return;
-      } else if (
+        return toast.error("GPA must be within the valid range of 0.0 to 4.0.");
+      }
+      if (
         formData.score_type === "Percentage" &&
         (numericScore < 0 || numericScore > 100)
       ) {
-        setError(
-          "Validation Error: Percentage must be within the valid range of 0 to 100.",
+        return toast.error(
+          "Percentage must be within the valid range of 0 to 100.",
         );
-        return;
       }
     }
 
     const data = new FormData(e.currentTarget);
 
     startTransition(async () => {
-      try {
-        await addEducationAction(userId, data);
+      const result = await addEducationAction(userId, data);
+      if (result?.success) {
+        toast.success("Education record added successfully!");
         handleReset();
-      } catch (err) {
-        console.error("Failed to add education entry:", err);
-        setError("Failed to upload. Ensure file is under 5MB.");
+      } else {
+        toast.error(result?.error || "Failed to add education record.");
       }
     });
   };
@@ -203,18 +178,14 @@ export default function EducationTab({
     setDeletingId(id);
 
     startTransition(async () => {
-      try {
-        await deleteEducationAction(id);
-      } catch (err) {
-        console.error("Failed to delete education entry:", err);
-      } finally {
-        setDeletingId(null);
+      const result = await deleteEducationAction(id);
+      if (result?.success) {
+        toast.success("Record deleted successfully.");
+      } else {
+        toast.error(result?.error || "Failed to delete record.");
       }
+      setDeletingId(null);
     });
-  };
-
-  const openDocumentModal = (id: string, level: string) => {
-    setDocModalItem({ id, level });
   };
 
   const handleSaveDocument = (e: React.FormEvent<HTMLFormElement>) => {
@@ -226,10 +197,14 @@ export default function EducationTab({
 
     setDocModalItem(null);
     startTransition(async () => {
-      try {
-        await updateEducationDocumentAction(targetId, modalFormData);
-      } catch (err) {
-        console.error("Failed to update document URL:", err);
+      const result = await updateEducationDocumentAction(
+        targetId,
+        modalFormData,
+      );
+      if (result?.success) {
+        toast.success("Document attached successfully.");
+      } else {
+        toast.error(result?.error || "Failed to update document URL.");
       }
     });
   };
@@ -249,13 +224,6 @@ export default function EducationTab({
             Education Details
           </h2>
         </div>
-
-        {error && (
-          <div className="flex items-center gap-2 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-medium animate-fadeIn">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
 
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -373,8 +341,7 @@ export default function EducationTab({
               disabled={isPending}
               className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 rounded-lg transition-colors cursor-pointer"
             >
-              <RotateCcw className="w-4 h-4" />
-              Reset
+              <RotateCcw className="w-4 h-4" /> Reset
             </button>
             <button
               type="submit"
@@ -385,7 +352,7 @@ export default function EducationTab({
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Save className="w-4 h-4" />
-              )}
+              )}{" "}
               Save
             </button>
           </div>
@@ -436,7 +403,6 @@ export default function EducationTab({
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-
                       {edu.document_url && (
                         <a
                           href={edu.document_url}
@@ -448,22 +414,18 @@ export default function EducationTab({
                           <ExternalLink className="w-4 h-4" />
                         </a>
                       )}
-
                       <button
                         type="button"
-                        onClick={() => openDocumentModal(edu.id, edu.level)}
-                        className={`p-1.5 rounded-md transition-colors cursor-pointer ${
-                          edu.document_url
-                            ? "text-indigo-600 hover:bg-indigo-50"
-                            : "text-blue-600 hover:bg-blue-50"
-                        }`}
+                        onClick={() =>
+                          setDocModalItem({ id: edu.id, level: edu.level })
+                        }
+                        className={`p-1.5 rounded-md transition-colors cursor-pointer ${edu.document_url ? "text-indigo-600 hover:bg-indigo-50" : "text-blue-600 hover:bg-blue-50"}`}
                         title={
                           edu.document_url ? "Update Document" : "Add Document"
                         }
                       >
                         <FilePlus className="w-4 h-4" />
                       </button>
-
                       <button
                         type="button"
                         onClick={() => setItemToDelete(edu.id)}
@@ -526,44 +488,36 @@ export default function EducationTab({
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="space-y-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <Building className="w-3.5 h-3.5 text-slate-400" />
+                    <Building className="w-3.5 h-3.5 text-slate-400" />{" "}
                     Institution
                   </span>
                   <p className="font-medium text-slate-800">
                     {selectedItem.institution}
                   </p>
                 </div>
-
                 <div className="space-y-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                    Location
+                    <MapPin className="w-3.5 h-3.5 text-slate-400" /> Location
                   </span>
                   <p className="font-medium text-slate-800">
                     {selectedItem.location || "N/A"}
                   </p>
                 </div>
-
                 <div className="space-y-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <Award className="w-3.5 h-3.5 text-slate-400" />
-                    Score / GPA
+                    <Award className="w-3.5 h-3.5 text-slate-400" /> Score / GPA
                   </span>
                   <p className="font-medium text-slate-800">
                     {selectedItem.score || "N/A"}
                   </p>
                 </div>
-
                 <div className="space-y-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                    Duration
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" /> Duration
                   </span>
                   <p className="font-medium text-slate-800">
                     {selectedItem.start_year || selectedItem.end_year
-                      ? `${selectedItem.start_year || "—"} - ${
-                          selectedItem.end_year || "Present"
-                        }`
+                      ? `${selectedItem.start_year || "—"} - ${selectedItem.end_year || "Present"}`
                       : "N/A"}
                   </p>
                 </div>
@@ -583,8 +537,7 @@ export default function EducationTab({
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shrink-0 ml-2"
                   >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    View
+                    <ExternalLink className="w-3.5 h-3.5" /> View
                   </a>
                 </div>
               ) : (
@@ -624,7 +577,6 @@ export default function EducationTab({
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-
                 <div>
                   <h3 className="text-base font-bold text-slate-900">
                     Attach Education Document
@@ -637,7 +589,6 @@ export default function EducationTab({
                     .
                   </p>
                 </div>
-
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                     Select File
@@ -651,7 +602,6 @@ export default function EducationTab({
                   />
                 </div>
               </div>
-
               <div className="bg-slate-50 px-6 py-4 flex items-center justify-end gap-3 border-t border-slate-100">
                 <button
                   type="button"
@@ -688,7 +638,6 @@ export default function EducationTab({
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               <div>
                 <h3 className="text-base font-bold text-slate-900">
                   Delete Education Record
@@ -699,7 +648,6 @@ export default function EducationTab({
                 </p>
               </div>
             </div>
-
             <div className="bg-slate-50 px-6 py-4 flex items-center justify-end gap-3 border-t border-slate-100">
               <button
                 type="button"
@@ -743,9 +691,7 @@ function InputField({
         )}
         <input
           type={type}
-          className={`w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-all disabled:opacity-60 disabled:bg-slate-100/80 ${
-            Icon ? "pl-9" : ""
-          }`}
+          className={`w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-all disabled:opacity-60 disabled:bg-slate-100/80 ${Icon ? "pl-9" : ""}`}
           placeholder={placeholder}
           {...props}
         />
@@ -773,9 +719,7 @@ function SelectField({
           </div>
         )}
         <select
-          className={`w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-all cursor-pointer disabled:opacity-60 disabled:bg-slate-100/80 ${
-            Icon ? "pl-9" : ""
-          }`}
+          className={`w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-all cursor-pointer disabled:opacity-60 disabled:bg-slate-100/80 ${Icon ? "pl-9" : ""}`}
           {...props}
         >
           <option value="">{placeholder}</option>

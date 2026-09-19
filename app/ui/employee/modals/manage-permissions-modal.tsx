@@ -12,6 +12,7 @@ import {
   Globe,
   Settings2,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   getUserPermissions,
   grantPermission,
@@ -50,6 +51,14 @@ const actionLabels: Record<string, string> = {
   view_payroll: "View Personal Payslips",
   view_directory: "View Company Directory",
   view_policies: "Access Company Policies",
+  create_records: "Create System Records",
+  update_records: "Update System Records",
+  delete_records: "Delete System Records",
+  export_system_data: "Export System Data",
+  manage_reports: "Manage Reports",
+  manage_security_policies: "Manage Security Policies",
+  manage_user_credentials: "Manage User Credentials",
+  manage_system_access: "Manage System Access",
 };
 
 export default function ManagePermissionsModal({
@@ -101,10 +110,11 @@ export default function ManagePermissionsModal({
     startTransition(async () => {
       const res = await grantPermission(formData);
       if (res.success) {
+        toast.success("Permission granted successfully!"); // 👈 TOAST SUCCESS
         const updated = await getUserPermissions(employee.id);
         setActivePermissions(updated as unknown as PermissionRecord[]);
       } else {
-        alert(res.error);
+        toast.error(res.error || "Failed to grant permission."); // 👈 TOAST ERROR
       }
     });
   };
@@ -113,9 +123,12 @@ export default function ManagePermissionsModal({
     startTransition(async () => {
       const res = await revokePermission(recordId);
       if (res.success) {
+        toast.success("Permission revoked."); // 👈 TOAST SUCCESS
         setActivePermissions((prev) =>
           prev.filter((p) => p.record_id !== recordId),
         );
+      } else {
+        toast.error(res.error || "Failed to revoke permission."); // 👈 TOAST ERROR
       }
     });
   };
@@ -189,7 +202,6 @@ export default function ManagePermissionsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
         <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center">
@@ -206,37 +218,34 @@ export default function ManagePermissionsModal({
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Tab Navigation */}
         <div className="flex border-b border-slate-200 px-5">
           <button
             onClick={() => setActiveTab("private")}
-            className={`px-4 py-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 ${activeTab === "private" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+            className={`px-4 py-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 cursor-pointer ${activeTab === "private" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-700"}`}
           >
             <Lock className="w-3.5 h-3.5" /> Private
           </button>
           <button
             onClick={() => setActiveTab("standard")}
-            className={`px-4 py-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 ${activeTab === "standard" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+            className={`px-4 py-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 cursor-pointer ${activeTab === "standard" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}
           >
             <Settings2 className="w-3.5 h-3.5" /> Standard
           </button>
           <button
             onClick={() => setActiveTab("public")}
-            className={`px-4 py-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 ${activeTab === "public" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+            className={`px-4 py-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 cursor-pointer ${activeTab === "public" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-700"}`}
           >
             <Globe className="w-3.5 h-3.5" /> Public
           </button>
         </div>
 
-        {/* Content Body */}
         <div className="p-5 overflow-y-auto">
-          {/* PRIVATE PERMISSIONS TAB */}
           {activeTab === "private" && (
             <div className="space-y-6 animate-fadeIn">
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
@@ -264,7 +273,7 @@ export default function ManagePermissionsModal({
                     </label>
                     <select
                       name="actionName"
-                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-500/20 bg-white"
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-500/20 bg-white cursor-pointer"
                     >
                       <option value="edit_personal_profile">
                         Edit Personal Profile
@@ -286,7 +295,7 @@ export default function ManagePermissionsModal({
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
                       <Plus className="w-3.5 h-3.5" />
-                    )}
+                    )}{" "}
                     Assign Private Role
                   </button>
                 </div>
@@ -295,7 +304,6 @@ export default function ManagePermissionsModal({
             </div>
           )}
 
-          {/* STANDARD PERMISSIONS TAB */}
           {activeTab === "standard" && (
             <div className="space-y-6 animate-fadeIn">
               <form
@@ -309,7 +317,7 @@ export default function ManagePermissionsModal({
                     </label>
                     <select
                       name="actionName"
-                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white"
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white cursor-pointer"
                     >
                       <optgroup label="Data & Reporting">
                         <option value="create_records">
@@ -336,7 +344,7 @@ export default function ManagePermissionsModal({
                       name="scope"
                       value={selectedScope}
                       onChange={(e) => setSelectedScope(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white"
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white cursor-pointer"
                     >
                       <option value="team">Team Level (Direct Reports)</option>
                       <option value="department">Department-Wide</option>
@@ -344,18 +352,30 @@ export default function ManagePermissionsModal({
                     </select>
                   </div>
                 </div>
+
+                {/* 👇 FIXED: Select Dropdowns for Branch and Department */}
                 {selectedScope === "branch" && (
                   <div className="space-y-1.5 animate-fadeIn">
                     <label className="text-[11px] font-bold text-slate-600">
                       Target Branch
                     </label>
-                    <input
-                      type="text"
+                    <select
                       name="targetBranch"
                       defaultValue={employee.branch || ""}
                       required
-                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/20"
-                    />
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white cursor-pointer"
+                    >
+                      <option value="" disabled>
+                        Select Branch...
+                      </option>
+                      <option value="HQ - Sulaymaniyah">
+                        HQ - Sulaymaniyah
+                      </option>
+                      <option value="Erbil Branch">Erbil Branch</option>
+                      <option value="Duhok Branch">Duhok Branch</option>
+                      <option value="Basra Branch">Basra Branch</option>
+                      <option value="Remote">Remote</option>
+                    </select>
                   </div>
                 )}
                 {selectedScope === "department" && (
@@ -363,13 +383,23 @@ export default function ManagePermissionsModal({
                     <label className="text-[11px] font-bold text-slate-600">
                       Target Department
                     </label>
-                    <input
-                      type="text"
+                    <select
                       name="targetDepartment"
                       defaultValue={employee.department || ""}
                       required
-                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/20"
-                    />
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white cursor-pointer"
+                    >
+                      <option value="" disabled>
+                        Select Department...
+                      </option>
+                      <option value="Engineering">Engineering</option>
+                      <option value="Human Resources">Human Resources</option>
+                      <option value="Design">Design</option>
+                      <option value="Marketing">Marketing</option>
+                      <option value="Sales">Sales</option>
+                      <option value="Finance">Finance</option>
+                      <option value="Operations">Operations</option>
+                    </select>
                   </div>
                 )}
                 <div className="flex justify-end pt-2">
@@ -382,7 +412,7 @@ export default function ManagePermissionsModal({
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
                       <Plus className="w-3.5 h-3.5" />
-                    )}
+                    )}{" "}
                     Grant Standard Access
                   </button>
                 </div>
@@ -403,8 +433,7 @@ export default function ManagePermissionsModal({
                 </div>
                 <p className="text-xs text-slate-500">
                   These baseline permissions are granted to all active employees
-                  by default, but can be manually revoked or overridden by an
-                  Administrator.
+                  by default.
                 </p>
               </div>
               <form
@@ -419,7 +448,7 @@ export default function ManagePermissionsModal({
                     </label>
                     <select
                       name="actionName"
-                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-purple-500/20 bg-white"
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-purple-500/20 bg-white cursor-pointer"
                     >
                       <optgroup label="System & Security">
                         <option value="manage_security_policies">
@@ -451,7 +480,7 @@ export default function ManagePermissionsModal({
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
                       <Plus className="w-3.5 h-3.5" />
-                    )}
+                    )}{" "}
                     Assign Global Role
                   </button>
                 </div>

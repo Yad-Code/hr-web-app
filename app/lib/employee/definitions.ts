@@ -106,6 +106,7 @@ export interface FullEmployeeProfile {
   jobFamily?: string | null;
   employmentType?: string | null;
   managerName?: string | null;
+  managerId?: string | null;
   joinDate?: string | null;
   shift_start?: string | null;
   shift_end?: string | null;
@@ -230,9 +231,8 @@ export interface DashboardPayrollRun {
   pay_date: Date;
 }
 
- 
 export interface AppCatchError extends Error {
-    code?: string | number;
-    details?: Record<string, unknown>;
-    status?: number;
+  code?: string | number;
+  details?: Record<string, unknown>;
+  status?: number;
 }

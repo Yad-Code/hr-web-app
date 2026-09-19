@@ -20,7 +20,7 @@ import {
 
 import {
   SelfAssessment,
-  Skill,
+  Skill, 
 } from "@/app/lib/employeeDashboard/performance/definitions";
 
 import ProfileForm from "../profileForm";

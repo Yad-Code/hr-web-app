@@ -22,7 +22,7 @@ import {
   PenTool,
   MessageSquare,
 } from "lucide-react";
- 
+import { toast } from "sonner";
 import { LanguageItem } from "@/app/lib/employee/definitions";
 import {
   addLanguageAction,
@@ -56,7 +56,6 @@ export default function LanguageTab({
   const [isPending, startTransition] = useTransition();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Modal States
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [docModalItem, setDocModalItem] = useState<{
     id: string;
@@ -85,7 +84,10 @@ export default function LanguageTab({
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleReset = () => setFormData(initialFormState);
+  const handleReset = () => {
+    setFormData(initialFormState);
+    if (formRef.current) formRef.current.reset();
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,11 +95,12 @@ export default function LanguageTab({
     Object.entries(formData).forEach(([key, value]) => data.append(key, value));
 
     startTransition(async () => {
-      try {
-        await addLanguageAction(userId, employeeName, data);
+      const result = await addLanguageAction(userId, employeeName, data);
+      if (result?.success) {
+        toast.success("Language capability added successfully!");
         handleReset();
-      } catch (err) {
-        console.error("Failed to add language entry:", err);
+      } else {
+        toast.error(result?.error || "Failed to add language entry.");
       }
     });
   };
@@ -109,23 +112,14 @@ export default function LanguageTab({
     setDeletingId(id);
 
     startTransition(async () => {
-      try {
-        await deleteLanguageAction(id);
-      } catch (err) {
-        console.error("Failed to delete language entry:", err);
-      } finally {
-        setDeletingId(null);
+      const result = await deleteLanguageAction(id);
+      if (result?.success) {
+        toast.success("Language record deleted.");
+      } else {
+        toast.error(result?.error || "Failed to delete language entry.");
       }
+      setDeletingId(null);
     });
-  };
-
-  const openDocumentModal = (
-    id: string,
-    language: string,
-    currentUrl?: string | null,
-  ) => {
-    setDocModalItem({ id, language, currentUrl });
-    setDocumentUrlInput(currentUrl || "");
   };
 
   const handleSaveDocument = (e: React.FormEvent) => {
@@ -137,19 +131,18 @@ export default function LanguageTab({
     setDocModalItem(null);
 
     startTransition(async () => {
-      try {
-        await updateLanguageDocumentAction(targetId, urlToSave);
-      } catch (err) {
-        console.error("Failed to update document URL:", err);
+      const result = await updateLanguageDocumentAction(targetId, urlToSave);
+      if (result?.success) {
+        toast.success("Document attached successfully.");
+      } else {
+        toast.error(result?.error || "Failed to update document URL.");
       }
     });
   };
 
   return (
     <div className="space-y-6 text-left animate-fadeIn">
-      {/* FORM CONTAINER */}
       <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xs space-y-6">
-        {/* SECTION 1: EMPLOYEE INFORMATION */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
             <div className="w-7 h-7 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
@@ -175,7 +168,6 @@ export default function LanguageTab({
           </div>
         </div>
 
-        {/* SECTION 2: LANGUAGE DETAILS FORM */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
             <div className="w-7 h-7 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
@@ -193,7 +185,7 @@ export default function LanguageTab({
                 name="language"
                 value={formData.language}
                 onChange={handleChange}
-                placeholder="e.g., English, Arabic, Persian"
+                placeholder="e.g., English, Arabic"
                 icon={Languages}
                 required
               />
@@ -269,7 +261,6 @@ export default function LanguageTab({
         </div>
       </div>
 
-      {/* SECTION 3: LANGUAGE TABLE */}
       <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xs space-y-5 overflow-hidden">
         <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider pb-3 border-b border-slate-100">
           Language Competencies
@@ -321,11 +312,11 @@ export default function LanguageTab({
                       <button
                         type="button"
                         onClick={() =>
-                          openDocumentModal(
-                            lang.id,
-                            lang.language,
-                            lang.document_url,
-                          )
+                          setDocModalItem({
+                            id: lang.id,
+                            language: lang.language,
+                            currentUrl: lang.document_url,
+                          })
                         }
                         className={`p-1.5 rounded-md transition-colors cursor-pointer ${lang.document_url ? "text-indigo-600 hover:bg-indigo-50" : "text-blue-600 hover:bg-blue-50"}`}
                         title={
@@ -381,7 +372,6 @@ export default function LanguageTab({
         </div>
       </div>
 
-      {/* VIEW FULL DETAILS MODAL */}
       {selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full border border-slate-200 overflow-hidden">
@@ -481,7 +471,6 @@ export default function LanguageTab({
         </div>
       )}
 
-      {/* DOCUMENT MODAL */}
       {docModalItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full border border-slate-200 overflow-hidden">
@@ -541,7 +530,6 @@ export default function LanguageTab({
         </div>
       )}
 
-      {/* DELETE CONFIRMATION MODAL */}
       {itemToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full border border-slate-200 overflow-hidden">
