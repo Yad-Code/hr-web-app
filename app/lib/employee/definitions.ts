@@ -78,7 +78,7 @@ export interface EmployeeDocument {
   file_size?: string;
   uploaded_at: string;
 }
- 
+
 export interface FullEmployeeProfile {
   id: string;
   userId?: string;
@@ -201,4 +201,31 @@ export type RegisterFormInput = {
   departmentId: string;
 };
 
-// 🗑️ MOCK DATA SUCCESSFULLY DELETED
+export interface DashboardPendingRequest {
+  id: string;
+  type: string;
+  description: string;
+  status: string;
+  created_at: Date;
+  employee_name: string;
+  job_title: string | null;
+  employee_image: string | null;
+}
+
+export interface DashboardOutToday {
+  name: string;
+  status: string;
+  detail: string;
+}
+
+export interface DashboardComplianceAlert {
+  name: string;
+  probation_end: Date;
+}
+
+export interface DashboardPayrollRun {
+  pay_period_start: Date;
+  pay_period_end: Date;
+  status: string;
+  pay_date: Date;
+}
