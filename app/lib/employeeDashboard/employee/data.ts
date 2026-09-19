@@ -75,12 +75,14 @@ export async function fetchEmployeeStatusList(): Promise<Employee[]> {
     const session = await auth();
     if (!session?.user?.id) return [];
 
-    const isAdmin = session.user.isAdmin;
-    const managerId = session.user.id;
+    // 👇 FIXED: Securely deriving privileges from the NextAuth role instead of deleted boolean
+    const role = session.user.role?.toLowerCase() || "employee";
+    const canViewAll = role === "admin" || role === "hr" || role === "manager";
+    const currentUserId = session.user.id;
 
     let rows;
 
-    if (isAdmin) {
+    if (canViewAll) {
       rows = await sql`
         SELECT id, name, email, role, image_url, last_seen_at, department
         FROM users
@@ -90,7 +92,7 @@ export async function fetchEmployeeStatusList(): Promise<Employee[]> {
       rows = await sql`
         SELECT id, name, email, role, image_url, last_seen_at, department
         FROM users 
-        WHERE manager_id = ${managerId} 
+        WHERE manager_id = ${currentUserId}::uuid 
         ORDER BY name ASC
       `;
     }
