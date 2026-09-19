@@ -24,7 +24,7 @@ import ReviewsTab from "./tabs/reviews-tab";
 import FeedbackTab from "./tabs/feedback-tab";
 import SkillsTab from "./tabs/skills-tab";
 import SelfAssessmentTab from "./tabs/self-assessment-tab";
-import CareerTab from "./tabs/career-tab";
+import CareerTab from "./tabs/career-tab"; 
 
 export interface DashboardData {
   profile: PerformanceProfile | null;
@@ -39,7 +39,7 @@ export interface DashboardData {
   history: PerformanceHistory[];
   selfAssessment: SelfAssessment | null;
   manager: Colleague | null;
-}
+} 
 
 export default function PerformanceDashboard({
   initialData,

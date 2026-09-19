@@ -1,32 +1,17 @@
-// app/ui/employee/payroll/payroll-dashboard.tsx
+// @/app/ui/employee/payroll/payroll-dashboard.tsx
 "use client";
 
 import { useState } from "react";
-import {
-  CompensationSummary,
-  PayStub,
-  PaymentMethod,
-  Document,
-} from "@/app/lib/employeeDashboard/payroll/definitions";
-
+import { PayrollDashboardData } from "@/app/lib/employee/payroll/definitions";
 import OverviewTab from "./tabs/overview-tab";
 import PayslipsTab from "./tabs/payslips-tab";
 import PaymentMethodsTab from "./tabs/payment-methods-tab";
 import CompanyDocsTab from "./tabs/company-docs-tab";
 
-export interface PayrollDashboardData {
-  summary: CompensationSummary;
-  payStubs: PayStub[];
-  paymentMethods: PaymentMethod[];
-  documents: Document[];
-}
-
 export default function PayrollDashboard({
   initialData,
-  onAddAccount,
 }: {
   initialData: PayrollDashboardData;
-  onAddAccount: (formData: FormData) => Promise<void>;
 }) {
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -39,7 +24,6 @@ export default function PayrollDashboard({
 
   return (
     <div className="flex flex-col gap-6 max-w-6xl mx-auto p-4 sm:p-6">
-      {/* Header Banner */}
       <div className="bg-linear-to-r from-slate-900 to-slate-800 text-white p-6 rounded-2xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider">
@@ -59,7 +43,6 @@ export default function PayrollDashboard({
         </div>
       </div>
 
-      {/* Navigation Tabs */}
       <div className="flex gap-2 border-b border-slate-200 overflow-x-auto pb-1">
         {tabs.map((tab) => (
           <button
@@ -76,7 +59,6 @@ export default function PayrollDashboard({
         ))}
       </div>
 
-      {/* Active Tab View */}
       <div>
         {activeTab === "overview" && (
           <OverviewTab
@@ -89,10 +71,7 @@ export default function PayrollDashboard({
           <PayslipsTab payStubs={initialData.payStubs} />
         )}
         {activeTab === "payment-methods" && (
-          <PaymentMethodsTab
-            methods={initialData.paymentMethods}
-            onAddAccount={onAddAccount}
-          />
+          <PaymentMethodsTab methods={initialData.paymentMethods} />
         )}
         {activeTab === "company-docs" && (
           <CompanyDocsTab documents={initialData.documents} />

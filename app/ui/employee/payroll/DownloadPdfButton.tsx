@@ -5,7 +5,7 @@ import { Download, Loader2 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-import { PayStubItem } from "@/app/lib/employeeDashboard/payroll/definitions";
+import { PayStubItem } from "@/app/lib/employee/payroll/definitions";
 
 interface PdfButtonProps {
   payStub: {

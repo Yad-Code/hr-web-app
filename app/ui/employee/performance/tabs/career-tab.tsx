@@ -12,7 +12,7 @@ import { formatDate } from "@/app/lib/utils";
 import {
   requestOneOnOne,
   updateCareerPlan,
-} from "@/app/lib/employeeDashboard/performance/actions/career";
+} from "@/app/lib/employeeDashboard/performance/actions";
 import EditCareerModal from "../modals/edit-career-modal";
 import RequestMeetingModal from "../modals/request-meeting-modal";
 import { MeetingStatusBadge } from "@/app/ui/utils/badge";

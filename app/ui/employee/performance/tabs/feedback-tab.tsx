@@ -9,7 +9,7 @@ import {
 import {
   markFeedbackAsRead,
   markAllFeedbackAsRead,
-} from "@/app/lib/employeeDashboard/performance/actions/feedback";
+} from "@/app/lib/employeeDashboard/performance/actions";
 import { formatDate } from "@/app/lib/utils";
 import RequestFeedbackModal from "../modals/request-feedback-modal";
 import { FeedbackTypeBadge } from "@/app/ui/utils/badge";

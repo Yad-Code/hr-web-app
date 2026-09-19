@@ -2,19 +2,19 @@
 
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import JobInformationTab from "./jobInformationTab";
 import OfficialInfoCard from "../officialInfoCard";
 import ProfileForm from "../profileForm";
 import EducationTab from "./educationTab";
 import LanguageTab from "./languageTab";
-import DocumentsTab from "./documentsTab";  
+import DocumentsTab from "./documentsTab";
 import {
   Briefcase,
   UserPen,
   GraduationCap,
   Languages,
-  FileText, 
+  FileText,
 } from "lucide-react";
 import {
   ProfileTabsProps,

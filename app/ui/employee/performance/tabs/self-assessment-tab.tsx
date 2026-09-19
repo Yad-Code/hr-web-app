@@ -7,7 +7,7 @@ import {
   submitSelfAssessment,
   reopenSelfAssessment,
   saveSelfAssessmentDraft,
-} from "@/app/lib/employeeDashboard/performance/actions/selfAssessment";
+} from "@/app/lib/employeeDashboard/performance/actions";
 import { formatDate } from "@/app/lib/utils";
 
 export default function SelfAssessmentTab({

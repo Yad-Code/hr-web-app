@@ -4,7 +4,7 @@
 import {
   CompensationSummary,
   PayStub,
-} from "@/app/lib/employeeDashboard/payroll/definitions";
+} from "@/app/lib/employee/payroll/definitions";
 
 interface OverviewTabProps {
   summary: CompensationSummary;

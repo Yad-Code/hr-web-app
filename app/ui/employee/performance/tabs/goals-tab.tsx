@@ -9,7 +9,7 @@ import {
 import {
   updateGoalProgress,
   addGoal,
-} from "@/app/lib/employeeDashboard/performance/actions/goals";
+} from "@/app/lib/employeeDashboard/performance/actions";
 import AddGoalModal from "@/app/ui/employee/performance/modals/add-goal-modal";
 import GoalsHeader from "@/app/ui/employee/performance/goals/goals-header";
 import GoalCard from "@/app/ui/employee/performance/goals/goal-card";

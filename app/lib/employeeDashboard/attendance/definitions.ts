@@ -1,4 +1,4 @@
-// @/app/lib/definitions/attendance.ts
+// @/app/lib/employeeDashboard/attendance/definitions.ts
 
 export type AttendanceStatus =
   | "Present"
@@ -34,7 +34,7 @@ export interface LeaveBalance {
 }
 
 export interface CalendarDay {
-  date: number | null; // e.g. 1, 2, 3... or null for padding
+  date: number | null;
   status?: "present" | "late" | "absent" | "weekend" | string;
   isToday?: boolean;
 }
@@ -46,7 +46,15 @@ export interface AttendanceLog {
   checkOut: string | null;
   workHours: string | null;
   status: AttendanceStatus | string;
-  location: string;  
+  location: string;
+}
+
+export interface PendingExchangeRequest {
+  id: string;
+  original_date: string | Date;
+  exchange_date: string | Date;
+  reason: string;
+  requester_name: string;
 }
 
 export interface AttendanceData {
@@ -55,4 +63,8 @@ export interface AttendanceData {
   leaveBalance: LeaveBalance;
   calendarDays: CalendarDay[];
   attendanceLog: AttendanceLog[];
+  workingDays: number[];
+  currentMonth: string;
+  currentYear: number;
+  overrides: Array<{ date: string; isWorking: boolean }>;
 }

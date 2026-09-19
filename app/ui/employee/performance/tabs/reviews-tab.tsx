@@ -6,7 +6,7 @@ import { PerformanceReview } from "@/app/lib/employeeDashboard/performance/defin
 import {
   updateEmployeeComments,
   acknowledgeReview,
-} from "@/app/lib/employeeDashboard/performance/actions/reviews";
+} from "@/app/lib/employeeDashboard/performance/actions";
 import { formatDate } from "@/app/lib/utils";
 import { ReviewRatingBadge } from "@/app/ui/utils/badge";
 

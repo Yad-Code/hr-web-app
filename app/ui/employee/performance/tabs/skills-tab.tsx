@@ -7,7 +7,7 @@ import {
   updateSkillLevel,
   addSkill,
   deleteSkill,
-} from "@/app/lib/employeeDashboard/performance/actions/skills";
+} from "@/app/lib/employeeDashboard/performance/actions";
 import AddSkillModal, {
   NewSkillData,
 } from "@/app/ui/employee/performance/modals/add-skill-modal";

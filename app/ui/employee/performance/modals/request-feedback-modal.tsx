@@ -3,7 +3,7 @@
 
 import { useState, useTransition, FormEvent } from "react";
 import { ModalWrapper } from "@/app/ui/components/modal-wrapper";
-import { requestFeedback } from "@/app/lib/employeeDashboard/performance/actions/feedback";
+import { requestFeedback } from "@/app/lib/employeeDashboard/performance/actions";
 
 export interface Colleague {
   name: string;

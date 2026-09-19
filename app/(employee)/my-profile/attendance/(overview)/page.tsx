@@ -1,9 +1,12 @@
 // @/app/(employee)/my-profile/attendance/(overview)/page.tsx
-
 import { Suspense } from "react";
 import { auth } from "@/auth";
-import { sql } from "@/app/lib/employeeDashboard/employee/db";
-import { getAttendanceData } from "@/app/lib/employeeDashboard/attendance/attendance";
+import { redirect } from "next/navigation";
+import {
+  getAttendanceData,
+  getColleaguesForLeave,
+  getPendingExchanges,
+} from "@/app/lib/employeeDashboard/attendance/attendance";
 
 import {
   TodayStatusCard,
@@ -15,7 +18,6 @@ import {
   AbsenceRequestModal,
   SectionHeader,
   PendingExchangesWidget,
-  PendingExchangeRequest, 
   DashboardControls,
 } from "@/app/ui/employee/my-attendance/my-attendance";
 import {
@@ -32,36 +34,12 @@ async function AttendanceContent({
   userId: string;
   targetMonth?: string;
 }) {
-  const data = await getAttendanceData(userId, targetMonth);
-
-  const userProfile =
-    await sql`SELECT department FROM users WHERE id = ${userId}`;
-  const userDept = userProfile[0]?.department;
-
-  const colleaguesQuery = await sql`
-    SELECT id, name, job_title, working_days 
-    FROM users 
-    WHERE role = 'employee' 
-      AND id != ${userId}
-      AND department = ${userDept}
-    ORDER BY name ASC
-  `;
-
-  const colleagues = colleaguesQuery as unknown as {
-    id: string;
-    name: string;
-    job_title: string | null;
-    working_days: number[];
-  }[];
-
-  const pendingExchangesQuery = await sql`
-    SELECT r.id, r.original_date, r.exchange_date, r.reason, u.name as requester_name
-    FROM leave_requests r
-    JOIN users u ON r.user_id = u.id
-    WHERE r.helper_id = ${userId} AND r.helper_status = 'Pending'
-  `;
-  const pendingExchanges =
-    pendingExchangesQuery as unknown as PendingExchangeRequest[];
+  // Execute all three database fetchers in parallel for maximum speed
+  const [data, colleagues, pendingExchanges] = await Promise.all([
+    getAttendanceData(userId, targetMonth),
+    getColleaguesForLeave(userId),
+    getPendingExchanges(userId),
+  ]);
 
   return (
     <>
@@ -101,7 +79,6 @@ async function AttendanceContent({
         month={data.currentMonth}
         year={data.currentYear}
       />
-
       <AbsenceRequestModal
         leaveBalance={data.leaveBalance}
         colleagues={colleagues}
@@ -111,48 +88,26 @@ async function AttendanceContent({
   );
 }
 
-interface PageProps {
-  searchParams: Promise<{ month?: string }>;
-}
-
 export default async function EmployeeAttendancePage({
   searchParams,
-}: PageProps) {
+}: {
+  searchParams: Promise<{ month?: string }>;
+}) {
   const resolvedParams = await searchParams;
   const targetMonth = resolvedParams.month;
+
   const session = await auth();
-
-  if (!session?.user?.email) {
-    return (
-      <div className="p-6 text-center text-slate-500">
-        Unauthorized: Please log in.
-      </div>
-    );
+  if (!session?.user?.id) {
+    redirect("/login");
   }
-
-  // 1. Resolve actual Postgres UUID using verified email
-  const userQuery = await sql`
-    SELECT id FROM users WHERE email = ${session.user.email}
-  `;
-
-  if (!userQuery || userQuery.length === 0) {
-    return (
-      <div className="p-6 text-center text-slate-500">
-        User not found in database.
-      </div>
-    );
-  }
-
-  const dbUserId = userQuery[0].id;
 
   return (
-    <main className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 sm:space-y-8">
+    <main className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-fadeIn">
       <SectionHeader
         title="My Attendance & Schedule"
         description="Track your daily check-ins, view attendance history, and manage your schedule."
         action={<DashboardControls />}
       />
-
       <Suspense
         fallback={
           <div className="space-y-6 sm:space-y-8">
@@ -171,7 +126,7 @@ export default async function EmployeeAttendancePage({
           </div>
         }
       >
-        <AttendanceContent userId={dbUserId} targetMonth={targetMonth} />
+        <AttendanceContent userId={session.user.id} targetMonth={targetMonth} />
       </Suspense>
     </main>
   );

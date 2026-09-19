@@ -20,6 +20,7 @@ import {
   AttendanceSummary,
   LeaveBalance,
   AttendanceLog,
+  PendingExchangeRequest,
 } from "@/app/lib/employeeDashboard/attendance/definitions";
 
 import {
@@ -1358,14 +1359,6 @@ export function AbsenceRequestModal({
       )}
     </>
   );
-}
-
-export interface PendingExchangeRequest {
-  id: string;
-  original_date: string | Date;
-  exchange_date: string | Date;
-  reason: string;
-  requester_name: string;
 }
 
 export function PendingExchangesWidget({

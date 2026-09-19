@@ -8,7 +8,7 @@ import {
   calculateWorkHours,
 } from "@/app/lib/employeeDashboard/employee/data";
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
-import { AppCatchError } from "@/app/lib/employee/definitions";  
+import { AppCatchError } from "@/app/lib/employee/definitions";
 
 function getLocalDateString(): string {
   const now = new Date();
@@ -78,7 +78,6 @@ export async function toggleCheckInStatus(
     revalidatePath("/my-profile/attendance");
     return { success: true };
   } catch (error: unknown) {
-    // 👇 Safely cast the unknown error
     const e = (
       error instanceof Error ? error : new Error(String(error))
     ) as AppCatchError;
@@ -185,16 +184,32 @@ export async function respondToExchangeRequest(
   status: "Accepted" | "Rejected",
 ) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+
+    // 👇 SECURITY FIX: Ensure the logged-in user is actually the assigned helper!
+    const reqCheck =
+      await db`SELECT helper_id FROM leave_requests WHERE id = ${requestId}::uuid LIMIT 1`;
+
+    if (reqCheck.length === 0 || reqCheck[0].helper_id !== session.user.id) {
+      return {
+        success: false,
+        error: "Forbidden: You are not authorized to respond to this request.",
+      };
+    }
+
     if (status === "Rejected") {
       await db`UPDATE leave_requests SET helper_status = 'Rejected', status = 'Rejected' WHERE id = ${requestId}::uuid`;
     } else {
       await db`UPDATE leave_requests SET helper_status = 'Accepted' WHERE id = ${requestId}::uuid`;
+
       const reqQuery =
         await db`SELECT r.user_id, u.manager_id FROM leave_requests r JOIN users u ON r.user_id = u.id WHERE r.id = ${requestId}::uuid`;
       if (reqQuery.length > 0 && reqQuery[0].manager_id) {
         await db`INSERT INTO performance_notifications (user_id, requester_id, title, description, type) VALUES (${reqQuery[0].manager_id}::uuid, ${reqQuery[0].user_id}::uuid, 'Shift Swap Ready', 'A shift swap was accepted and requires final approval.', 'Exchange')`;
       }
     }
+
     revalidatePath("/", "layout");
     return { success: true };
   } catch (error: unknown) {
@@ -303,6 +318,7 @@ export async function exportAttendanceCSV(monthStr?: string) {
         `"${displayDate}","${checkIn}","${checkOut}","${workHours}","${location}","${status}"`,
       );
     }
+
     csvRows.reverse();
     const csvContent = [headers.join(","), ...csvRows].join("\n");
     return {

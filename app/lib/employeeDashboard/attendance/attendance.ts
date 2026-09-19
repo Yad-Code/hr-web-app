@@ -1,51 +1,6 @@
-// lib/data/attendance.ts
-import postgres from "postgres";
-
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
-
-export interface AttendanceData {
-  today: {
-    checkIn: string | null;
-    checkOut: string | null;
-    status: "Checked In" | "Checked Out" | "Not Checked In" | "On Leave";
-    shiftStart: string;
-    shiftEnd: string;
-    workLocation: "Office" | "WFH" | "Remote";
-  };
-  summary: {
-    attendanceRate: number;
-    daysPresent: number;
-    lateArrivals: number;
-    totalHoursLogged: number;
-  };
-  leaveBalance: {
-    annualRemaining: number;
-    annualTotal: number;
-    sickRemaining: number;
-    sickTotal: number;
-    monthlyTotalHours: number;
-    monthlyRemainingHours: number;
-  };
-  currentMonth: string;
-  currentYear: number;
-  calendarDays: Array<{
-    date: string;
-    status: "present" | "absent" | "late" | "leave" | "weekend" | "upcoming";
-    checkIn?: string;
-  }>;
-  workingDays: number[];
-  overrides: Array<{ date: string; isWorking: boolean }>;
-
-  attendanceLog: Array<{
-    id: string;
-    date: string;
-    checkIn: string | null;
-    checkOut: string | null;
-    workHours: string;
-    status: string;
-    location: string;
-  }>;
-}
+// @/app/lib/employeeDashboard/attendance/attendance.ts
+import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
+import { AttendanceData, PendingExchangeRequest } from "./definitions";
 
 interface GeneratedLeaveLog {
   id: string;
@@ -57,37 +12,89 @@ interface GeneratedLeaveLog {
   location: string;
 }
 
+export async function getColleaguesForLeave(userId: string) {
+  try {
+    const userProfile =
+      await db`SELECT department FROM users WHERE id = ${userId}::uuid LIMIT 1`;
+    const userDept = userProfile[0]?.department;
+
+    if (!userDept) return [];
+
+    const colleaguesQuery = await db`
+      SELECT id, name, job_title, working_days 
+      FROM users 
+      WHERE role = 'employee' 
+        AND id != ${userId}::uuid
+        AND department = ${userDept}
+      ORDER BY name ASC
+    `;
+
+    return colleaguesQuery.map((c) => ({
+      id: c.id as string,
+      name: c.name as string,
+      job_title: c.job_title as string | null,
+      working_days: (c.working_days as number[]) || [1, 2, 3, 4, 5],
+    }));
+  } catch (error) {
+    console.error("Failed to fetch colleagues:", error);
+    return [];
+  }
+}
+
+export async function getPendingExchanges(
+  userId: string,
+): Promise<PendingExchangeRequest[]> {
+  try {
+    const pendingExchangesQuery = await db`
+      SELECT r.id, r.original_date, r.exchange_date, r.reason, u.name as requester_name
+      FROM leave_requests r
+      JOIN users u ON r.user_id = u.id
+      WHERE r.helper_id = ${userId}::uuid AND r.helper_status = 'Pending'
+    `;
+
+    return pendingExchangesQuery.map((r) => ({
+      id: String(r.id),
+      original_date: r.original_date as string | Date,
+      exchange_date: r.exchange_date as string | Date,
+      reason: String(r.reason),
+      requester_name: String(r.requester_name),
+    }));
+  } catch (error) {
+    console.error("Failed to fetch pending exchanges:", error);
+    return [];
+  }
+}
+
 export async function getAttendanceData(
-  userId?: string,
+  userId: string,
   targetMonth?: string,
 ): Promise<AttendanceData> {
-  const now = new Date(); 
+  const now = new Date();
   const targetDate = targetMonth ? new Date(`${targetMonth}-01T12:00:00`) : now;
   const targetY = targetDate.getFullYear();
   const targetM = targetDate.getMonth();
 
   try {
-    if (!userId) {
-      throw new Error("User authentication failed. Please log in again.");
-    }
-
     const localY = now.getFullYear();
     const localM = String(now.getMonth() + 1).padStart(2, "0");
     const localD = String(now.getDate()).padStart(2, "0");
     const todayStr = `${localY}-${localM}-${localD}`;
 
-    const todayLogs =
-      await sql`SELECT check_in, check_out, status, work_location FROM attendance WHERE user_id = ${userId} AND date = ${todayStr} LIMIT 1`;
-    const monthlyLogs =
-      await sql`SELECT id, date, check_in, check_out, work_hours, status, work_location FROM attendance WHERE user_id = ${userId} ORDER BY date DESC`;
-    const balanceLogs =
-      await sql`SELECT annual_total, annual_remaining, sick_total, sick_remaining, monthly_total_hours, monthly_remaining_hours FROM leave_balances WHERE user_id = ${userId} LIMIT 1`;
-    const profile =
-      await sql`SELECT working_days FROM users WHERE id = ${userId} LIMIT 1`;
-    const overridesLog =
-      await sql`SELECT target_date, is_working FROM schedule_overrides WHERE user_id = ${userId}`;
-    const approvedLeavesLog =
-      await sql`SELECT id, start_date, end_date FROM leave_requests WHERE user_id = ${userId} AND type = 'dayoff' AND status = 'Approved'`;
+    const [
+      todayLogs,
+      monthlyLogs,
+      balanceLogs,
+      profile,
+      overridesLog,
+      approvedLeavesLog,
+    ] = await Promise.all([
+      db`SELECT check_in, check_out, status, work_location FROM attendance WHERE user_id = ${userId}::uuid AND date = ${todayStr} LIMIT 1`,
+      db`SELECT id, date, check_in, check_out, work_hours, status, work_location FROM attendance WHERE user_id = ${userId}::uuid ORDER BY date DESC`,
+      db`SELECT annual_total, annual_remaining, sick_total, sick_remaining, monthly_total_hours, monthly_remaining_hours FROM leave_balances WHERE user_id = ${userId}::uuid LIMIT 1`,
+      db`SELECT working_days FROM users WHERE id = ${userId}::uuid LIMIT 1`,
+      db`SELECT target_date, is_working FROM schedule_overrides WHERE user_id = ${userId}::uuid`,
+      db`SELECT id, start_date, end_date FROM leave_requests WHERE user_id = ${userId}::uuid AND type = 'dayoff' AND status = 'Approved'`,
+    ]);
 
     const workingDays = profile[0]?.working_days || [1, 2, 3, 4, 5];
     const todayRecord = todayLogs[0];
@@ -99,15 +106,14 @@ export async function getAttendanceData(
       ? now.getDate()
       : new Date(targetY, targetM + 1, 0).getDate();
 
-    let expectedWorkingDays = 0;
-    let scheduledDaysPresent = 0;
-    let totalDaysPresent = 0;
-    let lateArrivals = 0;
-    let totalMinutes = 0;
- 
+    let expectedWorkingDays = 0,
+      scheduledDaysPresent = 0,
+      totalDaysPresent = 0,
+      lateArrivals = 0,
+      totalMinutes = 0;
+
     for (let i = 1; i <= limitDate; i++) {
       const dObj = new Date(targetY, targetM, i);
-
       let isWorkingDay = workingDays.includes(dObj.getDay());
 
       const override = overridesLog.find((o) => {
@@ -171,7 +177,6 @@ export async function getAttendanceData(
     });
 
     const totalHoursLogged = Math.floor(totalMinutes / 60);
-
     const attendanceRate =
       expectedWorkingDays > 0
         ? Math.round((scheduledDaysPresent / expectedWorkingDays) * 100)
@@ -227,41 +232,33 @@ export async function getAttendanceData(
       workingDays,
       currentMonth: targetDate.toLocaleString("en-US", { month: "long" }),
       currentYear: targetY,
-      overrides: overridesLog.map((o) => {
-        const oDate = new Date(o.target_date);
-        return {
-          date: oDate.toLocaleDateString("en-US", {
+      overrides: overridesLog.map((o) => ({
+        date: new Date(o.target_date).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+        isWorking: o.is_working,
+      })),
+      attendanceLog: [
+        ...monthlyLogs.map((log) => ({
+          id: String(log.id),
+          date: new Date(log.date).toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
             year: "numeric",
           }),
-          isWorking: o.is_working,
-        };
-      }),
-      attendanceLog: [
-        ...monthlyLogs.map((log) => {
-          const lDate = new Date(log.date);
-          return {
-            id: log.id,
-            date: lDate.toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            }),
-            checkIn: log.check_in || "--:--",
-            checkOut: log.check_out || "--:--",
-            workHours: log.work_hours || "0h 0m",
-            status: log.status || "Present",
-            location: log.work_location || "Office",
-          };
-        }),
+          checkIn: log.check_in || "--:--",
+          checkOut: log.check_out || "--:--",
+          workHours: log.work_hours || "0h 0m",
+          status: log.status || "Present",
+          location: log.work_location || "Office",
+        })),
         ...generatedLeaveLogs,
       ],
     };
   } catch (error) {
     console.error("Failed to fetch attendance data:", error);
-    throw new Error(
-      "Unable to connect to the attendance database. Please try again later.",
-    );
+    throw new Error("Unable to connect to the attendance database.");
   }
 }

@@ -6,9 +6,7 @@ import { Building2, LogOut } from "lucide-react";
 
 export default async function SideNav() {
   const session = await auth();
-  if (!session?.user) return null;
-
-  // 👇 Safely derive booleans from the session role
+  if (!session?.user) return null; 
   const role = session.user.role?.toLowerCase() || "employee";
   const isAdmin = role === "admin";
   const isManager = role === "manager" || role === "hr";

@@ -1,4 +1,4 @@
-//@/app/ui/employee/top-navbar.tsx
+// @/app/ui/employee/top-navbar.tsx
 "use client";
 
 import { useState, useRef, useEffect, useTransition } from "react";
@@ -20,15 +20,14 @@ import {
   markAllNotificationsAsRead,
   Notification,
 } from "@/app/lib/notifications/actions";
-
+ 
 interface TopNavbarProps {
   user: {
     id: string;
     name: string;
     email: string;
-    role: string;
-    image_url: string | null;
-    isAdmin: boolean; 
+    role?: string;
+    image_url?: string | null;
   };
 }
 
@@ -38,15 +37,20 @@ export default function TopNavbar({ user }: TopNavbarProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [, startTransition] = useTransition();
   const popoverRef = useRef<HTMLDivElement>(null);
- 
+
   useEffect(() => {
     let isMounted = true;
     async function fetchNotifications() {
       setIsLoading(true);
-      const data = await getEmployeeNotifications(user.id);
-      if (isMounted) {
-        setNotifications(data);
-        setIsLoading(false);
+      try {
+        const data = await getEmployeeNotifications(user.id);
+        if (isMounted) {
+          setNotifications(data);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Failed to load notifications", error);
+        if (isMounted) setIsLoading(false);
       }
     }
 
@@ -159,7 +163,6 @@ export default function TopNavbar({ user }: TopNavbarProps) {
 
           {isNotificationsOpen && (
             <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-200/90 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
-              {/* Header */}
               <div className="p-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                 <div className="flex items-center gap-2">
                   <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
@@ -258,7 +261,7 @@ export default function TopNavbar({ user }: TopNavbarProps) {
         </div>
 
         <div className="h-5 w-px bg-slate-200/80" />
-
+ 
         <UserDropdown user={user} />
       </div>
     </header>

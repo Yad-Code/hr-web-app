@@ -1,7 +1,7 @@
 // app/ui/employee/payroll/tabs/company-docs-tab.tsx
 "use client";
 
-import { Document } from "@/app/lib/employeeDashboard/payroll/definitions";
+import { Document } from "@/app/lib/employee/payroll/definitions";
 
 export default function CompanyDocsTab({
   documents,

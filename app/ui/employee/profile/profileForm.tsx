@@ -15,6 +15,7 @@ interface ProfileFormProps {
 export default function ProfileForm({ profile, userEmail }: ProfileFormProps) {
   const router = useRouter();
 
+  // Bind the profile ID to the central, ABAC-secured server action
   const updateProfileWithId = updateEmployeeDetails.bind(null, profile.id);
 
   const [state, formAction, isPending] = useActionState(
@@ -77,7 +78,7 @@ export default function ProfileForm({ profile, userEmail }: ProfileFormProps) {
             </div>
           )}
 
-          {/* 👇 FIXED: Error State now reads state.message */}
+          {/* Error State */}
           {state && !state.success && state.message && (
             <div className="p-3 bg-rose-50/90 border border-rose-200/80 rounded-xl text-xs font-semibold text-rose-700 animate-in fade-in slide-in-from-top-1 duration-200">
               {state.message}
@@ -90,7 +91,6 @@ export default function ProfileForm({ profile, userEmail }: ProfileFormProps) {
                 <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />{" "}
                 Username / Preferred Name
               </label>
-              {/* 👇 FIXED: Removed Zod fieldErrors checks */}
               <input
                 key={profile.preferred_name || profile.name}
                 type="text"
@@ -106,7 +106,6 @@ export default function ProfileForm({ profile, userEmail }: ProfileFormProps) {
                 <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />{" "}
                 Personal Email
               </label>
-              {/* 👇 FIXED: Removed Zod fieldErrors checks */}
               <input
                 key={profile.personal_email}
                 type="email"

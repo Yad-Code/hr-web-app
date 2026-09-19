@@ -1,18 +1,15 @@
-// app/ui/employee/payroll/tabs/payment-methods-tab.tsx
+// @/app/ui/employee/payroll/tabs/payment-methods-tab.tsx
 "use client";
 
 import { useState } from "react";
-import { PaymentMethod } from "@/app/lib/employeeDashboard/payroll/definitions";
-
-interface PaymentMethodsTabProps {
-  methods: PaymentMethod[];
-  onAddAccount: (formData: FormData) => Promise<void>;
-}
+import { PaymentMethod } from "@/app/lib/employee/payroll/definitions"; 
+import { addPaymentMethod } from "@/app/lib/employee/payroll/actions";
 
 export default function PaymentMethodsTab({
   methods,
-  onAddAccount,
-}: PaymentMethodsTabProps) {
+}: {
+  methods: PaymentMethod[];
+}) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -43,25 +40,19 @@ export default function PaymentMethodsTab({
         {methods.map((method) => (
           <div
             key={method.id}
-            className={`p-5 bg-white border rounded-xl shadow-xs space-y-4 relative ${
-              method.is_primary
-                ? "border-blue-500 ring-1 ring-blue-500/20"
-                : "border-slate-200"
-            }`}
+            className={`p-5 bg-white border rounded-xl shadow-xs space-y-4 relative ${method.is_primary ? "border-blue-500 ring-1 ring-blue-500/20" : "border-slate-200"}`}
           >
             {method.is_primary && (
               <span className="absolute top-4 right-4 text-[10px] font-bold bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full">
                 Primary Deposit
               </span>
             )}
-
             <div className="space-y-1">
               <p className="text-sm font-bold text-slate-900">
                 {method.bank_name}
               </p>
               <p className="text-xs text-slate-500">{method.account_holder}</p>
             </div>
-
             <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-1 text-xs">
               <div className="flex justify-between">
                 <span className="text-slate-500">Account Number:</span>
@@ -76,7 +67,6 @@ export default function PaymentMethodsTab({
                 </span>
               </div>
             </div>
-
             <div className="flex justify-between items-center pt-1 text-xs">
               <span className="inline-flex items-center gap-1.5 text-emerald-700 font-semibold">
                 ✓{" "}
@@ -88,14 +78,13 @@ export default function PaymentMethodsTab({
           </div>
         ))}
       </div>
- 
+
       {showAddModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
           <div className="bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-200 p-6 space-y-5">
             <h3 className="text-base font-bold text-slate-900">
               Add Direct Deposit Account
             </h3>
-
             {errorMessage && (
               <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-xs font-medium">
                 {errorMessage}
@@ -107,7 +96,8 @@ export default function PaymentMethodsTab({
                 setLoading(true);
                 setErrorMessage(null);
                 try {
-                  await onAddAccount(formData);
+                  // 👇 FIXED: Executing the secure action directly
+                  await addPaymentMethod(formData);
                   setShowAddModal(false);
                 } catch (err: unknown) {
                   setErrorMessage(
@@ -133,7 +123,6 @@ export default function PaymentMethodsTab({
                   required
                 />
               </div>
-
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
                   Account Holder Name
@@ -146,7 +135,6 @@ export default function PaymentMethodsTab({
                   required
                 />
               </div>
-
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
                   Account Number / IBAN
@@ -159,7 +147,6 @@ export default function PaymentMethodsTab({
                   required
                 />
               </div>
-
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
                   Routing / SWIFT Code

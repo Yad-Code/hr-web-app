@@ -64,7 +64,7 @@ export default function OverviewTab({
           </div>
           {onNavigateTab && (
             <button
-              onClick={() => onNavigateTab(actionDetails.tab)} // 👇 4. Dynamic routing applied here
+              onClick={() => onNavigateTab(actionDetails.tab)}
               className="text-xs font-semibold bg-white border border-blue-300 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap shadow-xs"
             >
               {actionDetails.label}
@@ -110,11 +110,7 @@ export default function OverviewTab({
                     {kpi.value}
                   </span>
                   <span
-                    className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                      kpi.is_up
-                        ? "bg-emerald-100 text-emerald-800"
-                        : "bg-amber-100 text-amber-800"
-                    }`}
+                    className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${kpi.is_up ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}
                   >
                     {kpi.trend}
                   </span>
@@ -159,12 +155,11 @@ export default function OverviewTab({
             <PerformanceChart history={history} />
           )}
         </section>
- 
+
         <section className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4 h-fit">
           <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">
             Quick Actions
           </h2>
-
           <div className="space-y-2">
             <button
               onClick={() => onNavigateTab && onNavigateTab("self-assessment")}
@@ -177,7 +172,6 @@ export default function OverviewTab({
                 Edit draft or view current review cycle
               </p>
             </button>
-
             <button
               onClick={() => onNavigateTab && onNavigateTab("career")}
               className="w-full p-3 text-left bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-xl transition-all group"
@@ -189,7 +183,6 @@ export default function OverviewTab({
                 Book a performance alignment meeting
               </p>
             </button>
-
             <button
               onClick={() => onNavigateTab && onNavigateTab("goals")}
               className="w-full p-3 text-left bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-xl transition-all group"

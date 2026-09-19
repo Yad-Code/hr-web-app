@@ -4,7 +4,7 @@
 import { useTransition, useState } from "react";
 import { ModalWrapper } from "@/app/ui/components/modal-wrapper";
 import { Goal } from "@/app/lib/employeeDashboard/performance/definitions";
-import { updateGoal } from "@/app/lib/employeeDashboard/performance/actions/goals";
+import { updateGoal } from "@/app/lib/employeeDashboard/performance/actions";
 
 interface EditGoalModalProps {
   goal: Goal;

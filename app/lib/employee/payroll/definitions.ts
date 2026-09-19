@@ -1,7 +1,6 @@
-// app/lib/employeeDashboard/payroll/definitions.ts
+// @/app/lib/employee/payroll/definitions.ts
 
 export type PayStatus = "paid" | "processing" | "scheduled" | "on_hold";
-
 export type PayItemType = "earning" | "deduction";
 
 export type PayStubItem = {
@@ -18,7 +17,7 @@ export type PayStub = {
   pay_period_start: string;
   pay_period_end: string;
   pay_date: string;
-  net_pay: number;  
+  net_pay: number;
   status: PayStatus;
   pdf_url?: string;
   items: PayStubItem[];
@@ -37,12 +36,12 @@ export type PaymentMethod = {
   id: string;
   bank_name: string;
   account_holder: string;
-  account_number_masked: string; 
+  account_number_masked: string;
   routing_or_iban: string;
   is_primary: boolean;
   status: "verified" | "pending";
 };
- 
+
 export type Document = {
   id: string;
   title: string;
@@ -57,5 +56,9 @@ export type Document = {
   file_url: string;
 };
 
-// Alias to avoid breaking imports elsewhere during refactoring
-export type PayrollDocument = Document;
+export interface PayrollDashboardData {
+  summary: CompensationSummary;
+  payStubs: PayStub[];
+  paymentMethods: PaymentMethod[];
+  documents: Document[];
+}
