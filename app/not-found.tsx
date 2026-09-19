@@ -1,6 +1,7 @@
 // @/app/not-found.tsx
 import Link from "next/link";
-import { FileQuestion, ArrowLeft, LayoutDashboard } from "lucide-react";
+import { FileQuestion, LayoutDashboard, LogOut } from "lucide-react";
+import { signOut } from "@/auth";
 
 export default function GlobalNotFound() {
   return (
@@ -18,14 +19,22 @@ export default function GlobalNotFound() {
         removed, renamed, or you may not have the required access permissions.
       </p>
 
-      <div className="flex flex-col sm:flex-row items-center gap-3">
-        <Link
-          href="/login"
-          className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-2.5 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all shadow-xs"
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+        {/* 👇 Server Action to destroy the session and redirect */}
+        <form
+          action={async () => {
+            "use server";
+            await signOut({ redirectTo: "/login" });
+          }}
         >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Login
-        </Link>
+          <button
+            type="submit"
+            className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-2.5 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:text-rose-600 transition-all shadow-xs cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" />
+            Log Out & Return
+          </button>
+        </form>
 
         <Link
           href="/dashboard"

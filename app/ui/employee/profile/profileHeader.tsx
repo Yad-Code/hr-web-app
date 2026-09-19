@@ -2,9 +2,9 @@
 
 import { useTransition, useRef } from "react";
 import Image from "next/image";
-import { handleSignOut } from "@/app/lib/employeeDashboard/employee/auth-actions";
-import { uploadProfilePicture } from "@/app/lib/employeeDashboard/employee/actions";
-import { FullEmployeeProfile } from "@/app/lib/employeeDashboard/employee/definitions";
+import { handleSignOut } from "@/app/lib/employeeDashboard/employee/auth-actions"; 
+import { uploadProfilePicture } from "@/app/lib/employeeList/actions";
+import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
 
 import { LogOut, Camera, Loader2 } from "lucide-react";
 
@@ -18,15 +18,17 @@ export default function ProfileHeader({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return; 
+    if (!file) return;
 
     const formData = new FormData();
     formData.append("avatar", file);
+    // Include the employee ID so the server action knows who to update
+    formData.append("employeeId", profile.id);
 
     startTransition(async () => {
       const result = await uploadProfilePicture(formData);
-      if (!result.success) {
-        alert(result.error || "Failed to update profile picture.");
+      if (!result?.success) {
+        alert(result?.error || "Failed to update profile picture.");
       }
     });
   };
@@ -44,7 +46,6 @@ export default function ProfileHeader({
       </div>
 
       <div className="px-6 pb-6 pt-0 relative">
-        {/* Avatar Container with Upload Overlay */}
         <div className="absolute -top-12 left-6 group">
           <div className="w-24 h-24 rounded-full bg-linear-to-tr from-indigo-500 to-blue-600 text-white font-bold text-2xl flex items-center justify-center border-4 border-white shadow-md overflow-hidden relative">
             {profile.image_url ? (
@@ -63,7 +64,6 @@ export default function ProfileHeader({
               </span>
             )}
 
-            {/* Hover Camera Overlay & Loading State */}
             <button
               type="button"
               disabled={isPending}
@@ -80,8 +80,6 @@ export default function ProfileHeader({
               )}
             </button>
           </div>
-
-          {/* Hidden File Input */}
           <input
             ref={fileInputRef}
             type="file"
@@ -112,10 +110,9 @@ export default function ProfileHeader({
           <form action={handleSignOut}>
             <button
               type="submit"
-              className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-rose-600 bg-rose-50/50 border border-rose-100/60 rounded-xl hover:bg-rose-50 transition-all active:scale-95"
+              className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-rose-600 bg-rose-50/50 border border-rose-100/60 rounded-xl hover:bg-rose-50 transition-all active:scale-95 cursor-pointer"
             >
-              <LogOut className="w-3.5 h-3.5 text-rose-400" />
-              Sign Out
+              <LogOut className="w-3.5 h-3.5 text-rose-400" /> Sign Out
             </button>
           </form>
         </div>

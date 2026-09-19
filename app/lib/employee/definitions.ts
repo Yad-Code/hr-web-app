@@ -229,3 +229,10 @@ export interface DashboardPayrollRun {
   status: string;
   pay_date: Date;
 }
+
+ 
+export interface AppCatchError extends Error {
+    code?: string | number;
+    details?: Record<string, unknown>;
+    status?: number;
+}

@@ -8,14 +8,7 @@ export const authConfig = {
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role;
-        token.id = user.id; 
-        token.isAdmin = user.isAdmin;
-        token.isManager = user.isManager;
-        token.hasEmployeeView = user.hasEmployeeView;
-        token.canEditProfile = user.canEditProfile;
-        token.canStartReviews = user.canStartReviews;
-        token.canLogFeedback = user.canLogFeedback;
-        token.canApproveLeaves = user.canApproveLeaves;
+        token.id = user.id;
       }
       return token;
     },
@@ -23,14 +16,6 @@ export const authConfig = {
       if (session.user) {
         session.user.role = token.role as string;
         session.user.id = token.id as string;
-        // Expose permissions to the client and server components
-        session.user.isAdmin = token.isAdmin as boolean;
-        session.user.isManager = token.isManager as boolean;
-        session.user.hasEmployeeView = token.hasEmployeeView as boolean;
-        session.user.canEditProfile = token.canEditProfile as boolean;
-        session.user.canStartReviews = token.canStartReviews as boolean;
-        session.user.canLogFeedback = token.canLogFeedback as boolean;
-        session.user.canApproveLeaves = token.canApproveLeaves as boolean;
       }
       return session;
     },
@@ -48,21 +33,17 @@ export const authConfig = {
         return false;
       }
 
+      const isManagement = user?.role === "admin" || user?.role === "manager";
+
       // 2. Handle Logged-in users visiting /login or root /
       if (isLoggedIn && (isOnLoginPage || path === "/")) {
-        const target =
-          user?.isAdmin || user?.isManager ? "/dashboard" : "/my-profile";
+        const target = isManagement ? "/dashboard" : "/my-profile";
         return Response.redirect(new URL(target, nextUrl));
       }
 
       // 3. Admin/Manager protection: Block standard employees from /dashboard
-      if (isOnAdminRoute && !user?.isAdmin && !user?.isManager) {
+      if (isOnAdminRoute && !isManagement) {
         return Response.redirect(new URL("/my-profile", nextUrl));
-      }
-
-      // 4. Employee portal protection: Block users who shouldn't have an employee view (e.g., strict Admins)
-      if (isOnEmployeePortal && !user?.hasEmployeeView) {
-        return Response.redirect(new URL("/dashboard", nextUrl));
       }
 
       return true;

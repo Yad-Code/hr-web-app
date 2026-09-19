@@ -5,14 +5,14 @@ import Image from "next/image";
 import { User, Settings, HelpCircle, LogOut, ChevronDown } from "lucide-react";
 import { handleSignOut } from "@/app/lib/employeeDashboard/employee/auth-actions";
 import Link from "next/link";
-// Import from the react sub-module if using NextAuth
 
+// 👇 FIXED: Removed legacy boolean flags, using standard `role` string
 interface UserDropdownProps {
   user: {
     name: string;
     email: string;
-    image_url: string | null;
-    isAdmin: boolean;
+    image_url?: string | null;
+    role?: string;
   };
 }
 
@@ -40,14 +40,21 @@ export function UserDropdown({ user }: UserDropdownProps) {
     .toUpperCase()
     .slice(0, 2);
 
-  // Client side handler execution
+  // 👇 Dynamic display text based on actual database role
+  const displayRole =
+    user.role === "admin"
+      ? "HR Administrator"
+      : user.role === "manager"
+        ? "Team Manager"
+        : "Employee";
+  const displayTeam = user.role === "admin" ? "People Ops" : "Operations";
 
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-3 text-left p-1.5 hover:bg-slate-50 rounded-xl transition-colors duration-200 active:scale-98 focus:outline-none"
+        className="flex items-center gap-3 text-left p-1.5 hover:bg-slate-50 rounded-xl transition-colors duration-200 active:scale-98 focus:outline-none cursor-pointer"
       >
         {user.image_url ? (
           <div className="relative w-9 h-9 rounded-full overflow-hidden border border-slate-200">
@@ -68,7 +75,7 @@ export function UserDropdown({ user }: UserDropdownProps) {
             {user.name}
           </p>
           <p className="text-[10px] font-medium text-slate-400 mt-0.5 uppercase tracking-wider">
-            {user.isAdmin ? "HR Administrator" : "Employee"}
+            {displayRole}
           </p>
         </div>
         <ChevronDown
@@ -78,7 +85,7 @@ export function UserDropdown({ user }: UserDropdownProps) {
 
       {/* Menu Overlay Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 overflow-hidden divide-y divide-slate-100">
+        <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 overflow-hidden divide-y divide-slate-100 animate-in fade-in slide-in-from-top-2 duration-150">
           {/* Top Info Context */}
           <div className="p-4 flex items-center gap-3 bg-slate-50/40">
             {user.image_url ? (
@@ -107,15 +114,11 @@ export function UserDropdown({ user }: UserDropdownProps) {
           <div className="p-3 bg-white text-xs space-y-2">
             <div className="flex justify-between items-center text-slate-500">
               <span className="font-medium">Role</span>
-              <span className="font-bold text-slate-800">
-                {user.isAdmin ? "HR Administrator" : "Employee"}
-              </span>
+              <span className="font-bold text-slate-800">{displayRole}</span>
             </div>
             <div className="flex justify-between items-center text-slate-500">
               <span className="font-medium">Team</span>
-              <span className="font-bold text-slate-800">
-                {user.isAdmin ? "People Ops" : "Engineering"}
-              </span>
+              <span className="font-bold text-slate-800">{displayTeam}</span>
             </div>
           </div>
 
@@ -127,11 +130,11 @@ export function UserDropdown({ user }: UserDropdownProps) {
                 My Profile
               </button>
             </Link>
-            <button className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors text-left group">
+            <button className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors text-left group cursor-pointer">
               <Settings className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
               Workspace Settings
             </button>
-            <button className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors text-left group">
+            <button className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors text-left group cursor-pointer">
               <HelpCircle className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
               Help & Support
             </button>
@@ -142,7 +145,7 @@ export function UserDropdown({ user }: UserDropdownProps) {
             <form action={handleSignOut}>
               <button
                 type="submit"
-                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors text-left group active:scale-98"
+                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors text-left group active:scale-98 cursor-pointer"
               >
                 <LogOut className="w-4 h-4 text-rose-400 group-hover:text-rose-600" />
                 Sign out

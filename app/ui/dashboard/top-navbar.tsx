@@ -26,15 +26,15 @@ interface TopNavbarProps {
     id: string;
     name: string;
     email: string;
-    image_url: string | null;
-    role: string;
-    isAdmin: boolean;
-    isManager: boolean;
+    image_url?: string | null;
+    role?: string;
   };
 }
 
 export default function TopNavbar({ user }: TopNavbarProps) {
-  const isManagement = user.isAdmin || user.isManager;
+  // 👇 Safely derive management status from the role string
+  const role = user.role?.toLowerCase() || "employee";
+  const isManagement = role === "admin" || role === "manager" || role === "hr";
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -55,10 +55,15 @@ export default function TopNavbar({ user }: TopNavbarProps) {
     async function fetchNotifications() {
       if (!user.id) return;
       setIsLoading(true);
-      const data = await getEmployeeNotifications(user.id);
-      if (isMounted) {
-        setNotifications(data);
-        setIsLoading(false);
+      try {
+        const data = await getEmployeeNotifications(user.id);
+        if (isMounted) {
+          setNotifications(data);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Failed to load notifications", error);
+        if (isMounted) setIsLoading(false);
       }
     }
 
@@ -86,11 +91,9 @@ export default function TopNavbar({ user }: TopNavbarProps) {
 
   const handleMarkAsRead = (id: string, isAlreadyRead: boolean) => {
     if (isAlreadyRead) return;
-
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
     );
-
     startTransition(async () => {
       await markNotificationAsRead(id);
     });
@@ -98,7 +101,6 @@ export default function TopNavbar({ user }: TopNavbarProps) {
 
   const handleMarkAllAsRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-
     startTransition(async () => {
       await markAllNotificationsAsRead(user.id);
     });
@@ -211,8 +213,7 @@ export default function TopNavbar({ user }: TopNavbarProps) {
                       onClick={handleMarkAllAsRead}
                       className="text-[11px] font-medium text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition cursor-pointer"
                     >
-                      <CheckCheck className="w-3.5 h-3.5" />
-                      Mark all read
+                      <CheckCheck className="w-3.5 h-3.5" /> Mark all read
                     </button>
                   )}
                   <button
@@ -227,7 +228,7 @@ export default function TopNavbar({ user }: TopNavbarProps) {
               <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
                 {isLoading ? (
                   <div className="p-8 flex items-center justify-center text-slate-400 gap-2 text-xs">
-                    <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                    <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />{" "}
                     Loading updates...
                   </div>
                 ) : notifications.length > 0 ? (
@@ -235,24 +236,15 @@ export default function TopNavbar({ user }: TopNavbarProps) {
                     <div
                       key={item.id}
                       onClick={() => handleMarkAsRead(item.id, item.read)}
-                      className={`p-3.5 flex items-start gap-3 transition cursor-pointer ${
-                        item.read
-                          ? "bg-white opacity-75 hover:opacity-100"
-                          : "bg-slate-50/60 hover:bg-slate-50"
-                      }`}
+                      className={`p-3.5 flex items-start gap-3 transition cursor-pointer ${item.read ? "bg-white opacity-75 hover:opacity-100" : "bg-slate-50/60 hover:bg-slate-50"}`}
                     >
                       <div className="p-2 rounded-xl bg-white border border-slate-200/70 shadow-xs shrink-0">
                         {getNotificationIcon(item.type)}
                       </div>
-
                       <div className="flex-1 space-y-0.5">
                         <div className="flex items-center justify-between gap-2">
                           <p
-                            className={`text-xs ${
-                              item.read
-                                ? "font-semibold text-slate-700"
-                                : "font-bold text-slate-900"
-                            }`}
+                            className={`text-xs ${item.read ? "font-semibold text-slate-700" : "font-bold text-slate-900"}`}
                           >
                             {item.title}
                           </p>
@@ -264,7 +256,6 @@ export default function TopNavbar({ user }: TopNavbarProps) {
                           {item.message}
                         </p>
                       </div>
-
                       {!item.read && (
                         <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0 mt-1" />
                       )}
@@ -282,8 +273,7 @@ export default function TopNavbar({ user }: TopNavbarProps) {
                   href="/my-profile/notifications"
                   className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 inline-flex items-center gap-1 transition"
                 >
-                  View Activity History
-                  <ExternalLink className="w-3 h-3" />
+                  View Activity History <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
             </div>
@@ -292,6 +282,7 @@ export default function TopNavbar({ user }: TopNavbarProps) {
 
         <div className="h-6 w-px bg-slate-100 hidden sm:block" />
 
+        {/* UserDropdown handles the "role" translation itself now! */}
         <UserDropdown user={user} />
       </div>
     </header>

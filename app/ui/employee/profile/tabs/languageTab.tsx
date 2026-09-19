@@ -1,3 +1,4 @@
+// @/app/ui/employee/profile/tabs/languageTab.tsx
 "use client";
 
 import React, { useState, useTransition, useRef } from "react";
@@ -21,22 +22,16 @@ import {
   PenTool,
   MessageSquare,
 } from "lucide-react";
-
-export interface LanguageEntry {
-  id: string;
-  user_id: string;
-  language: string;
-  listening: string;
-  reading: string;
-  writing: string;
-  speaking: string;
-  created_by: string;
-  document_url?: string | null;
-  created_at?: string;
-}
+ 
+import { LanguageItem } from "@/app/lib/employee/definitions";
+import {
+  addLanguageAction,
+  deleteLanguageAction,
+  updateLanguageDocumentAction,
+} from "@/app/lib/employee/profile/actions";
 
 interface LanguageTabProps {
-  languageHistory: LanguageEntry[];
+  languageHistory: LanguageItem[];
   userId: string;
   employeeId?: string;
   employeeName?: string;
@@ -69,7 +64,7 @@ export default function LanguageTab({
     currentUrl?: string | null;
   } | null>(null);
   const [documentUrlInput, setDocumentUrlInput] = useState("");
-  const [selectedItem, setSelectedItem] = useState<LanguageEntry | null>(null);
+  const [selectedItem, setSelectedItem] = useState<LanguageItem | null>(null);
 
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -90,9 +85,7 @@ export default function LanguageTab({
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleReset = () => {
-    setFormData(initialFormState);
-  };
+  const handleReset = () => setFormData(initialFormState);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,8 +94,6 @@ export default function LanguageTab({
 
     startTransition(async () => {
       try {
-        const { addLanguageAction } =
-          await import("@/app/lib/employee/profile/actions");
         await addLanguageAction(userId, employeeName, data);
         handleReset();
       } catch (err) {
@@ -113,15 +104,12 @@ export default function LanguageTab({
 
   const confirmDelete = () => {
     if (!itemToDelete) return;
-
     const id = itemToDelete;
     setItemToDelete(null);
     setDeletingId(id);
 
     startTransition(async () => {
       try {
-        const { deleteLanguageAction } =
-          await import("@/app/lib/employee/profile/actions");
         await deleteLanguageAction(id);
       } catch (err) {
         console.error("Failed to delete language entry:", err);
@@ -146,12 +134,10 @@ export default function LanguageTab({
 
     const targetId = docModalItem.id;
     const urlToSave = documentUrlInput.trim() || null;
-
     setDocModalItem(null);
+
     startTransition(async () => {
       try {
-        const { updateLanguageDocumentAction } =
-          await import("@/app/lib/employee/profile/actions");
         await updateLanguageDocumentAction(targetId, urlToSave);
       } catch (err) {
         console.error("Failed to update document URL:", err);
@@ -173,7 +159,6 @@ export default function LanguageTab({
               Employee Information
             </h2>
           </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <InputField
               label="Employee ID"
@@ -212,7 +197,6 @@ export default function LanguageTab({
                 icon={Languages}
                 required
               />
-
               <SelectField
                 label="Listening Proficiency"
                 name="listening"
@@ -222,7 +206,6 @@ export default function LanguageTab({
                 icon={Volume2}
                 required
               />
-
               <SelectField
                 label="Reading Proficiency"
                 name="reading"
@@ -232,7 +215,6 @@ export default function LanguageTab({
                 icon={BookOpen}
                 required
               />
-
               <SelectField
                 label="Writing Proficiency"
                 name="writing"
@@ -242,7 +224,6 @@ export default function LanguageTab({
                 icon={PenTool}
                 required
               />
-
               <SelectField
                 label="Speaking Proficiency"
                 name="speaking"
@@ -252,7 +233,6 @@ export default function LanguageTab({
                 icon={MessageSquare}
                 required
               />
-
               <InputField
                 label="Document / Certificate Link"
                 name="document_url"
@@ -270,8 +250,7 @@ export default function LanguageTab({
                 disabled={isPending}
                 className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 rounded-lg transition-colors cursor-pointer"
               >
-                <RotateCcw className="w-4 h-4" />
-                Reset
+                <RotateCcw className="w-4 h-4" /> Reset
               </button>
               <button
                 type="submit"
@@ -282,7 +261,7 @@ export default function LanguageTab({
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <Save className="w-4 h-4" />
-                )}
+                )}{" "}
                 Save
               </button>
             </div>
@@ -320,7 +299,6 @@ export default function LanguageTab({
                 >
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-2">
-                      {/* View Details Button */}
                       <button
                         type="button"
                         onClick={() => setSelectedItem(lang)}
@@ -329,8 +307,6 @@ export default function LanguageTab({
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-
-                      {/* View External Certificate */}
                       {lang.document_url && (
                         <a
                           href={lang.document_url}
@@ -342,8 +318,6 @@ export default function LanguageTab({
                           <ExternalLink className="w-4 h-4" />
                         </a>
                       )}
-
-                      {/* Attach/Edit Document */}
                       <button
                         type="button"
                         onClick={() =>
@@ -353,19 +327,13 @@ export default function LanguageTab({
                             lang.document_url,
                           )
                         }
-                        className={`p-1.5 rounded-md transition-colors cursor-pointer ${
-                          lang.document_url
-                            ? "text-indigo-600 hover:bg-indigo-50"
-                            : "text-blue-600 hover:bg-blue-50"
-                        }`}
+                        className={`p-1.5 rounded-md transition-colors cursor-pointer ${lang.document_url ? "text-indigo-600 hover:bg-indigo-50" : "text-blue-600 hover:bg-blue-50"}`}
                         title={
                           lang.document_url ? "Update Document" : "Add Document"
                         }
                       >
                         <FilePlus className="w-4 h-4" />
                       </button>
-
-                      {/* Delete Record */}
                       <button
                         type="button"
                         onClick={() => setItemToDelete(lang.id)}
@@ -441,41 +409,34 @@ export default function LanguageTab({
                 </button>
               </div>
 
-              {/* Grid of Competencies */}
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="space-y-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <Volume2 className="w-3.5 h-3.5 text-slate-400" />
-                    Listening
+                    <Volume2 className="w-3.5 h-3.5 text-slate-400" /> Listening
                   </span>
                   <div>
                     <ProficiencyBadge level={selectedItem.listening} />
                   </div>
                 </div>
-
                 <div className="space-y-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <BookOpen className="w-3.5 h-3.5 text-slate-400" />
-                    Reading
+                    <BookOpen className="w-3.5 h-3.5 text-slate-400" /> Reading
                   </span>
                   <div>
                     <ProficiencyBadge level={selectedItem.reading} />
                   </div>
                 </div>
-
                 <div className="space-y-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <PenTool className="w-3.5 h-3.5 text-slate-400" />
-                    Writing
+                    <PenTool className="w-3.5 h-3.5 text-slate-400" /> Writing
                   </span>
                   <div>
                     <ProficiencyBadge level={selectedItem.writing} />
                   </div>
                 </div>
-
                 <div className="space-y-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
+                    <MessageSquare className="w-3.5 h-3.5 text-slate-400" />{" "}
                     Speaking
                   </span>
                   <div>
@@ -484,7 +445,6 @@ export default function LanguageTab({
                 </div>
               </div>
 
-              {/* Document Link Card */}
               {selectedItem.document_url ? (
                 <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-3 flex items-center justify-between">
                   <div className="flex items-center gap-2 overflow-hidden">
@@ -499,8 +459,7 @@ export default function LanguageTab({
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shrink-0 ml-2"
                   >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    View
+                    <ExternalLink className="w-3.5 h-3.5" /> View
                   </a>
                 </div>
               ) : (
@@ -509,7 +468,6 @@ export default function LanguageTab({
                 </div>
               )}
             </div>
-
             <div className="bg-slate-50 px-6 py-4 flex items-center justify-end border-t border-slate-100">
               <button
                 type="button"
@@ -541,7 +499,6 @@ export default function LanguageTab({
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-
                 <div>
                   <h3 className="text-base font-bold text-slate-900">
                     Attach Language Certificate
@@ -554,7 +511,6 @@ export default function LanguageTab({
                     .
                   </p>
                 </div>
-
                 <InputField
                   label="Document URL"
                   type="url"
@@ -565,7 +521,6 @@ export default function LanguageTab({
                   required
                 />
               </div>
-
               <div className="bg-slate-50 px-6 py-4 flex items-center justify-end gap-3 border-t border-slate-100">
                 <button
                   type="button"
@@ -603,7 +558,6 @@ export default function LanguageTab({
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               <div>
                 <h3 className="text-base font-bold text-slate-900">
                   Delete Language Record
@@ -614,7 +568,6 @@ export default function LanguageTab({
                 </p>
               </div>
             </div>
-
             <div className="bg-slate-50 px-6 py-4 flex items-center justify-end gap-3 border-t border-slate-100">
               <button
                 type="button"
@@ -638,11 +591,8 @@ export default function LanguageTab({
   );
 }
 
-// Reusable Proficiency Badge Component
 function ProficiencyBadge({ level }: { level: string }) {
-  // Extract level code (e.g. "B1" from "B1 - Intermediate")
   const code = level ? level.split(" ")[0] : "N/A";
-
   return (
     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
       {code}
@@ -650,7 +600,6 @@ function ProficiencyBadge({ level }: { level: string }) {
   );
 }
 
-// Reusable Input Field Component
 function InputField({
   label,
   type = "text",
@@ -674,9 +623,7 @@ function InputField({
         )}
         <input
           type={type}
-          className={`w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-all disabled:opacity-60 disabled:bg-slate-100/80 ${
-            Icon ? "pl-9" : ""
-          }`}
+          className={`w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-all disabled:opacity-60 disabled:bg-slate-100/80 ${Icon ? "pl-9" : ""}`}
           placeholder={placeholder}
           {...props}
         />
@@ -685,7 +632,6 @@ function InputField({
   );
 }
 
-// Reusable Select Field Component
 function SelectField({
   label,
   options,
@@ -708,9 +654,7 @@ function SelectField({
           </div>
         )}
         <select
-          className={`w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-all cursor-pointer ${
-            Icon ? "pl-9" : ""
-          }`}
+          className={`w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-all cursor-pointer ${Icon ? "pl-9" : ""}`}
           {...props}
         >
           <option value="">Select Level...</option>

@@ -1,9 +1,9 @@
 // @/app/(employee)/layout.tsx
 
-import SideNav from "../ui/dashboard/sidnav";
-import TopNavbar  from "@/app/ui/employee/top-navbar";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import SideNav from "../ui/dashboard/sidnav";
+import TopNavbar  from "@/app/ui/employee/top-navbar";
 import { PresenceHeartbeat } from "@/app/providers/PresenceHeartbeat";
 
 export default async function Layout({

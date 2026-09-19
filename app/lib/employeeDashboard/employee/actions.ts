@@ -1,175 +1,18 @@
+// @/app/lib/employeeDashboard/employee/actions.ts
 "use server";
 
 import { auth } from "@/auth";
-import { put, del } from "@vercel/blob";
-import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { ActionState } from "./definitions";
 import {
   getFormattedTime,
   calculateWorkHours,
 } from "@/app/lib/employeeDashboard/employee/data";
-import { sql } from "@/app/lib/employeeDashboard/employee/db";
-
-export async function uploadProfilePicture(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.email) {
-    return { success: false, error: "Unauthorized" };
-  }
-
-  const file = formData.get("avatar") as File;
-  if (!file || file.size === 0) {
-    return { success: false, error: "No file provided" };
-  }
-
-  if (!file.type.startsWith("image/")) {
-    return { success: false, error: "File must be an image" };
-  }
-  if (file.size > 4 * 1024 * 1024) {
-    return { success: false, error: "Image must be smaller than 4MB" };
-  }
-
-  try {
-    const existingUser = await sql`
-      SELECT image_url FROM users WHERE email = ${session.user.email}
-    `;
-    const oldImageUrl = existingUser[0]?.image_url;
-
-    // 1. Upload new image to Vercel Blob
-    const blob = await put(
-      `avatars/${session.user.email}-${Date.now()}`,
-      file,
-      { access: "public" },
-    );
-
-    // 2. Update Postgres database
-    await sql`
-      UPDATE users 
-      SET image_url = ${blob.url} 
-      WHERE email = ${session.user.email}
-    `;
-
-    // 3. Clean up old blob image safely
-    if (oldImageUrl && oldImageUrl.includes("public.blob.vercel-storage.com")) {
-      try {
-        await del(oldImageUrl);
-      } catch (e) {
-        console.warn("Failed to delete old blob:", e);
-      }
-    }
-
-    // 4. Revalidate cache for all profile & team views
-    revalidatePath("/my-profile");
-    revalidatePath("/employees");
-
-    return { success: true, url: blob.url };
-  } catch (error) {
-    console.error("Avatar upload failed:", error);
-    return { success: false, error: "Failed to upload image" };
-  }
-}
-
-const ProfileUpdateSchema = z.object({
-  preferredName: z
-    .string()
-    .trim()
-    .min(1, { message: "Preferred name is required." }),
-  maritalStatus: z.enum(["Single", "Married", "Divorced", "Widowed"], {
-    message: "Please select a valid marital status.",
-  }),
-  bloodGroup: z.enum(
-    ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "Unknown"],
-    {
-      message: "Please select a valid blood group.",
-    },
-  ),
-  personalEmail: z
-    .string()
-    .email({ message: "Invalid personal email address." }),
-  personalPhone: z.string().trim().optional(),
-  currentAddress: z.string().trim().optional(),
-});
-
-export async function updateEmployeeProfile(
-  prevState: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const session = await auth();
-
-  if (!session?.user?.email) {
-    return {
-      success: false,
-      error: "Unauthorized",
-    };
-  }
-
-  const rawData = {
-    preferredName: formData.get("preferredName"),
-    maritalStatus: formData.get("maritalStatus"),
-    bloodGroup: formData.get("bloodGroup"),
-    personalEmail: formData.get("personalEmail"),
-    personalPhone: formData.get("personalPhone"),
-    currentAddress: formData.get("currentAddress"),
-  };
-
-  const validatedFields = ProfileUpdateSchema.safeParse(rawData);
-
-  if (!validatedFields.success) {
-    const flattenedErrors = validatedFields.error.flatten().fieldErrors;
-
-    console.error("Validation errors:", flattenedErrors);
-
-    return {
-      success: false,
-      error:
-        "Invalid form data. Check your inputs (e.g. Marital Status capitalization).",
-      fieldErrors: flattenedErrors,
-    };
-  }
-
-  const {
-    preferredName,
-    maritalStatus,
-    bloodGroup,
-    personalEmail,
-    personalPhone,
-    currentAddress,
-  } = validatedFields.data;
-
-  // 3. Update database
-  try {
-    await sql`
-      UPDATE users  
-      SET 
-        preferred_name = ${preferredName},
-        marital_status = ${maritalStatus},
-        blood_group = ${bloodGroup},
-        personal_email = ${personalEmail},
-        personal_phone = ${personalPhone || null},
-        current_address = ${currentAddress || null}
-      WHERE email = ${session.user.email}
-    `;
-
-    // 4. Trigger Next.js cache revalidation
-    revalidatePath("/my-profile");
-
-    return { success: true };
-  } catch (error) {
-    console.error("Database update failed:", error);
-
-    return {
-      success: false,
-      error: "Database error occurred while updating profile.",
-    };
-  }
-}
+import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
+import { AppCatchError } from "@/app/lib/employee/definitions";  
 
 function getLocalDateString(): string {
   const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
 export async function toggleCheckInStatus(
@@ -177,62 +20,32 @@ export async function toggleCheckInStatus(
 ) {
   try {
     const session = await auth();
+    if (!session?.user?.id) return { success: false, error: "Unauthorized" };
 
-    if (!session?.user?.email) {
-      return {
-        success: false,
-        error: "Unauthorized: Missing user session email.",
-      };
-    }
+    const userId = session.user.id;
+    const userQuery =
+      await db`SELECT u.id, u.working_days, u.shift_start, r.grace_period_minutes FROM users u LEFT JOIN shift_rules r ON u.shift_type = r.shift_name WHERE u.id = ${userId}::uuid`;
 
-    // 1. Fetch user data AND join with shift_rules for the grace period
-    const userQuery = await sql`
-      SELECT 
-        u.id, 
-        u.working_days,
-        u.shift_start,
-        r.grace_period_minutes
-      FROM users u
-      LEFT JOIN shift_rules r ON u.shift_type = r.shift_name
-      WHERE u.email = ${session.user.email}
-    `;
-
-    if (!userQuery || userQuery.length === 0) {
-      return { success: false, error: "User not found in the database." };
-    }
+    if (!userQuery.length) return { success: false, error: "User not found." };
 
     const user = userQuery[0];
-    const userId = user.id;
     const workingDays = user.working_days || [1, 2, 3, 4, 5];
 
-    // 2. Use your existing helpers for accurate local time
     const todayStr = getLocalDateString();
     const timeString12hr = getFormattedTime();
     const now = new Date();
 
-    // 3. Determine if today is an actual working day (check overrides)
     const [y, m, d] = todayStr.split("-");
     const dayOfWeek = new Date(Number(y), Number(m) - 1, Number(d)).getDay();
     let isWorkingDay = workingDays.includes(dayOfWeek);
 
-    const overrideQuery = await sql`
-      SELECT is_working FROM schedule_overrides 
-      WHERE user_id = ${userId} AND target_date = ${todayStr}
-    `;
+    const overrideQuery =
+      await db`SELECT is_working FROM schedule_overrides WHERE user_id = ${userId}::uuid AND target_date = ${todayStr}`;
+    if (overrideQuery.length > 0) isWorkingDay = overrideQuery[0].is_working;
 
-    if (overrideQuery && overrideQuery.length > 0) {
-      isWorkingDay = overrideQuery[0].is_working;
-    }
+    const existingLog =
+      await db`SELECT id, check_in, check_out FROM attendance WHERE user_id = ${userId}::uuid AND date = ${todayStr} LIMIT 1`;
 
-    // 4. Check if they already have a log for today
-    const existingLog = await sql`
-      SELECT id, check_in, check_out 
-      FROM attendance 
-      WHERE user_id = ${userId} AND date = ${todayStr} 
-      LIMIT 1
-    `;
-
-    // Block NEW check-ins on off-days, but ALWAYS allow check-outs if a record exists
     if (!isWorkingDay && (!existingLog || existingLog.length === 0)) {
       return {
         success: false,
@@ -242,27 +55,16 @@ export async function toggleCheckInStatus(
 
     if (existingLog && existingLog.length > 0) {
       const log = existingLog[0];
-
-      if (log.check_out) {
+      if (log.check_out)
         return { success: false, error: "Shift already completed for today." };
-      }
 
-      // --- CHECK OUT LOGIC ---
       const checkInTime = log.check_in || timeString12hr;
-      // Use your existing helper to calculate the hours!
       const workHoursStr = calculateWorkHours(checkInTime, timeString12hr);
 
-      await sql`
-        UPDATE attendance 
-        SET check_out = ${timeString12hr}, work_hours = ${workHoursStr}
-        WHERE id = ${log.id}
-      `;
+      await db`UPDATE attendance SET check_out = ${timeString12hr}, work_hours = ${workHoursStr} WHERE id = ${log.id}::uuid`;
     } else {
-      // --- CHECK IN LOGIC ---
-      // Dynamically calculate "Late" vs "Present" based on Shift Rules
       const shiftStart = user.shift_start || "09:00:00";
       const gracePeriod = user.grace_period_minutes || 15;
-
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
       const [startHour, startMin] = shiftStart.split(":").map(Number);
       const shiftStartMinutes = startHour * 60 + startMin;
@@ -270,61 +72,48 @@ export async function toggleCheckInStatus(
       const isLate = currentMinutes > shiftStartMinutes + gracePeriod;
       const status = isLate ? "Late" : "Present";
 
-      await sql`
-        INSERT INTO attendance (user_id, date, check_in, status, work_location)
-        VALUES (${userId}, ${todayStr}, ${timeString12hr}, ${status}, ${location})
-      `;
+      await db`INSERT INTO attendance (user_id, date, check_in, status, work_location) VALUES (${userId}::uuid, ${todayStr}, ${timeString12hr}, ${status}, ${location})`;
     }
 
     revalidatePath("/my-profile/attendance");
     return { success: true };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("Check-In Error:", error);
-    return { success: false, error: `Server error: ${message}` };
+    // 👇 Safely cast the unknown error
+    const e = (
+      error instanceof Error ? error : new Error(String(error))
+    ) as AppCatchError;
+    console.error("Check-In Error:", e);
+    return { success: false, error: `Server error: ${e.message}` };
   }
 }
 
 export async function submitWFHRequest(formData: FormData) {
   const session = await auth();
+  if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+
   const helperId = formData.get("helperId") as string | null;
-
-  if (!session?.user?.email) {
-    return { success: false, error: "Unauthorized" };
-  }
-
   const type = (formData.get("type") as string) || "wfh";
   const reason = formData.get("reason") as string;
 
-  if (!reason) {
-    return { success: false, error: "Reason is required." };
-  }
+  if (!reason) return { success: false, error: "Reason is required." };
 
-  try { 
-    const userQuery = await sql`
-      SELECT id, manager_id FROM users WHERE email = ${session.user.email}
-    `;
-
-    if (!userQuery || userQuery.length === 0) {
-      return { success: false, error: "User not found in database." };
-    }
+  try {
+    const userQuery =
+      await db`SELECT id, manager_id FROM users WHERE id = ${session.user.id}::uuid`;
+    if (!userQuery.length) return { success: false, error: "User not found." };
 
     const userId = userQuery[0].id;
     const managerId = userQuery[0].manager_id;
+    const [balance] =
+      await db`SELECT annual_remaining, sick_remaining, monthly_remaining_hours FROM leave_balances WHERE user_id = ${userId}::uuid`;
 
-    const [balance] = await sql`
-      SELECT annual_remaining, sick_remaining, monthly_remaining_hours
-      FROM leave_balances
-      WHERE user_id = ${userId}
-    `;
-
-    let startDate: string | null = null;
-    let endDate: string | null = null;
-    let leaveCategory: string | null = null;
-    let totalDays: number = 0;
-    let hours: number = 0;
-    let originalDate: string | null = null;
-    let exchangeDate: string | null = null;
+    let startDate: string | null = null,
+      endDate: string | null = null,
+      leaveCategory: string | null = null;
+    let totalDays = 0,
+      hours = 0;
+    let originalDate: string | null = null,
+      exchangeDate: string | null = null;
 
     if (type === "wfh") {
       startDate = formData.get("date") as string;
@@ -338,114 +127,58 @@ export async function submitWFHRequest(formData: FormData) {
       leaveCategory = (formData.get("leaveCategory") as string) || "annual";
       totalDays = Number(formData.get("totalDays")) || 1;
 
-      if (!startDate || !endDate) {
-        return { success: false, error: "Start and end dates are required." };
-      }
+      if (!startDate || !endDate)
+        return { success: false, error: "Start and end dates required." };
 
       if (balance) {
-        if (
-          leaveCategory === "annual" &&
-          totalDays > balance.annual_remaining
-        ) {
-          return {
-            success: false,
-            error: `Insufficient Annual Leave (${balance.annual_remaining} days remaining).`,
-          };
-        }
-        if (leaveCategory === "sick" && totalDays > balance.sick_remaining) {
-          return {
-            success: false,
-            error: `Insufficient Sick Leave (${balance.sick_remaining} days remaining).`,
-          };
-        }
+        if (leaveCategory === "annual" && totalDays > balance.annual_remaining)
+          return { success: false, error: "Insufficient Annual Leave." };
+        if (leaveCategory === "sick" && totalDays > balance.sick_remaining)
+          return { success: false, error: "Insufficient Sick Leave." };
       }
     } else if (type === "timeoff") {
       startDate = formData.get("date") as string;
       endDate = startDate;
       hours = Number(formData.get("hours")) || 0;
 
-      if (!startDate || hours <= 0) {
-        return { success: false, error: "Date and valid hours are required." };
-      }
-
-      if (balance && hours > balance.monthly_remaining_hours) {
-        return {
-          success: false,
-          error: `Insufficient monthly hours (${balance.monthly_remaining_hours} hrs remaining).`,
-        };
-      }
+      if (!startDate || hours <= 0)
+        return { success: false, error: "Valid date and hours required." };
+      if (balance && hours > balance.monthly_remaining_hours)
+        return { success: false, error: "Insufficient monthly hours." };
     } else if (type === "exchange") {
       originalDate = formData.get("originalDate") as string;
       exchangeDate = formData.get("exchangeDate") as string;
-
-      if (!originalDate || !exchangeDate) {
+      if (!originalDate || !exchangeDate)
         return {
           success: false,
-          error: "Original date and exchange date are required.",
+          error: "Original and exchange dates required.",
         };
-      }
     }
 
     const helperStatus = type === "exchange" ? "Pending" : "N/A";
 
-    await sql`
-      INSERT INTO leave_requests (
-        user_id,
-        type,
-        leave_category,
-        start_date,
-        end_date,
-        total_days,
-        hours,
-        original_date,
-        exchange_date,
-        helper_id,
-        helper_status,
-        reason,
-        status
-      )
-      VALUES (
-        ${userId},
-        ${type},
-        ${leaveCategory || null},
-        ${startDate || null},
-        ${endDate || null},
-        ${totalDays},
-        ${hours},
-        ${originalDate || null},
-        ${exchangeDate || null},
-        ${helperId || null},
-        ${helperStatus},
-        ${reason},
-        'Pending'
-      )
+    await db`
+      INSERT INTO leave_requests (user_id, type, leave_category, start_date, end_date, total_days, hours, original_date, exchange_date, helper_id, helper_status, reason, status)
+      VALUES (${userId}::uuid, ${type}, ${leaveCategory || null}, ${startDate || null}, ${endDate || null}, ${totalDays}, ${hours}, ${originalDate || null}, ${exchangeDate || null}, ${helperId ? `${helperId}::uuid` : null}, ${helperStatus}, ${reason}, 'Pending')
     `;
 
-    
-
     if (type === "exchange" && helperId) {
-      await sql`
-        INSERT INTO performance_notifications (user_id, requester_id, title, description, type)
-        VALUES (${helperId}, ${userId}, 'Shift Exchange Request', 'Someone wants to trade shifts with you.', 'Exchange')
-      `;
-    } else if (managerId) { 
-      await sql`
-        INSERT INTO performance_notifications (user_id, requester_id, title, description, type)
-        VALUES (${managerId}, ${userId}, 'New Leave Request', 'An employee has requested time off pending your approval.', 'Leave')
-      `;
+      await db`INSERT INTO performance_notifications (user_id, requester_id, title, description, type) VALUES (${helperId}::uuid, ${userId}::uuid, 'Shift Exchange Request', 'Someone wants to trade shifts with you.', 'Exchange')`;
+    } else if (managerId) {
+      await db`INSERT INTO performance_notifications (user_id, requester_id, title, description, type) VALUES (${managerId}::uuid, ${userId}::uuid, 'New Leave Request', 'An employee has requested time off pending your approval.', 'Leave')`;
     }
 
     revalidatePath("/my-profile/attendance");
     revalidatePath("/dashboard");
-
     return { success: true };
-  } catch (error) {
-    console.error("Leave request error:", error);
+  } catch (error: unknown) {
+    const e = (
+      error instanceof Error ? error : new Error(String(error))
+    ) as AppCatchError;
+    console.error("Leave request error:", e);
     return { success: false, error: "Could not submit leave request." };
   }
 }
-
- 
 
 export async function respondToExchangeRequest(
   requestId: string,
@@ -453,65 +186,40 @@ export async function respondToExchangeRequest(
 ) {
   try {
     if (status === "Rejected") {
-      await sql`
-        UPDATE leave_requests 
-        SET helper_status = 'Rejected', status = 'Rejected' 
-        WHERE id = ${requestId}
-      `;
+      await db`UPDATE leave_requests SET helper_status = 'Rejected', status = 'Rejected' WHERE id = ${requestId}::uuid`;
     } else {
-      await sql`
-        UPDATE leave_requests 
-        SET helper_status = 'Accepted' 
-        WHERE id = ${requestId}
-      `;
- 
-      const reqQuery = await sql`
-        SELECT r.user_id, u.manager_id 
-        FROM leave_requests r 
-        JOIN users u ON r.user_id = u.id 
-        WHERE r.id = ${requestId}
-      `;
-
-      if (reqQuery && reqQuery.length > 0) {
-        const req = reqQuery[0];
-         
-        if (req.manager_id) {
-            await sql`
-              INSERT INTO performance_notifications (user_id, requester_id, title, description, type)
-              VALUES (${req.manager_id}, ${req.user_id}, 'Shift Swap Ready', 'A shift swap was accepted by a coworker and requires final approval.', 'Exchange')
-            `;
-        }
+      await db`UPDATE leave_requests SET helper_status = 'Accepted' WHERE id = ${requestId}::uuid`;
+      const reqQuery =
+        await db`SELECT r.user_id, u.manager_id FROM leave_requests r JOIN users u ON r.user_id = u.id WHERE r.id = ${requestId}::uuid`;
+      if (reqQuery.length > 0 && reqQuery[0].manager_id) {
+        await db`INSERT INTO performance_notifications (user_id, requester_id, title, description, type) VALUES (${reqQuery[0].manager_id}::uuid, ${reqQuery[0].user_id}::uuid, 'Shift Swap Ready', 'A shift swap was accepted and requires final approval.', 'Exchange')`;
       }
     }
-
     revalidatePath("/", "layout");
     return { success: true };
-  } catch (error) {
-    console.error("Failed to respond to exchange:", error);
+  } catch (error: unknown) {
+    const e = (
+      error instanceof Error ? error : new Error(String(error))
+    ) as AppCatchError;
+    console.error("Failed to respond to exchange:", e);
     return { success: false, error: "Failed to update request." };
   }
 }
- 
 
 export async function exportAttendanceCSV(monthStr?: string) {
   try {
     const session = await auth();
-    if (!session?.user?.email) return { success: false, error: "Unauthorized" };
+    if (!session?.user?.id) return { success: false, error: "Unauthorized" };
 
-    const userQuery = await sql`
-      SELECT id, name, working_days FROM users WHERE email = ${session.user.email}
-    `;
-    if (!userQuery || userQuery.length === 0) {
-      return { success: false, error: "User not found." };
-    }
+    const userId = session.user.id;
+    const userQuery =
+      await db`SELECT id, name, working_days FROM users WHERE id = ${userId}::uuid`;
+    if (!userQuery.length) return { success: false, error: "User not found." };
 
     const user = userQuery[0];
     const workingDays = user.working_days || [1, 2, 3, 4, 5];
 
-    // Determine target year and month based on input or current date
-    let yearNum: number;
-    let monthNum: number;
-
+    let yearNum: number, monthNum: number;
     if (monthStr && /^\d{4}-\d{2}$/.test(monthStr)) {
       const [y, m] = monthStr.split("-");
       yearNum = parseInt(y, 10);
@@ -523,18 +231,13 @@ export async function exportAttendanceCSV(monthStr?: string) {
     }
 
     const daysInMonth = new Date(yearNum, monthNum + 1, 0).getDate();
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const logs = await sql`
-      SELECT date, check_in, check_out, work_hours, status, work_location 
-      FROM attendance WHERE user_id = ${user.id}
-    `;
-    const overrides = await sql`
-      SELECT target_date, is_working 
-      FROM schedule_overrides WHERE user_id = ${user.id}
-    `;
+    const logs =
+      await db`SELECT date, check_in, check_out, work_hours, status, work_location FROM attendance WHERE user_id = ${userId}::uuid`;
+    const overrides =
+      await db`SELECT target_date, is_working FROM schedule_overrides WHERE user_id = ${userId}::uuid`;
 
     const headers = [
       "Date",
@@ -548,31 +251,24 @@ export async function exportAttendanceCSV(monthStr?: string) {
 
     for (let i = 1; i <= daysInMonth; i++) {
       const dateObj = new Date(yearNum, monthNum, i);
-
-      const y = dateObj.getFullYear();
-      const m = String(dateObj.getMonth() + 1).padStart(2, "0");
-      const d = String(dateObj.getDate()).padStart(2, "0");
-      const dbDateStr = `${y}-${m}-${d}`;
-
+      const dbDateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}-${String(dateObj.getDate()).padStart(2, "0")}`;
       const displayDate = dateObj.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
         year: "numeric",
       });
 
-      const log = logs.find((l) => {
-        const lDate =
-          typeof l.date === "string" ? l.date : l.date.toISOString();
-        return lDate.startsWith(dbDateStr);
-      });
-
-      const override = overrides.find((o) => {
-        const oDate =
-          typeof o.target_date === "string"
-            ? o.target_date
-            : o.target_date.toISOString();
-        return oDate.startsWith(dbDateStr);
-      });
+      const log = logs.find((l) =>
+        (typeof l.date === "string" ? l.date : l.date.toISOString()).startsWith(
+          dbDateStr,
+        ),
+      );
+      const override = overrides.find((o) =>
+        (typeof o.target_date === "string"
+          ? o.target_date
+          : o.target_date.toISOString()
+        ).startsWith(dbDateStr),
+      );
 
       let isWorkingDay = workingDays.includes(dateObj.getDay());
       let overrideBadge = null;
@@ -603,20 +299,22 @@ export async function exportAttendanceCSV(monthStr?: string) {
           location = dateObj.getTime() === today.getTime() ? "Pending" : "--";
         }
       }
-
       csvRows.push(
         `"${displayDate}","${checkIn}","${checkOut}","${workHours}","${location}","${status}"`,
       );
     }
- 
     csvRows.reverse();
-
     const csvContent = [headers.join(","), ...csvRows].join("\n");
-    const filename = `${user.name.replace(/\s+/g, "_")}_Timesheet_${yearNum}_${String(monthNum + 1).padStart(2, "0")}.csv`;
-
-    return { success: true, csv: csvContent, filename };
-  } catch (error) {
-    console.error("Export Error:", error);
+    return {
+      success: true,
+      csv: csvContent,
+      filename: `${user.name.replace(/\s+/g, "_")}_Timesheet_${yearNum}_${String(monthNum + 1).padStart(2, "0")}.csv`,
+    };
+  } catch (error: unknown) {
+    const e = (
+      error instanceof Error ? error : new Error(String(error))
+    ) as AppCatchError;
+    console.error("Export Error:", e);
     return { success: false, error: "Failed to generate export file." };
   }
 }

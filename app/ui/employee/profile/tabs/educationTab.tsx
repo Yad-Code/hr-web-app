@@ -80,15 +80,13 @@ export default function EducationTab({
   const [isPending, startTransition] = useTransition();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // Modal States
+ 
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [docModalItem, setDocModalItem] = useState<{
     id: string;
     level: string;
   } | null>(null);
-
-  // State for the View Full Details Modal
+ 
   const [selectedItem, setSelectedItem] = useState<
     ExtendedEducationTabProps["educationHistory"][number] | null
   >(null);

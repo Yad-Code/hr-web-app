@@ -25,34 +25,7 @@ async function getUser(email: string) {
     `;
 
     if (userResult.length === 0) return null;
-    const user = userResult[0];
- 
-    const perms = await sql`
-      SELECT p.action 
-      FROM user_permissions up
-      JOIN permissions p ON up.permission_id = p.id
-      WHERE up.user_id = ${user.id}
-    `;
- 
-    const actions = perms.map((p) => p.action);
- 
-    return {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      password_hash: user.password_hash,
-      role: user.role,
-      image_url: user.image_url,
-      // Derive boolean flags from the new role and permission tables
-      isAdmin: user.role === "admin",
-      isManager:
-        user.role === "manager" || user.role === "hr" || user.role === "admin",
-      hasEmployeeView: true,
-      canEditProfile: true,
-      canStartReviews: actions.includes("start_reviews"),
-      canLogFeedback: actions.includes("log_feedback"),
-      canApproveLeaves: actions.includes("approve_leaves"),
-    };
+    return userResult[0];
   } catch (err) {
     console.error("Failed to fetch user:", err);
     return null;
@@ -70,25 +43,16 @@ export async function verifyUserCredentials(email: string, password: string) {
   const user = await getUser(cleanEmail);
   if (!user) return null;
 
-  const passwordsMatch = await bcrypt.compare(
-    cleanPassword,
-    user.password_hash,
-  );
+  const passwordsMatch = await bcrypt.compare(cleanPassword, user.password_hash);
 
   if (passwordsMatch) { 
+    // 👇 Provide only strict identity fields, no booleans
     return {
       id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
       image: user.image_url,
-      isAdmin: user.isAdmin,
-      isManager: user.isManager,
-      hasEmployeeView: user.hasEmployeeView,
-      canEditProfile: user.canEditProfile,
-      canStartReviews: user.canStartReviews,
-      canLogFeedback: user.canLogFeedback,
-      canApproveLeaves: user.canApproveLeaves,
     };
   }
 
@@ -99,10 +63,7 @@ export async function handleSignOut() {
   await signOut({ redirectTo: "/login" });
 }
 
-export async function authenticate(
-  prevState: string | undefined,
-  formData: FormData,
-) {
+export async function authenticate(prevState: string | undefined, formData: FormData) {
   try {
     const rawFields = Object.fromEntries(formData.entries());
     const validatedFields = LoginSchema.safeParse(rawFields);
@@ -112,11 +73,10 @@ export async function authenticate(
     }
 
     const { email, password } = validatedFields.data;
-
     const user = await getUser(email);
  
-    const destination =
-      user?.isAdmin || user?.isManager ? "/dashboard" : "/my-profile";
+    // 👇 Route based on the role string
+    const destination = user?.role === "admin" || user?.role === "manager" ? "/dashboard" : "/my-profile";
 
     await signIn("credentials", {
       email,
@@ -126,10 +86,8 @@ export async function authenticate(
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
-        case "CredentialsSignin":
-          return "Invalid credentials.";
-        default:
-          return "Something went wrong.";
+        case "CredentialsSignin": return "Invalid credentials.";
+        default: return "Something went wrong.";
       }
     }
     throw error;
