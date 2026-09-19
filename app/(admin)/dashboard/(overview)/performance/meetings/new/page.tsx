@@ -1,5 +1,6 @@
 // @/app/(admin)/dashboard/(overview)/performance/meetings/new/page.tsx
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   ArrowLeft,
   CalendarPlus,
@@ -8,17 +9,29 @@ import {
   FileText,
   ListChecks,
 } from "lucide-react";
+
+import { auth } from "@/auth";
+import { verifyAccess } from "@/app/lib/auth/access-control";
 import { getEmployeesList } from "@/app/lib/admin/performance/data";
 import { scheduleOneOnOneMeeting } from "@/app/lib/admin/performance/actions";
-import { auth } from "@/auth";
+import { SubmitMeetingButton } from "../../_components/submit-buttons";
 
 export default async function ScheduleMeetingPage() {
   const session = await auth();
-  const isAdmin = session?.user?.isAdmin;
+  if (!session?.user?.id) redirect("/login");
+
+  // 1. Dynamic ABAC check for UI Text
+  const isGlobalAdmin = await verifyAccess(
+    session.user.id,
+    "manage_system",
+    session.user.id,
+  );
+
+  // 2. Fetch scoped employees (Admin sees all, Manager sees team)
   const employees = await getEmployeesList();
 
   return (
-    <main className="max-w-3xl mx-auto w-full p-4 sm:p-6 lg:p-8 space-y-6">
+    <main className="max-w-3xl mx-auto w-full p-4 sm:p-6 lg:p-8 space-y-6 animate-fadeIn">
       <Link
         href="/dashboard/performance/meetings"
         className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
@@ -26,16 +39,15 @@ export default async function ScheduleMeetingPage() {
         <ArrowLeft className="w-4 h-4" /> Back to 1-on-1 Meetings
       </Link>
 
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
           <CalendarPlus className="w-7 h-7 text-purple-600" />
           Schedule a 1-on-1 Sync
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          {isAdmin
+          {isGlobalAdmin
             ? "Set up a new performance review or check-in session with any employee."
-            : "Set up a new performance review or check-in session with your direct reports."}
+            : "Set up a new performance review or check-in session with your authorized team."}
         </p>
       </div>
 
@@ -49,9 +61,12 @@ export default async function ScheduleMeetingPage() {
             <select
               name="manager_id"
               required
+              defaultValue=""
               className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all shadow-xs"
             >
-              <option value="">-- Choose a manager --</option>
+              <option value="" disabled>
+                -- Choose a manager --
+              </option>
               {employees.map((emp) => (
                 <option key={emp.id} value={emp.id}>
                   {emp.name} ({emp.department})
@@ -59,6 +74,7 @@ export default async function ScheduleMeetingPage() {
               ))}
             </select>
           </div>
+
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
               <User className="w-3.5 h-3.5 text-slate-400" /> Select Employee
@@ -66,9 +82,12 @@ export default async function ScheduleMeetingPage() {
             <select
               name="employee_id"
               required
+              defaultValue=""
               className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all shadow-xs"
             >
-              <option value="">-- Choose an employee --</option>
+              <option value="" disabled>
+                -- Choose an employee --
+              </option>
               {employees.map((emp) => (
                 <option key={emp.id} value={emp.id}>
                   {emp.name} ({emp.department})
@@ -113,6 +132,7 @@ export default async function ScheduleMeetingPage() {
               className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all shadow-xs resize-none"
             />
           </div>
+
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
               <ListChecks className="w-3.5 h-3.5 text-slate-400" /> Action Items
@@ -126,7 +146,6 @@ export default async function ScheduleMeetingPage() {
             />
           </div>
 
-          {/* Actions */}
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
             <Link
               href="/dashboard/performance/meetings"
@@ -134,12 +153,7 @@ export default async function ScheduleMeetingPage() {
             >
               Cancel
             </Link>
-            <button
-              type="submit"
-              className="px-5 py-2.5 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-xs transition-all flex items-center gap-2"
-            >
-              <CalendarPlus className="w-4 h-4" /> Schedule Meeting
-            </button>
+            <SubmitMeetingButton />
           </div>
         </form>
       </div>

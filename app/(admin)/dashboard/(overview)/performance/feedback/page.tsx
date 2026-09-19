@@ -1,19 +1,20 @@
 // @/app/(admin)/dashboard/(overview)/performance/feedback/page.tsx
-
 import Link from "next/link";
 import Image from "next/image";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { MessageSquare, ArrowLeft } from "lucide-react";
 
 import { getCompanyFeedback } from "@/app/lib/admin/performance/data";
-import { FeedbackRow } from "../types";
 
 export const revalidate = 0;
 
 export default async function FullFeedbackPage() {
   const session = await auth();
-  if (!session?.user) return null;
-  const allFeedback = (await getCompanyFeedback()) as unknown as FeedbackRow[];
+  if (!session?.user?.id) redirect("/login");
+
+  // Clean, strictly-typed data fetch!
+  const allFeedback = await getCompanyFeedback();
 
   const getTypeBadge = (type: string) => {
     switch (type?.toLowerCase()) {
@@ -27,7 +28,7 @@ export default async function FullFeedbackPage() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-6 max-w-7xl mx-auto space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
         <div>
           <Link
@@ -75,7 +76,7 @@ export default async function FullFeedbackPage() {
                   id={`feedback-${item.id}`}
                   className="py-5 first:pt-2 last:pb-2 flex flex-col sm:flex-row gap-4 sm:items-start hover:bg-slate-50/50 transition-colors rounded-xl px-2 sm:px-4 -mx-2 sm:-mx-4 scroll-mt-24 target:bg-indigo-50/40 target:ring-2 target:ring-indigo-100"
                 >
-                  {/* Avatar (Optimized with next/image) */}
+                  {/* Avatar */}
                   <div className="shrink-0 pt-1">
                     {item.recipient_image ? (
                       <Image
@@ -117,7 +118,6 @@ export default async function FullFeedbackPage() {
                       </span>
                     </div>
 
-                    {/* Feedback Text Block */}
                     <div className="bg-slate-50/80 border border-slate-100 rounded-xl p-4">
                       <p className="text-sm text-slate-600 italic leading-relaxed">
                         &quot;{item.text}&quot;

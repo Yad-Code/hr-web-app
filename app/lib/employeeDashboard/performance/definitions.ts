@@ -22,6 +22,7 @@ export interface GoalRow {
   due_date: string | Date;
   status: string;
   employee_name: string;
+  department: string;  
 }
 
 export interface MeetingRow {

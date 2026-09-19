@@ -1,18 +1,15 @@
-// @/app/(admin)/dashboard/(overview)/performance/feedback/new/page.tsx
-
 import Link from "next/link";
-
 import { getEmployeesList } from "@/app/lib/admin/performance/data";
 import { createNewFeedback } from "@/app/lib/admin/performance/actions";
-import { SubmitButton } from "./submit-button";
-
+import { SubmitFeedbackButton } from "../../_components/submit-buttons";
 import { ArrowLeft, MessageSquare } from "lucide-react";
 
-export default async function NewFeedbackPage() { 
+export default async function NewFeedbackPage() {
+  // 1. Fetches strictly scoped employees
   const employees = await getEmployeesList();
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-6">
+    <div className="p-6 max-w-3xl mx-auto space-y-6 animate-fadeIn">
       <div className="flex items-center gap-4">
         <Link
           href="/dashboard/performance"
@@ -22,8 +19,8 @@ export default async function NewFeedbackPage() {
         </Link>
         <div>
           <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-indigo-600" />
-            Log New Feedback
+            <MessageSquare className="w-5 h-5 text-indigo-600" /> Log New
+            Feedback
           </h1>
           <p className="text-xs text-slate-500 mt-1">
             Record positive recognition or constructive feedback for a team
@@ -106,7 +103,7 @@ export default async function NewFeedbackPage() {
           >
             Cancel
           </Link>
-          <SubmitButton />
+          <SubmitFeedbackButton />
         </div>
       </form>
     </div>

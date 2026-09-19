@@ -1,40 +1,15 @@
-// @/app/(admin)/dashboard/(overview)/performance/goals/new/page.tsx
-
 import Link from "next/link";
-import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { createNewGoal } from "@/app/lib/admin/performance/actions";
-import { SubmitButton } from "./submit-button";
-import { auth } from "@/auth";
-
+import { getEmployeesList } from "@/app/lib/admin/performance/data";
+import { SubmitGoalButton } from "../../_components/submit-buttons";
 import { ArrowLeft } from "lucide-react";
 
-interface EmployeeRow {
-  id: string;
-  name: string;
-  department: string;
-}
-
 export default async function NewGoalPage() {
-const session = await auth();
-  if (!session?.user?.id) return null; 
-
-  const isAdmin = session.user.isAdmin;
-  const managerId = session.user.id;  
-  let employees;
-
-  if (isAdmin) {
-    employees = (await db`
-      SELECT id, name, department FROM users WHERE status = 'Active' ORDER BY name ASC
-    `) as unknown as EmployeeRow[];
-  } else {
-   employees = (await db`
-      
-      SELECT id, name, department FROM users WHERE status = 'Active' AND manager_id = ${managerId} ORDER BY name ASC
-    `) as unknown as EmployeeRow[];
-  }
+  // 1. Fetches strictly scoped employees (Manager sees their team, Admin sees all)
+  const employees = await getEmployeesList();
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-6">
+    <div className="p-6 max-w-3xl mx-auto space-y-6 animate-fadeIn">
       <div className="flex items-center gap-4">
         <Link
           href="/dashboard/performance"
@@ -96,7 +71,7 @@ const session = await auth();
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label
               htmlFor="priority"
@@ -116,7 +91,6 @@ const session = await auth();
               <option value="Low">Low</option>
             </select>
           </div>
-
           <div className="space-y-2">
             <label
               htmlFor="dueDate"
@@ -141,7 +115,7 @@ const session = await auth();
           >
             Cancel
           </Link>
-          <SubmitButton />
+          <SubmitGoalButton />
         </div>
       </form>
     </div>

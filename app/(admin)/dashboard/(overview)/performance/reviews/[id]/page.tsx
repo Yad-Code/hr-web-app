@@ -1,5 +1,4 @@
 // @/app/(admin)/dashboard/(overview)/performance/reviews/[id]/page.tsx
-import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -12,62 +11,20 @@ import {
   FileText,
   CheckCircle,
 } from "lucide-react";
-import { auth } from "@/auth";
 
-interface ReviewDetailRow {
-  id: string;
-  user_id: string;
-  period: string;
-  date: string | Date;
-  reviewer: string;
-  rating: string | number;
-  strengths: string | null;
-  improvements: string | null;
-  manager_comments: string | null;
-  employee_comments: string | null;
-  goals_for_next_cycle: string | null;
-  status: string;
-  acknowledged: boolean;
-  acknowledged_at: string | Date | null;
-  employee_name: string;
-  department: string;
-  job_title: string;
-  image_url: string;
-}
+import { getReviewDetailsById } from "@/app/lib/admin/performance/data";
 
 export default async function ReviewDetailsPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
- const { id } = await params;
-  const session = await auth();
-  if (!session?.user?.id) return null;  
+  const { id } = await params;
 
-  const isAdmin = session.user.isAdmin;
-  const managerId = session.user.id;
+  // 1. Data fetcher validates 'view_dashboard' access internally via ABAC
+  const review = await getReviewDetailsById(id);
 
-  let result;
-
-  if (isAdmin) {
-    result = await db`
-      SELECT pr.*, u.name as employee_name, u.department, u.job_title, u.image_url
-      FROM performance_reviews pr JOIN users u ON pr.user_id = u.id
-      WHERE pr.id = ${id}
-    `;
-  } else {
-   result = await db`
-      SELECT pr.*, u.name as employee_name, u.department, u.job_title, u.image_url
-      FROM performance_reviews pr JOIN users u ON pr.user_id = u.id
-      WHERE pr.id = ${id} AND u.manager_id = ${managerId}  
-    `;
-  }
-
-  if (result.length === 0) {
-    notFound();
-  }
-
-  const review = result[0] as unknown as ReviewDetailRow;
+  if (!review) notFound();
 
   const getRatingBadge = (rating: number) => {
     if (rating >= 4.5)
@@ -84,7 +41,7 @@ export default async function ReviewDetailsPage({
   });
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="p-6 max-w-5xl mx-auto space-y-6 animate-fadeIn">
       <div className="flex items-center justify-between border-b border-slate-200 pb-6">
         <div className="flex items-center gap-4">
           <Link
@@ -95,8 +52,8 @@ export default async function ReviewDetailsPage({
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <FileText className="w-6 h-6 text-indigo-600" />
-              Performance Review Report
+              <FileText className="w-6 h-6 text-indigo-600" /> Performance
+              Review Report
             </h1>
             <p className="text-xs text-slate-500 mt-1">
               {review.period} Evaluation for {review.employee_name}
@@ -114,8 +71,8 @@ export default async function ReviewDetailsPage({
                 "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
               }
               alt={review.employee_name}
-              width={36}
-              height={36}
+              width={96}
+              height={96}
               className="w-24 h-24 rounded-full object-cover border-4 border-slate-50 shadow-xs"
             />
             <div>
@@ -123,7 +80,7 @@ export default async function ReviewDetailsPage({
                 {review.employee_name}
               </h2>
               <p className="text-sm font-medium text-slate-600 flex items-center justify-center gap-1.5 mt-1">
-                <Briefcase className="w-4 h-4 text-slate-400" />
+                <Briefcase className="w-4 h-4 text-slate-400" />{" "}
                 {review.job_title}
               </p>
               <span className="inline-block px-3 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded-lg mt-3">

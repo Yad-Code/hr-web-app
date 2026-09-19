@@ -1,5 +1,4 @@
 // @/app/(admin)/dashboard/(overview)/performance/reviews/page.tsx
-import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -10,45 +9,24 @@ import {
   Calendar,
   UserCheck,
 } from "lucide-react";
-import { auth } from "@/auth";
 
-interface ReviewRow {
-  id: string;
-  user_id: string;
-  employee_name: string;
-  department: string;
-  job_title: string;
-  image_url: string;
-  period: string;
-  date: string | Date;
-  reviewer: string;
-  rating: number;
-  status: string;
-}
+import { auth } from "@/auth";
+import { verifyAccess } from "@/app/lib/auth/access-control";
+import { getAllReviews } from "@/app/lib/admin/performance/data";
 
 export default async function PerformanceReviewsPage() {
- const session = await auth();
-  if (!session?.user?.id) return null;  
+  const session = await auth();
+  if (!session?.user?.id) return null;
 
-  const isAdmin = session.user.isAdmin;
-  const managerId = session.user.id;
+  // 1. ABAC UI Flag for the subtitle
+  const isGlobalAdmin = await verifyAccess(
+    session.user.id,
+    "manage_system",
+    session.user.id,
+  );
 
-  let reviews;
-
-  if (isAdmin) {
-    reviews = (await db`
-      SELECT pr.id, pr.user_id, pr.period, pr.date, pr.reviewer, pr.rating, pr.status, u.name as employee_name, u.department, u.job_title, u.image_url
-      FROM performance_reviews pr JOIN users u ON pr.user_id = u.id
-      ORDER BY pr.date DESC
-    `) as unknown as ReviewRow[];
-  } else {
-   reviews = (await db`
-      SELECT pr.id, pr.user_id, pr.period, pr.date, pr.reviewer, pr.rating, pr.status, u.name as employee_name, u.department, u.job_title, u.image_url
-      FROM performance_reviews pr JOIN users u ON pr.user_id = u.id
-      WHERE u.manager_id = ${managerId}  
-      ORDER BY pr.date DESC
-    `) as unknown as ReviewRow[];
-  }
+  // 2. Fetch Strictly Scoped Reviews
+  const reviews = await getAllReviews();
 
   const getRatingBadge = (rating: number) => {
     if (rating >= 4.5)
@@ -59,7 +37,7 @@ export default async function PerformanceReviewsPage() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-6 max-w-7xl mx-auto space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
         <div className="flex items-center gap-4">
           <Link
@@ -70,13 +48,13 @@ export default async function PerformanceReviewsPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <FileText className="w-6 h-6 text-indigo-600" />
-              Performance Reviews
+              <FileText className="w-6 h-6 text-indigo-600" /> Performance
+              Reviews
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              {isAdmin
+              {isGlobalAdmin
                 ? "View and manage formal evaluations across the organization."
-                : "View and manage formal evaluations for your direct reports."}
+                : "View and manage formal evaluations for your authorized team."}
             </p>
           </div>
         </div>
@@ -114,7 +92,7 @@ export default async function PerformanceReviewsPage() {
                         <Image
                           src={
                             review.image_url ||
-                            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+                            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
                           }
                           alt={review.employee_name}
                           width={36}
@@ -126,7 +104,7 @@ export default async function PerformanceReviewsPage() {
                             {review.employee_name}
                           </p>
                           <p className="text-xs text-slate-500">
-                            {review.job_title} • {review.department}
+                            {review.department}
                           </p>
                         </div>
                       </div>
@@ -146,7 +124,7 @@ export default async function PerformanceReviewsPage() {
                     </td>
                     <td className="px-6 py-4 text-slate-600 text-xs">
                       <div className="flex items-center gap-1.5">
-                        <UserCheck className="w-3.5 h-3.5 text-slate-400" />
+                        <UserCheck className="w-3.5 h-3.5 text-slate-400" />{" "}
                         {review.reviewer}
                       </div>
                     </td>

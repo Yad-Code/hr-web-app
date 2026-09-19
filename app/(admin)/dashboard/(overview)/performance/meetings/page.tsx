@@ -1,20 +1,29 @@
 // @/app/(admin)/dashboard/(overview)/performance/meetings/page.tsx
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowLeft, Calendar, Plus } from "lucide-react";
+
+import { auth } from "@/auth";
+import { verifyAccess } from "@/app/lib/auth/access-control";
 import { getAllAdminMeetings } from "@/app/lib/admin/performance/data";
 import { AdminMeetingsTable } from "./_components/AdminMeetingsTable";
-import { auth } from "@/auth";
 
 export default async function AdminMeetingsPage() {
   const session = await auth();
-  if (!session?.user) return null;
-  
-  const isAdmin = session.user.isAdmin;
+  if (!session?.user?.id) redirect("/login");
 
+  // ABAC Check to toggle the subtitle text dynamically
+  const isGlobalAdmin = await verifyAccess(
+    session.user.id,
+    "manage_system",
+    session.user.id,
+  );
+
+  // Data fetcher handles its own internal ABAC scoping now!
   const meetings = await getAllAdminMeetings();
 
   return (
-    <main className="max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8 space-y-6">
+    <main className="max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8 space-y-6 animate-fadeIn">
       {/* Header & Navigation */}
       <div>
         <Link
@@ -30,9 +39,9 @@ export default async function AdminMeetingsPage() {
               1-on-1 Sync Meetings
             </h1>
             <p className="text-sm text-slate-500 mt-1">
-              {isAdmin
+              {isGlobalAdmin
                 ? "Manage and track all scheduled 1-on-1 performance syncs across all employees."
-                : "Manage and track scheduled 1-on-1 performance syncs for your direct reports."}
+                : "Manage and track scheduled 1-on-1 performance syncs for your authorized team."}
             </p>
           </div>
           <Link

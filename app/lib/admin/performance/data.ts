@@ -277,3 +277,87 @@ export async function getCompanyFeedback(): Promise<FeedbackRow[]> {
     return [];
   }
 }
+
+export async function getAllGoals(): Promise<GoalRow[]> {
+  try {
+    const session = await auth();
+    const actorId = session?.user?.id;
+    if (!actorId) return [];
+
+    return await db<GoalRow[]>`
+      ${authUsersCTE(actorId)}
+      SELECT ug.id, ug.title, ug.progress, ug.priority, ug.due_date, ug.status, u.name as employee_name, COALESCE(u.department, 'General') as department
+      FROM user_goals ug JOIN users u ON ug.user_id = u.id
+      WHERE u.id IN (SELECT id FROM auth_users)
+      ORDER BY CASE WHEN ug.status = 'In Progress' THEN 1 WHEN ug.status = 'Pending' THEN 2 ELSE 3 END, ug.due_date ASC
+    `;
+  } catch (error) {
+    console.error("Failed to fetch goals:", error);
+    return [];
+  }
+}
+
+export interface AdminReviewDetail {
+  id: string;
+  user_id: string;
+  period: string;
+  date: string | Date;
+  reviewer: string;
+  rating: string | number;
+  strengths: string | null;
+  improvements: string | null;
+  manager_comments: string | null;
+  employee_comments: string | null;
+  goals_for_next_cycle: string | null;
+  status: string;
+  acknowledged: boolean;
+  acknowledged_at: string | Date | null;
+  employee_name: string;
+  department: string;
+  job_title: string;
+  image_url: string | null;
+}
+
+export async function getAllReviews(): Promise<ReviewRow[]> {
+  try {
+    const session = await auth();
+    const actorId = session?.user?.id;
+    if (!actorId) return [];
+
+    return await db<ReviewRow[]>`
+      ${authUsersCTE(actorId)}
+      SELECT pr.id, pr.period, pr.date, pr.reviewer, pr.rating, pr.status, u.name as employee_name, COALESCE(u.department, 'General') as department, u.image_url
+      FROM performance_reviews pr JOIN users u ON pr.user_id = u.id
+      WHERE u.id IN (SELECT id FROM auth_users)
+      ORDER BY pr.date DESC
+    `;
+  } catch (error) {
+    console.error("Failed to fetch all reviews:", error);
+    return [];
+  }
+}
+
+export async function getReviewDetailsById(id: string): Promise<AdminReviewDetail | null> {
+  try {
+    const session = await auth();
+    const actorId = session?.user?.id;
+    if (!actorId) return null;
+
+    const rows = await db<AdminReviewDetail[]>`
+      SELECT pr.*, u.name as employee_name, COALESCE(u.department, 'General') as department, u.job_title, u.image_url
+      FROM performance_reviews pr JOIN users u ON pr.user_id = u.id
+      WHERE pr.id = ${id}::uuid
+    `;
+
+    if (!rows.length) return null;
+
+    // ABAC Security Check: Can this user view this specific employee's dashboard?
+    const isAuthorized = await verifyAccess(actorId, 'view_dashboard', rows[0].user_id);
+    if (!isAuthorized) return null;
+
+    return rows[0];
+  } catch (error) {
+    console.error("Failed to fetch review details:", error);
+    return null;
+  }
+}
