@@ -4,6 +4,7 @@ import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
  * Universal Access Control Gateway
  * Verifies if an actor has the permission and scope to perform an action on a target user.
  */
+
 export async function verifyAccess(
   actorId: string,
   actionName: string,
@@ -50,6 +51,21 @@ export async function verifyAccess(
     return false;
   } catch (error) {
     console.error("Access Control Error:", error);
+    return false;
+  }
+}
+
+export async function verifyFeatureAccess(actorId: string, action: string) {
+  try {
+    const result = await db`
+      SELECT 1 FROM user_permissions up
+      JOIN permissions p ON p.id = up.permission_id
+      WHERE up.user_id = ${actorId}::uuid AND p.action = ${action}
+      LIMIT 1
+    `;
+    return result.length > 0;
+  } catch (error) {
+    console.error("Feature access check failed:", error);
     return false;
   }
 }

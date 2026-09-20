@@ -21,31 +21,24 @@ export const authConfig = {
     },
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const user = auth?.user;
       const path = nextUrl.pathname;
 
-      const isOnAdminRoute = path.startsWith("/dashboard");
-      const isOnEmployeePortal = path.startsWith("/my-profile");
+      const isOnProtectedPage =
+        path.startsWith("/dashboard") || path.startsWith("/my-profile");
       const isOnLoginPage = path.startsWith("/login");
 
-      // 1. Unauthenticated users trying to access protected pages
-      if ((isOnAdminRoute || isOnEmployeePortal) && !isLoggedIn) {
+      // 1. Kick out unauthenticated users trying to access protected pages
+      if (isOnProtectedPage && !isLoggedIn) {
         return false;
       }
 
-      const isManagement = user?.role === "admin" || user?.role === "manager";
-
-      // 2. Handle Logged-in users visiting /login or root /
+      // 2. If already logged in and visiting root or login, bounce them to their profile.
+      // (The actual login form submission handles the smart dashboard routing)
       if (isLoggedIn && (isOnLoginPage || path === "/")) {
-        const target = isManagement ? "/dashboard" : "/my-profile";
-        return Response.redirect(new URL(target, nextUrl));
-      }
-
-      // 3. Admin/Manager protection: Block standard employees from /dashboard
-      if (isOnAdminRoute && !isManagement) {
         return Response.redirect(new URL("/my-profile", nextUrl));
       }
-
+ 
+      // We now let the individual page layouts query the database to verify access.
       return true;
     },
   },

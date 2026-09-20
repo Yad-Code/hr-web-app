@@ -1,3 +1,4 @@
+// @/app/ui/dashboard/user-dropdown.tsx
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -6,7 +7,6 @@ import { User, Settings, HelpCircle, LogOut, ChevronDown } from "lucide-react";
 import { handleSignOut } from "@/app/lib/employeeDashboard/employee/auth-actions";
 import Link from "next/link";
 
-// 👇 FIXED: Removed legacy boolean flags, using standard `role` string
 interface UserDropdownProps {
   user: {
     name: string;
@@ -40,18 +40,13 @@ export function UserDropdown({ user }: UserDropdownProps) {
     .toUpperCase()
     .slice(0, 2);
 
-  // 👇 Dynamic display text based on actual database role
-  const displayRole =
-    user.role === "admin"
-      ? "HR Administrator"
-      : user.role === "manager"
-        ? "Team Manager"
-        : "Employee";
-  const displayTeam = user.role === "admin" ? "People Ops" : "Operations";
+  // 👇 FIXED: Dynamically format the role string, removing legacy hardcoding
+  const displayRole = user.role
+    ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
+    : "Employee";
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-3 text-left p-1.5 hover:bg-slate-50 rounded-xl transition-colors duration-200 active:scale-98 focus:outline-none cursor-pointer"
@@ -83,10 +78,8 @@ export function UserDropdown({ user }: UserDropdownProps) {
         />
       </button>
 
-      {/* Menu Overlay Dropdown */}
       {isOpen && (
         <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 overflow-hidden divide-y divide-slate-100 animate-in fade-in slide-in-from-top-2 duration-150">
-          {/* Top Info Context */}
           <div className="p-4 flex items-center gap-3 bg-slate-50/40">
             {user.image_url ? (
               <div className="relative w-12 h-12 rounded-full overflow-hidden border border-slate-200 shrink-0">
@@ -110,25 +103,27 @@ export function UserDropdown({ user }: UserDropdownProps) {
             </div>
           </div>
 
-          {/* Metadata Grid */}
           <div className="p-3 bg-white text-xs space-y-2">
             <div className="flex justify-between items-center text-slate-500">
-              <span className="font-medium">Role</span>
+              <span className="font-medium">System Role</span>
               <span className="font-bold text-slate-800">{displayRole}</span>
             </div>
             <div className="flex justify-between items-center text-slate-500">
-              <span className="font-medium">Team</span>
-              <span className="font-bold text-slate-800">{displayTeam}</span>
+              <span className="font-medium">Environment</span>
+              <span className="font-bold text-slate-800 text-[#009473]">
+                Secure Workspace
+              </span>
             </div>
           </div>
 
-          {/* Action Navigation Links */}
           <div className="p-1.5 bg-white space-y-0.5">
-            <Link href="/my-profile">
-              <button className="cursor-pointer w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors text-left group">
-                <User className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
-                My Profile
-              </button>
+            {/* 👇 FIXED: Replaced nested <button> inside <Link> which causes hydration errors */}
+            <Link
+              href="/my-profile"
+              className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors text-left group cursor-pointer"
+            >
+              <User className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
+              My Profile
             </Link>
             <button className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors text-left group cursor-pointer">
               <Settings className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
@@ -140,7 +135,6 @@ export function UserDropdown({ user }: UserDropdownProps) {
             </button>
           </div>
 
-          {/* Sign Out Action Button */}
           <div className="p-1.5 bg-white">
             <form action={handleSignOut}>
               <button

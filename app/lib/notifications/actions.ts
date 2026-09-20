@@ -2,7 +2,8 @@
 "use server";
 
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
- 
+import { auth } from "@/auth"; // 👈 FIXED: Added authentication
+
 export interface Notification {
   id: string;
   user_id: string;
@@ -12,7 +13,7 @@ export interface Notification {
   read: boolean;
   created_at: string;
 }
- 
+
 interface DbNotificationRow {
   id: string;
   user_id: string;
@@ -22,10 +23,15 @@ interface DbNotificationRow {
   read: boolean;
   created_at: Date | string;
 }
- 
-export async function getEmployeeNotifications(userId: string): Promise<Notification[]> {
-  try { 
-    // 👇 FIXED: Added ::uuid casts
+
+export async function getEmployeeNotifications(
+  userId: string,
+): Promise<Notification[]> {
+  try {
+    // 👇 FIXED: Zero-Trust verification to prevent malicious access
+    const session = await auth();
+    if (session?.user?.id !== userId) throw new Error("Unauthorized access");
+
     const perfNotifs = await db`
       SELECT 
         id, user_id, title, description AS message,
@@ -35,7 +41,7 @@ export async function getEmployeeNotifications(userId: string): Promise<Notifica
       ORDER BY created_at DESC
       LIMIT 10
     `;
- 
+
     const feedbackNotifs = await db`
       SELECT 
         id, user_id, CONCAT('Feedback from ', sender) AS title,
@@ -45,8 +51,11 @@ export async function getEmployeeNotifications(userId: string): Promise<Notifica
       ORDER BY created_at DESC
       LIMIT 5
     `;
- 
-    const rawRows = [...perfNotifs, ...feedbackNotifs] as unknown as DbNotificationRow[];
+
+    const rawRows = [
+      ...perfNotifs,
+      ...feedbackNotifs,
+    ] as unknown as DbNotificationRow[];
 
     const combined: Notification[] = rawRows.map((item) => ({
       id: item.id,
@@ -57,8 +66,11 @@ export async function getEmployeeNotifications(userId: string): Promise<Notifica
       read: Boolean(item.read),
       created_at: new Date(item.created_at).toISOString(),
     }));
- 
-    combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    combined.sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
 
     return combined.slice(0, 10);
   } catch (error) {
@@ -82,24 +94,32 @@ function mapTypeToCategory(type: string): Notification["type"] {
       return "document";
   }
 }
- 
+
 export async function markNotificationAsRead(notificationId: string) {
   try {
-    // 👇 FIXED: Added ::uuid casts
-    await db`UPDATE performance_notifications SET is_read = true WHERE id = ${notificationId}::uuid`;
-    await db`UPDATE user_feedback SET is_read = true WHERE id = ${notificationId}::uuid`;
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    // 👇 FIXED: Hardened SQL to ensure they only edit their OWN notifications
+    await db`UPDATE performance_notifications SET is_read = true WHERE id = ${notificationId}::uuid AND user_id = ${session.user.id}::uuid`;
+    await db`UPDATE user_feedback SET is_read = true WHERE id = ${notificationId}::uuid AND user_id = ${session.user.id}::uuid`;
+
     return { success: true };
   } catch (error) {
     console.error("Error updating notification read status:", error);
     return { success: false };
   }
 }
- 
+
 export async function markAllNotificationsAsRead(userId: string) {
   try {
-    // 👇 FIXED: Added ::uuid casts
+    // 👇 FIXED: Zero-Trust verification to prevent malicious access
+    const session = await auth();
+    if (session?.user?.id !== userId) throw new Error("Unauthorized access");
+
     await db`UPDATE performance_notifications SET is_read = true WHERE user_id = ${userId}::uuid`;
     await db`UPDATE user_feedback SET is_read = true WHERE user_id = ${userId}::uuid`;
+
     return { success: true };
   } catch (error) {
     console.error("Error marking all notifications as read:", error);

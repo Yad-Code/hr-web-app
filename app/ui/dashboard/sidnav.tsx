@@ -3,13 +3,12 @@ import NavLinks from "./nav-links";
 import { WorkspaceToggle } from "./workSpace-toggle";
 import { handleSignOut } from "@/app/lib/employeeDashboard/employee/auth-actions";
 import { Building2, LogOut } from "lucide-react"; 
-import { verifyFeatureAccess } from "@/app/lib/employeeDashboard/employee/auth-actions";
+import { verifyFeatureAccess } from "@/app/lib/auth/access-control";
 
 export default async function SideNav() {
   const session = await auth();
   if (!session?.user?.id) return null;
-
-  // 👇 FIXED: Check specific features individually
+ 
   const canViewDashboard = await verifyFeatureAccess(
     session.user.id,
     "view_dashboard",
