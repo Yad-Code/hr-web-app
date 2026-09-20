@@ -7,7 +7,7 @@ import {
   DashboardPayrollRun,
 } from "@/app/lib/employee/definitions";
 
-const authUsersCTE = (actorId: string, action: string = "view_dashboard") => db`
+const authUsersCTE = (actorId: string, action: string = "manage_reports") => db`
   WITH auth_users AS (
     SELECT DISTINCT u.id FROM users u
     JOIN user_permissions up ON up.user_id = ${actorId}::uuid
@@ -25,47 +25,31 @@ const authUsersCTE = (actorId: string, action: string = "view_dashboard") => db`
 
 export async function getCardsData(actorId: string) {
   try {
-    const [headcountRes, openPosRes, pendingRes, attendanceRes] =
-      await Promise.all([
-        db`
-        ${authUsersCTE(actorId)}
-        SELECT COUNT(*) FROM users u WHERE u.status = 'Active' AND u.id IN (SELECT id FROM auth_users)
-      `,
-        db`SELECT COUNT(*) FROM job_postings WHERE status = 'Open'`,
-        db`
-        ${authUsersCTE(actorId, "approve_leaves")}
-        SELECT COUNT(*) as total FROM leave_requests lr 
-        WHERE lr.status ILIKE 'pending' AND lr.user_id IN (SELECT id FROM auth_users)
-      `,
-        db`
+    const [headcountRes, openPosRes, pendingRes, attendanceRes] = await Promise.all([
+      db`${authUsersCTE(actorId)} SELECT COUNT(*) FROM users u WHERE u.status = 'Active' AND u.id IN (SELECT id FROM auth_users)`,
+      db`SELECT COUNT(*) FROM job_postings WHERE status = 'Open'`,
+      db`${authUsersCTE(actorId, "update_records")} SELECT COUNT(*) as total FROM leave_requests lr WHERE lr.status ILIKE 'pending' AND lr.user_id IN (SELECT id FROM auth_users)`,
+      db`
         ${authUsersCTE(actorId)}
         , target_users AS (
           SELECT u.id as user_id, COALESCE(u.working_days, '{1,2,3,4,5}'::int[]) as working_days 
           FROM users u WHERE u.status = 'Active' AND u.id IN (SELECT id FROM auth_users)
         ),
-        past_days AS (
-          SELECT date::date FROM generate_series(DATE_TRUNC('month', CURRENT_DATE), CURRENT_DATE, '1 day'::interval) AS date
-        ),
+        past_days AS (SELECT date::date FROM generate_series(DATE_TRUNC('month', CURRENT_DATE), CURRENT_DATE, '1 day'::interval) AS date),
         expected_shifts AS (
-          SELECT u.user_id, p.date
-          FROM target_users u CROSS JOIN past_days p
+          SELECT u.user_id, p.date FROM target_users u CROSS JOIN past_days p
           WHERE EXTRACT(DOW FROM p.date)::int = ANY(u.working_days)
         ),
         scheduled_days AS (
-          SELECT e.user_id, e.date
-          FROM expected_shifts e
-          LEFT JOIN leave_requests lr 
-            ON lr.user_id = e.user_id AND lr.type = 'dayoff' AND lr.status = 'Approved' AND e.date BETWEEN lr.start_date AND lr.end_date
+          SELECT e.user_id, e.date FROM expected_shifts e
+          LEFT JOIN leave_requests lr ON lr.user_id = e.user_id AND lr.type = 'dayoff' AND lr.status = 'Approved' AND e.date BETWEEN lr.start_date AND lr.end_date
           WHERE lr.id IS NULL
         ),
-        actual_attendance AS (
-          SELECT user_id, date, status FROM attendance WHERE date >= DATE_TRUNC('month', CURRENT_DATE)
-        )
+        actual_attendance AS (SELECT user_id, date, status FROM attendance WHERE date >= DATE_TRUNC('month', CURRENT_DATE))
         SELECT COALESCE(ROUND(COUNT(a.status) FILTER (WHERE a.status IN ('Present', 'Late')) * 100.0 / NULLIF(COUNT(s.date), 0)), 0) as average 
-        FROM scheduled_days s
-        LEFT JOIN actual_attendance a ON s.user_id = a.user_id AND s.date = a.date
+        FROM scheduled_days s LEFT JOIN actual_attendance a ON s.user_id = a.user_id AND s.date = a.date
       `,
-      ]);
+    ]);
 
     return {
       headcount: Number(headcountRes[0]?.count || 0),
@@ -75,12 +59,7 @@ export async function getCardsData(actorId: string) {
     };
   } catch (error) {
     console.error("Failed to fetch card metrics:", error);
-    return {
-      headcount: 0,
-      openPositions: 0,
-      pendingRequests: 0,
-      avgAttendance: 0,
-    };
+    return { headcount: 0, openPositions: 0, pendingRequests: 0, avgAttendance: 0 };
   }
 }
 
@@ -90,17 +69,11 @@ export async function getChartData(actorId: string) {
       ${authUsersCTE(actorId)}
       SELECT TO_CHAR(p.month, 'Mon') AS month, EXTRACT(MONTH FROM p.month) AS month_num,
       ROUND(AVG(p.teamwork)) AS engagement, ROUND(AVG(p.attendance)) AS retention    
-      FROM performance_history p
-      JOIN users u ON p.user_id = u.id
-      WHERE p.month >= DATE_TRUNC('year', CURRENT_DATE) 
-        AND u.id IN (SELECT id FROM auth_users)
+      FROM performance_history p JOIN users u ON p.user_id = u.id
+      WHERE p.month >= DATE_TRUNC('year', CURRENT_DATE) AND u.id IN (SELECT id FROM auth_users)
       GROUP BY TO_CHAR(p.month, 'Mon'), EXTRACT(MONTH FROM p.month) ORDER BY month_num ASC
     `;
-    return rawData.map((row) => ({
-      month: row.month,
-      engagement: Number(row.engagement) || 0,
-      retention: Number(row.retention) || 0,
-    }));
+    return rawData.map((row) => ({ month: row.month, engagement: Number(row.engagement) || 0, retention: Number(row.retention) || 0 }));
   } catch (error) {
     console.error("Failed to fetch chart data:", error);
     return [];
@@ -111,22 +84,20 @@ export async function getQuickOperationsData(actorId: string) {
   try {
     const permCheck = await db`
       SELECT 1 FROM user_permissions up JOIN permissions p ON p.id = up.permission_id 
-      WHERE up.user_id = ${actorId}::uuid AND p.action = 'approve_leaves' LIMIT 1
+      WHERE up.user_id = ${actorId}::uuid AND p.action = 'update_records' LIMIT 1
     `;
     const isLeader = permCheck.length > 0;
-
     let pendingRequests: DashboardPendingRequest[] = [];
 
     if (isLeader) {
       pendingRequests = await db<DashboardPendingRequest[]>`
-        ${authUsersCTE(actorId, "approve_leaves")}
+        ${authUsersCTE(actorId, "update_records")}
         SELECT r.id, r.type, r.reason as description, r.status, r.created_at, u.name as employee_name, u.job_title, u.image_url as employee_image
         FROM leave_requests r JOIN users u ON r.user_id = u.id
         WHERE r.status ILIKE 'pending' AND u.id IN (SELECT id FROM auth_users)
         ORDER BY r.created_at ASC LIMIT 5
       `;
     }
-
     return { isLeader, pendingRequests };
   } catch (error) {
     console.error("Failed to fetch quick operations:", error);
@@ -136,7 +107,7 @@ export async function getQuickOperationsData(actorId: string) {
 
 export async function getSecondaryWidgetsData(actorId: string) {
   try {
-    const [outToday, complianceAlerts, payrollRun] = await Promise.all([
+    const [outToday, complianceAlerts, payrollRun, jobStats] = await Promise.all([
       db<DashboardOutToday[]>`
         ${authUsersCTE(actorId)}
         SELECT u.name, 'On Leave' as status, lr.type as detail
@@ -151,23 +122,17 @@ export async function getSecondaryWidgetsData(actorId: string) {
         ${authUsersCTE(actorId)}
         SELECT name, join_date + INTERVAL '90 days' as probation_end
         FROM users
-        WHERE status = 'Active' 
-          AND join_date + INTERVAL '90 days' BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '14 days'
+        WHERE status = 'Active' AND join_date + INTERVAL '90 days' BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '14 days'
           AND id IN (SELECT id FROM auth_users)
       `,
-      db<DashboardPayrollRun[]>`
-        SELECT pay_period_start, pay_period_end, status, pay_date
-        FROM pay_stubs ORDER BY pay_period_start DESC LIMIT 1
-      `,
+      db<DashboardPayrollRun[]>`SELECT pay_period_start, pay_period_end, status, pay_date FROM pay_stubs ORDER BY pay_period_start DESC LIMIT 1`,
+      // 👇 FIXED: Fetching real job posting counts grouped by department
+      db`SELECT department, COUNT(*)::int as count FROM job_postings WHERE status = 'Open' GROUP BY department ORDER BY count DESC LIMIT 3`,
     ]);
 
-    return {
-      outToday,
-      complianceAlerts,
-      payroll: payrollRun[0] || null,
-    };
+    return { outToday, complianceAlerts, payroll: payrollRun[0] || null, activeJobs: jobStats };
   } catch (error) {
     console.error("Failed to fetch secondary widgets:", error);
-    return { outToday: [], complianceAlerts: [], payroll: null };
+    return { outToday: [], complianceAlerts: [], payroll: null, activeJobs: [] };
   }
 }

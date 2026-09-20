@@ -3,13 +3,7 @@
 
 import React, { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  RotateCcw,
-  Save,
-  Loader2,
-  Check,
-  AlertCircle, 
-} from "lucide-react";
+import { RotateCcw, Save, Loader2, Check, AlertCircle } from "lucide-react";
 import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
 import { updateEmployeeDetails } from "@/app/lib/employeeList/actions";
 
@@ -20,8 +14,10 @@ import { EmploymentHistoryTimeline } from "./job/employmentHistoryTimeline";
 
 export default function AdminJobInformationTab({
   profile,
+  managersList = [],
 }: {
   profile: FullEmployeeProfile;
+  managersList?: { id: string; name: string; department: string }[];
 }) {
   const router = useRouter();
   const updateProfileWithId = updateEmployeeDetails.bind(null, profile.id);
@@ -64,7 +60,7 @@ export default function AdminJobInformationTab({
       <form action={formAction} className="space-y-6">
         <input type="hidden" name="isJobForm" value="true" />
 
-        <CurrentPositionSection profile={profile} />
+        <CurrentPositionSection profile={profile} managersList={managersList} />
         <OrganizationDetailsSection profile={profile} />
 
         <div className="flex items-center justify-end gap-3">

@@ -3,16 +3,19 @@
 
 import { useState, useTransition } from "react";
 import { Trash2, Lock, Settings2, Globe, Loader2 } from "lucide-react";
+import { toast } from "sonner"; // 👈 FIXED: Imported toast
 import { Employee } from "@/app/lib/employeeList/definitions";
-import ManagePermissionsModal from "./modals/manage-permissions-modal"; 
+import ManagePermissionsModal from "./modals/manage-permissions-modal";
 import { deleteEmployeeAction } from "@/app/lib/employeeList/actions";
 
 interface PermissionsDataGridProps {
   employees: Employee[];
+  canDelete?: boolean; // 👈 FIXED: Added the prop
 }
 
 export default function PermissionsDataGrid({
   employees,
+  canDelete = false, // 👈 FIXED: Default fallback
 }: PermissionsDataGridProps) {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
     null,
@@ -22,7 +25,6 @@ export default function PermissionsDataGrid({
   >("standard");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // 👇 Add transition state for the delete action
   const [isPending, startTransition] = useTransition();
 
   const openModal = (
@@ -34,7 +36,6 @@ export default function PermissionsDataGrid({
     setIsModalOpen(true);
   };
 
-  // 👇 Hook up the real database action
   const handleDelete = (id: string, name: string) => {
     if (
       confirm(
@@ -44,7 +45,9 @@ export default function PermissionsDataGrid({
       startTransition(async () => {
         const res = await deleteEmployeeAction(id);
         if (!res.success) {
-          alert(res.error);
+          toast.error(res.error || "Failed to delete employee."); // 👈 FIXED: Replaced alert with toast
+        } else {
+          toast.success("Employee permanently deleted.");
         }
       });
     }
@@ -74,9 +77,12 @@ export default function PermissionsDataGrid({
               <th className="px-5 py-4 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
                 Public Access
               </th>
-              <th className="px-5 py-4 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-right">
-                Action
-              </th>
+              {/* 👇 FIXED: Conditionally render the Action header */}
+              {canDelete && (
+                <th className="px-5 py-4 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-right">
+                  Action
+                </th>
+              )}
             </tr>
           </thead>
 
@@ -102,7 +108,7 @@ export default function PermissionsDataGrid({
                 <td className="px-5 py-3">
                   <button
                     onClick={() => openModal(emp, "private")}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-all shadow-xs"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-all shadow-xs cursor-pointer"
                   >
                     <Lock className="w-3.5 h-3.5 text-slate-400" /> Private
                   </button>
@@ -110,7 +116,7 @@ export default function PermissionsDataGrid({
                 <td className="px-5 py-3">
                   <button
                     onClick={() => openModal(emp, "standard")}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200/80 rounded-lg hover:bg-indigo-100 transition-all shadow-xs"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200/80 rounded-lg hover:bg-indigo-100 transition-all shadow-xs cursor-pointer"
                   >
                     <Settings2 className="w-3.5 h-3.5" /> Manage
                   </button>
@@ -118,25 +124,28 @@ export default function PermissionsDataGrid({
                 <td className="px-5 py-3">
                   <button
                     onClick={() => openModal(emp, "public")}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-all shadow-xs"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-all shadow-xs cursor-pointer"
                   >
                     <Globe className="w-3.5 h-3.5 text-slate-400" /> Public
                   </button>
                 </td>
-                <td className="px-5 py-3 text-right">
-                  <button
-                    onClick={() => handleDelete(emp.id, emp.name)}
-                    disabled={isPending}
-                    title={`Delete ${emp.name}`}
-                    className="inline-flex p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 disabled:opacity-50"
-                  >
-                    {isPending ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
-                  </button>
-                </td>
+                {/* 👇 FIXED: Conditionally render the Delete button cell */}
+                {canDelete && (
+                  <td className="px-5 py-3 text-right">
+                    <button
+                      onClick={() => handleDelete(emp.id, emp.name)}
+                      disabled={isPending}
+                      title={`Delete ${emp.name}`}
+                      className="inline-flex p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 disabled:opacity-50 cursor-pointer"
+                    >
+                      {isPending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

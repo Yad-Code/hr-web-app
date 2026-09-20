@@ -3,29 +3,29 @@ import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
 
 export async function getDirectoryEmployees(actorId: string) {
-  try {
-    // Check if the user has Administrative Data Grid powers
+  try { 
     const adminCheck = await db`
       SELECT 1 FROM user_permissions up
       JOIN permissions p ON p.id = up.permission_id
-      WHERE up.user_id = ${actorId}::uuid AND p.action IN ('manage_system_access', 'update_records')
+      WHERE up.user_id = ${actorId}::uuid 
+        AND p.action IN ('view_directory', 'manage_system', 'manage_system_access') 
+        AND up.scope = 'global'
       LIMIT 1
     `;
     const hasAdminView = adminCheck.length > 0;
 
-    // Fetch only the employees the current user is authorized to see
     const users = await db`
       WITH auth_users AS (
         SELECT DISTINCT u.id FROM users u
         JOIN user_permissions up ON up.user_id = ${actorId}::uuid
-        JOIN permissions p ON p.id = up.permission_id
-        WHERE p.action IN ('view_directory', 'view_dashboard', 'update_records')
+        JOIN permissions p ON p.id = up.permission_id 
+        -- Visibility is now strictly locked to 'view_directory' or System Admin roles.
+        WHERE p.action IN ('view_directory', 'manage_system', 'manage_system_access')
           AND (
             up.scope = 'global' OR
             (up.scope = 'branch' AND u.branch = up.target_branch) OR
             (up.scope = 'department' AND u.department = up.target_department) OR
-            (up.scope = 'team' AND u.manager_id = ${actorId}::uuid) OR
-            (up.scope = 'self' AND u.id = ${actorId}::uuid)
+            (up.scope = 'team' AND u.manager_id = ${actorId}::uuid)
           )
       )
       SELECT 
@@ -38,9 +38,7 @@ export async function getDirectoryEmployees(actorId: string) {
     const employees = users.map((user) => ({
       id: String(user.id),
       name: String(user.name),
-      preferred_name: user.preferred_name
-        ? String(user.preferred_name)
-        : undefined,
+      preferred_name: user.preferred_name ? String(user.preferred_name) : undefined,
       email: String(user.email),
       department: user.department ? String(user.department) : undefined,
       branch: user.branch ? String(user.branch) : undefined,
@@ -57,14 +55,16 @@ export async function getDirectoryEmployees(actorId: string) {
   }
 }
 
-export async function getProfileById(
-  id: string,
-): Promise<FullEmployeeProfile | null> {
+export async function getProfileById(id: string): Promise<FullEmployeeProfile | null> {
   if (!id) return null;
 
   try {
     const users = await db`
-      SELECT * FROM users WHERE id::text = ${id} OR employee_id = ${id} LIMIT 1
+      SELECT u.*, m.name as fetched_manager_name 
+      FROM users u
+      LEFT JOIN users m ON u.manager_id = m.id
+      WHERE u.id::text = ${id} OR u.employee_id = ${id} 
+      LIMIT 1
     `;
 
     if (!users || users.length === 0) return null;
@@ -99,10 +99,9 @@ export async function getProfileById(
       jobTitle: user.job_title || null,
       jobFamily: user.job_family || null,
       employmentType: user.employment_type || null,
-      managerName: user.manager_name || null,
-      joinDate: user.join_date
-        ? new Date(user.join_date).toISOString().split("T")[0]
-        : null,
+      managerName: user.fetched_manager_name || null,
+      managerId: user.manager_id || null,
+      joinDate: user.join_date ? new Date(user.join_date).toISOString().split("T")[0] : null,
       shift_start: user.shift_start || "09:00:00",
       shift_end: user.shift_end || "17:00:00",
       shift_type: user.shift_type || "Standard (Mon - Fri)",
@@ -110,7 +109,7 @@ export async function getProfileById(
       privateOrg: user.private_org || null,
       insurance: user.insurance || null,
       subscription: user.subscription || null,
-      last_seen_text: user.status === 'Active' ? 'Online' : 'Offline',
+      last_seen_text: user.status === "Active" ? "Online" : "Offline",
       history: historyRows.map((row) => ({
         title: row.title,
         company: row.company || "Company",
@@ -120,5 +119,24 @@ export async function getProfileById(
   } catch (error) {
     console.error("SQL Error in getProfileById:", error);
     return null;
+  }
+}
+
+export async function getManagersDropdown() {
+  try {
+    const managers = await db`
+      SELECT id, name, department 
+      FROM users 
+      WHERE role IN ('manager', 'admin') AND status = 'Active'
+      ORDER BY name ASC
+    `;
+    return managers.map(m => ({ 
+      id: String(m.id), 
+      name: String(m.name), 
+      department: String(m.department) 
+    }));
+  } catch (error) {
+    console.error("Failed to fetch managers:", error);
+    return [];
   }
 }

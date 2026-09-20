@@ -1,4 +1,5 @@
 // @/app/(admin)/dashboard/page.tsx
+
 import { Suspense } from "react";
 import AdminCardsWrapper from "./_components/cards-wrapper";
 import AdminChartWrapper from "./_components/chart-wrapper";

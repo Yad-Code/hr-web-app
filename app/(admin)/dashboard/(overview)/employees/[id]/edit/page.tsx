@@ -3,7 +3,10 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { verifyAccess } from "@/app/lib/auth/access-control";
-import { getProfileById } from "@/app/lib/employeeList/data";
+import {
+  getProfileById,
+  getManagersDropdown,
+} from "@/app/lib/employeeList/data";
 import {
   getEducationData,
   getLanguageData,
@@ -71,15 +74,25 @@ export default async function AdminEmployeeEditPage({
     );
   }
 
+  // mock data
   const currentCycle = "Q3 2026";
-  const [educationHistory, languageHistory, documents, assessment, skills] =
-    await Promise.all([
-      getEducationData(profile.id),
-      getLanguageData(profile.id),
-      getEmployeeDocumentsData(profile.id),
-      getEmployeeSelfAssessment(profile.id, currentCycle),
-      getEmployeeSkills(profile.id),
-    ]);
+  //
+
+  const [
+    educationHistory,
+    languageHistory,
+    documents,
+    assessment,
+    skills,
+    managersList,
+  ] = await Promise.all([
+    getEducationData(profile.id),
+    getLanguageData(profile.id),
+    getEmployeeDocumentsData(profile.id),
+    getEmployeeSelfAssessment(profile.id, currentCycle),
+    getEmployeeSkills(profile.id),
+    getManagersDropdown(), // 👈 FIXED: Fetch the real managers
+  ]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 p-2 sm:p-4 text-left select-none animate-fadeIn">
@@ -115,6 +128,7 @@ export default async function AdminEmployeeEditPage({
           documents={documents}
           assessment={assessment}
           skills={skills}
+          managersList={managersList}  
           canUpdateOfficialRecords={canUpdateOfficialRecords}
           canManagePermissions={canManagePermissions}
         />

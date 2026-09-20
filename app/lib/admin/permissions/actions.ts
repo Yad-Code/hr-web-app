@@ -1,3 +1,4 @@
+// @/app/lib/admin/permissions/actions.ts
 "use server";
 
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
@@ -9,12 +10,17 @@ export async function getUserPermissions(targetUserId: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
+  // 👇 FIXED: Passed targetUserId so a manager can only view permissions of their own scoped team
   const isAuthorized = await verifyAccess(
     session.user.id,
     "manage_system_access",
+    targetUserId,
   );
+
   if (!isAuthorized)
-    throw new Error("Forbidden: You lack permission to view access controls.");
+    throw new Error(
+      "Forbidden: You lack permission to view this user's access controls.",
+    );
 
   try {
     const permissions = await db`
@@ -41,21 +47,33 @@ export async function grantPermission(formData: FormData) {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "Unauthorized" };
 
+  const userId = formData.get("userId") as string;
+
+  // 👇 FIXED: Passed userId to ensure the actor is authorized to modify this specific employee
   const isAuthorized = await verifyAccess(
     session.user.id,
     "manage_system_access",
+    userId,
   );
+
   if (!isAuthorized)
     return {
       success: false,
-      error: "Forbidden: You lack permission to grant access.",
+      error: "Forbidden: You lack permission to grant access to this employee.",
     };
 
-  const userId = formData.get("userId") as string;
   const actionName = formData.get("actionName") as string;
   const scope = formData.get("scope") as string;
-  const targetBranch = formData.get("targetBranch") as string | null;
-  const targetDepartment = formData.get("targetDepartment") as string | null;
+
+  // 👇 FIXED: Strictly nullify branch/department data if the scope doesn't explicitly require it
+  const targetBranch =
+    scope === "branch"
+      ? (formData.get("targetBranch") as string) || null
+      : null;
+  const targetDepartment =
+    scope === "department"
+      ? (formData.get("targetDepartment") as string) || null
+      : null;
 
   try {
     const permRecord =
@@ -66,7 +84,7 @@ export async function grantPermission(formData: FormData) {
 
     await db`
       INSERT INTO user_permissions (user_id, permission_id, scope, target_branch, target_department)
-      VALUES (${userId}::uuid, ${permissionId}::uuid, ${scope}::access_scope, ${targetBranch || null}, ${targetDepartment || null})
+      VALUES (${userId}::uuid, ${permissionId}::uuid, ${scope}::access_scope, ${targetBranch}, ${targetDepartment})
     `;
 
     revalidatePath("/dashboard/employees");
@@ -88,17 +106,8 @@ export async function revokePermission(recordId: string) {
     return { success: false, error: "Unauthorized" };
   }
 
-  const isAuthorized = await verifyAccess(
-    currentUserId,
-    "manage_system_access",
-  );
-  if (!isAuthorized)
-    return {
-      success: false,
-      error: "Forbidden: You lack permission to revoke access.",
-    };
-
   try {
+    // 👇 FIXED: We must fetch the target record FIRST to know WHO we are revoking from
     const targetRecord = await db`
       SELECT up.user_id, p.action 
       FROM user_permissions up
@@ -112,11 +121,28 @@ export async function revokePermission(recordId: string) {
 
     const { user_id, action } = targetRecord[0];
 
-    if (String(user_id) === currentUserId && action === "manage_system") {
+    // 👇 FIXED: Now we securely check if the current user has authority over the target user
+    const isAuthorized = await verifyAccess(
+      currentUserId,
+      "manage_system_access",
+      String(user_id),
+    );
+
+    if (!isAuthorized)
       return {
         success: false,
         error:
-          "Action Denied: For security reasons, you cannot revoke your own global admin privileges.",
+          "Forbidden: You lack permission to revoke access from this employee.",
+      };
+
+    if (
+      String(user_id) === currentUserId &&
+      (action === "manage_system" || action === "manage_system_access")
+    ) {
+      return {
+        success: false,
+        error:
+          "Action Denied: For security reasons, you cannot revoke your own admin privileges.",
       };
     }
 

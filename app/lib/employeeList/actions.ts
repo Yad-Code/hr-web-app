@@ -112,7 +112,6 @@ export async function updateEmployeeDetails(
       return { success: false, message: "Unauthorized. Please log in again." };
     }
 
-    // 👇 3. Dynamic ABAC Check for viewing/saving the edit form
     const requiredAction =
       actorId === targetUserId ? "edit_personal_profile" : "update_records";
     const isAuthorized = await verifyAccess(
@@ -150,7 +149,11 @@ export async function updateEmployeeDetails(
     const jobTitle = formData.get("jobTitle")?.toString() || null;
     const jobFamily = formData.get("jobFamily")?.toString() || null;
     const employmentType = formData.get("employmentType")?.toString() || null;
-    const managerId = formData.get("managerId")?.toString() || null;
+
+    const hasManagerId = formData.has("managerId");
+    const rawManagerId = formData.get("managerId")?.toString();
+    const managerId = rawManagerId === "none" ? null : rawManagerId;
+
     const joinDate = formData.get("joinDate")?.toString() || null;
     const publicOrg = formData.get("publicOrg")?.toString() || null;
     const privateOrg = formData.get("privateOrg")?.toString() || null;
@@ -160,7 +163,6 @@ export async function updateEmployeeDetails(
     const rawSalary = formData.get("baseSalary");
     const baseSalary = rawSalary ? Number(rawSalary) : null;
 
-    // 👇 4. Determine if they have Administrative Data powers, or just Personal Edit powers
     const canUpdateOfficialRecords = await verifyAccess(
       actorId,
       "update_records",
@@ -191,7 +193,7 @@ export async function updateEmployeeDetails(
           job_title = COALESCE(${jobTitle}, job_title),
           job_family = COALESCE(${jobFamily}, job_family),
           employment_type = COALESCE(${employmentType}, employment_type),
-          manager_id = COALESCE(${managerId}::uuid, manager_id),
+          manager_id = CASE WHEN ${hasManagerId}::boolean THEN ${managerId ? managerId : null}::uuid ELSE manager_id END,
           join_date = COALESCE(${joinDate}, join_date),
           public_org = COALESCE(${publicOrg}, public_org),
           private_org = COALESCE(${privateOrg}, private_org),

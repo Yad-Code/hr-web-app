@@ -56,7 +56,7 @@ export async function GET() {
     await db`
      CREATE TABLE users (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        employee_id VARCHAR(50) UNIQUE,
+        employee_id VARCHAR(50) UNIQUE DEFAULT CONCAT('ID-', UPPER(SUBSTRING(gen_random_uuid()::text FROM 1 FOR 6))),
         name VARCHAR(100) NOT NULL,
         preferred_name VARCHAR(100),
         job_title VARCHAR(100),
@@ -418,7 +418,7 @@ CREATE TABLE self_assessments (
 
     const seededManagers = await db`
      INSERT INTO users (
-        employee_id, name, preferred_name, job_title, job_family, employment_type, manager_id, join_date, 
+        name, preferred_name, job_title, job_family, employment_type, manager_id, join_date, 
         department, branch, date_of_birth, age, gender, nationality, marital_status, 
         blood_group, email, personal_email, personal_phone, current_address, 
         password_hash, role, status, base_salary, 
@@ -427,7 +427,7 @@ CREATE TABLE self_assessments (
        )
       VALUES  
         (
-          'EMP-1001', 'Admin Manager', 'Admin', 'HR Director', 'Human Resources', 'Full-Time', NULL, '2020-01-15',
+          'Admin Manager', 'Admin', 'HR Director', 'Human Resources', 'Full-Time', NULL, '2020-01-15',
           'Human Resources', 'HQ - Sulaymaniyah',
           '1988-03-15', 38, 'Female', 'Iraqi', 'Married', 'O+',
           'admin@company.com', 'admin.personal@gmail.com', '+964 770 111 2233',
@@ -437,7 +437,7 @@ CREATE TABLE self_assessments (
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
         ),
         (
-          'EMP-1006', 'Sarah Jenkins', 'Sarah', 'Head of Engineering', 'Engineering', 'Full-Time', NULL, '2019-05-10',
+          'Sarah Jenkins', 'Sarah', 'Head of Engineering', 'Engineering', 'Full-Time', NULL, '2019-05-10',
           'Engineering', 'HQ - Sulaymaniyah',
           '1985-08-22', 40, 'Female', 'American', 'Married', 'A+',
           'sarah.j@company.com', 'sarah.j.personal@gmail.com', '+964 770 999 8877',
@@ -447,7 +447,7 @@ CREATE TABLE self_assessments (
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
         ),
         (
-          'EMP-1007', 'Alex Studio', 'Alex', 'Head of Design', 'Design', 'Full-Time', NULL, '2020-11-20',
+          'Alex Studio', 'Alex', 'Head of Design', 'Design', 'Full-Time', NULL, '2020-11-20',
           'Design', 'HQ - Sulaymaniyah',
           '1990-12-05', 35, 'Male', 'British', 'Single', 'B-',
           'alex.s@company.com', 'alex.s.personal@gmail.com', '+964 770 666 5544',
@@ -457,7 +457,7 @@ CREATE TABLE self_assessments (
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
         ),
         (
-          'EMP-1008', 'Naza Rahman', 'Naza', 'HR Manager', 'Human Resources', 'Full-Time', NULL, '2022-08-15',
+          'Naza Rahman', 'Naza', 'HR Manager', 'Human Resources', 'Full-Time', NULL, '2022-08-15',
           'Human Resources', 'Erbil Branch',
           '1992-07-14', 34, 'Female', 'Iraqi', 'Married', 'A+',
           'naza.hr@company.com', 'naza.personal@gmail.com', '+964 750 111 2233',
@@ -467,7 +467,7 @@ CREATE TABLE self_assessments (
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP
         ), 
         (
-          'EMP-1009', 'Saman Ali', 'Saman', 'HR Coordinator', 'Human Resources', 'Full-Time', NULL, '2024-02-01',
+          'Saman Ali', 'Saman', 'HR Coordinator', 'Human Resources', 'Full-Time', NULL, '2024-02-01',
           'Human Resources', 'HQ - Sulaymaniyah',
           '1996-11-30', 29, 'Male', 'Iraqi', 'Single', 'O+',
           'saman.hr@company.com', 'saman.personal@gmail.com', '+964 770 888 9900',
@@ -484,7 +484,7 @@ CREATE TABLE self_assessments (
 
     const seededEmployees = await db`
      INSERT INTO users (
-        employee_id, name, preferred_name, job_title, job_family, employment_type, manager_id, join_date, 
+        name, preferred_name, job_title, job_family, employment_type, manager_id, join_date, 
         department, branch, date_of_birth, age, gender, nationality, marital_status, 
         blood_group, email, personal_email, personal_phone, current_address, 
         password_hash, role, status, base_salary, 
@@ -493,7 +493,7 @@ CREATE TABLE self_assessments (
        )
       VALUES  
         (
-          'EMP-1002', 'Yad Developer', 'Yad', 'Software Engineer', 'Engineering', 'Full-Time', ${sarahId}, '2022-03-01',
+          'Yad Developer', 'Yad', 'Software Engineer', 'Engineering', 'Full-Time', ${sarahId}, '2022-03-01',
           'Engineering', 'HQ - Sulaymaniyah',
           '2002-05-20', 24, 'Male', 'Iraqi', 'Single', 'A+',
           'yad@company.com', 'yad.dev@gmail.com', '+964 770 222 3344',
@@ -503,7 +503,7 @@ CREATE TABLE self_assessments (
           '09:00:00', '17:00:00', 'Weekend Flex', '{6,0,1}', CURRENT_TIMESTAMP
         ),
         (
-          'EMP-1003', 'Lana Amin', 'Lana', 'Product Designer', 'Design', 'Full-Time', ${alexId}, '2023-06-10',
+          'Lana Amin', 'Lana', 'Product Designer', 'Design', 'Full-Time', ${alexId}, '2023-06-10',
           'Design', 'HQ - Sulaymaniyah',
           '1997-09-12', 28, 'Female', 'Iraqi', 'Single', 'B+',
           'lana@company.com', 'lana.amin@gmail.com', '+964 770 333 4455',
@@ -513,7 +513,7 @@ CREATE TABLE self_assessments (
           '09:00:00', '17:00:00', 'Mid-Week Core', '{2,3,4}', CURRENT_TIMESTAMP - INTERVAL '2 hours'
         ),
         (
-          'EMP-1004', 'Diyar Karwan', 'Diyar', 'Backend Engineer', 'Engineering', 'Full-Time', ${sarahId}, '2021-11-20',
+          'Diyar Karwan', 'Diyar', 'Backend Engineer', 'Engineering', 'Full-Time', ${sarahId}, '2021-11-20',
           'Engineering', 'HQ - Sulaymaniyah',
           '1995-11-04', 30, 'Male', 'Iraqi', 'Married', 'O-',
           'diyar@company.com', 'diyar.karwan@gmail.com', '+964 770 444 5566',
@@ -523,7 +523,7 @@ CREATE TABLE self_assessments (
           '09:00:00', '17:00:00', 'Standard (Mon - Fri)', '{1,2,3,4,5}', CURRENT_TIMESTAMP - INTERVAL '1 day'
         ),
         (
-          'EMP-1005', 'Sara Omar', 'Sara', 'QA Engineer', 'Engineering', 'Full-Time', ${sarahId}, '2024-01-05',
+          'Sara Omar', 'Sara', 'QA Engineer', 'Engineering', 'Full-Time', ${sarahId}, '2024-01-05',
           'Engineering', 'HQ - Sulaymaniyah',
           '1999-01-28', 27, 'Female', 'Iraqi', 'Single', 'AB+',
           'sara@company.com', 'sara.omar@gmail.com', '+964 770 555 6677',
@@ -764,35 +764,35 @@ CREATE TABLE self_assessments (
 `;
 
       await db`
-    INSERT INTO one_on_one_meetings (
-        employee_id,
-        manager_id,
-        meeting_date,
-        topic,
-        notes,
-        action_items,
-        status
-    )
-    VALUES
-    (
-        ${emp.id},
-        ${managerId},
-        '2026-07-15',
-        'Quarterly Growth Discussion',
-        'Discussed progress in Next.js migration and backend ownership.',
-        'Complete system design training and lead authentication refactor.',
-        'Completed'
-    ),
-    (
-        ${emp.id},
-        ${managerId},
-        '2026-10-10',
-        'Q4 Planning',
-        'Review progress toward Senior Engineer promotion.',
-        'Finish architecture documentation.',
-        'Scheduled'
-    );
-`;
+        INSERT INTO one_on_one_meetings (
+          employee_id, 
+          manager_id, 
+          meeting_date, 
+          topic, 
+          notes, 
+          action_items, 
+          status
+        )
+        VALUES
+        (
+          ${emp.id}, 
+          ${managerId}, 
+          '2026-07-15', 
+          'Quarterly Growth Discussion', 
+          'Discussed progress in Next.js migration.', 
+          'Complete system design training.', 
+          'Completed'
+        ),
+        (
+          ${emp.id}, 
+          ${managerId}, 
+          '2026-10-10', 
+          'Q4 Planning', 
+          'Review progress toward Senior Engineer promotion.', 
+          'Finish architecture documentation.', 
+          'Scheduled'
+        );
+      `;
 
       await db`
 INSERT INTO performance_notifications (
@@ -1065,7 +1065,7 @@ VALUES
       ('manage_system_access', 'Can modify user permissions and roles'),
       ('manage_system', 'administrator access to view all global dashboards and override data')
     `;
- 
+
     await db`
       INSERT INTO user_permissions (user_id, permission_id, scope)
       SELECT u.id, p.id, 'global'::access_scope
@@ -1073,16 +1073,16 @@ VALUES
       WHERE u.role = 'admin'
       ON CONFLICT DO NOTHING
     `;
- 
+
     await db`
       INSERT INTO user_permissions (user_id, permission_id, scope)
       SELECT u.id, p.id, 'team'::access_scope
       FROM users u CROSS JOIN permissions p
-      WHERE u.role = 'manager' 
-      AND p.action IN ('create_records', 'update_records', 'export_system_data', 'manage_reports')
+      WHERE u.role = 'manager'  
+      AND p.action IN ('create_records', 'update_records', 'export_system_data', 'manage_reports', 'view_directory', 'manage_system_access')
       ON CONFLICT DO NOTHING
     `;
- 
+
     await db`
       INSERT INTO user_permissions (user_id, permission_id, scope, target_branch)
       SELECT u.id, p.id, 'branch'::access_scope, u.branch
@@ -1091,7 +1091,7 @@ VALUES
       AND p.action IN ('create_records', 'update_records', 'export_system_data', 'manage_reports')
       ON CONFLICT DO NOTHING
     `;
- 
+
     await db`
       INSERT INTO user_permissions (user_id, permission_id, scope)
       SELECT u.id, p.id, 'self'::access_scope
@@ -1099,12 +1099,12 @@ VALUES
       WHERE p.action IN ('edit_personal_profile', 'submit_requests', 'view_payroll')
       ON CONFLICT DO NOTHING
     `;
- 
+
     await db`
       INSERT INTO user_permissions (user_id, permission_id, scope)
       SELECT u.id, p.id, 'global'::access_scope
-      FROM users u CROSS JOIN permissions p
-      WHERE p.action IN ('view_directory', 'view_policies')
+      FROM users u CROSS JOIN permissions p 
+      WHERE p.action IN ('view_policies')
       ON CONFLICT DO NOTHING
     `;
 

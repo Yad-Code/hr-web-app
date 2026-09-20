@@ -1,6 +1,7 @@
 // @/app/(admin)/dashboard/(overview)/employees/page.tsx
 import { Suspense } from "react";
 import { auth } from "@/auth";
+import { verifyAccess } from "@/app/lib/auth/access-control";
 import { EmployeeSearchListClient } from "./EmployeeSearchList";
 import { EmployeeSearchListSkeleton } from "@/app/ui/employee/skeleton";
 import { getDirectoryEmployees } from "@/app/lib/employeeList/data";
@@ -13,9 +14,14 @@ export default async function EmployeesStatusPage() {
   const session = await auth();
   if (!session?.user?.id) return null;
 
-  // 1. Fetch perfectly scoped employees based on ABAC permissions
   const { employees, hasAdminView } = await getDirectoryEmployees(
     session.user.id,
+  );
+
+  const canDelete = await verifyAccess(session.user.id, "delete_records");
+  const canManageAccess = await verifyAccess(
+    session.user.id, 
+    "manage_system_access",
   );
 
   return (
@@ -31,11 +37,11 @@ export default async function EmployeesStatusPage() {
         </p>
       </div>
 
-      <Suspense fallback={<EmployeeSearchListSkeleton />}>
-        {/* Pass the dynamic auth state instead of hardcoded session flags */}
+      <Suspense fallback={<EmployeeSearchListSkeleton />}> 
         <EmployeeSearchListClient
           initialEmployees={employees}
-          isAdmin={hasAdminView}
+          canDelete={canDelete}
+          canManageAccess={canManageAccess}
         />
       </Suspense>
     </main>

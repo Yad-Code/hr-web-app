@@ -1,10 +1,11 @@
+// @/app/(admin)/dashboard/_components/request-items.tsx
 "use client";
 
 import { useTransition } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
-// 👇 IMPORT FIXED: Point to the new centralized ABAC actions file
+import { toast } from "sonner";
 import { approveLeaveRequest as updateLeaveRequestStatus } from "@/app/lib/admin/performance/actions";
 
 interface RequestItemProps {
@@ -25,22 +26,26 @@ export function RequestItem({ request }: RequestItemProps) {
 
   const typeLabels: Record<string, string> = {
     wfh: "🏠 WFH",
-    dayoff: "🌴 Day Off",
+    dayoff: "✈️ Day Off",
     timeoff: "⏱️ Time Off",
     exchange: "🔄 Exchange",
   };
 
   const handleApprove = () => {
     startTransition(async () => {
-      // Pass the ID to our consolidated server action
       const res = await updateLeaveRequestStatus(request.id);
-      if (!res?.success) alert(res?.error || "Failed to approve request");
+      if (res?.success) {
+        toast.success("Request approved successfully.");
+      } else {
+        toast.error(res?.error || "Failed to approve request.");
+      }
     });
   };
 
   const handleDecline = () => {
-    // Decline logic currently routes through standard UI response or custom action.
-    alert("Declining functionality implemented via standard rejection route.");
+    toast.info(
+      "Decline functionality is managed via the detailed review screen.",
+    );
   };
 
   return (
@@ -48,19 +53,32 @@ export function RequestItem({ request }: RequestItemProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2.5">
           <Image
-            src={request.employee_image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&auto=format&fit=crop&q=60"}
+            src={
+              request.employee_image ||
+              "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&auto=format&fit=crop&q=60"
+            }
             alt={request.employee_name}
             width={36}
             height={36}
             className="w-7 h-7 rounded-full border border-slate-100 object-cover shadow-xs"
           />
           <div>
-            <span className="text-xs font-bold text-slate-800 block leading-tight">{request.employee_name}</span>
-            {request.status.toLowerCase() === "pending" && request.job_title && (
-              <span className="text-[10px] text-slate-500 font-medium block mb-0.5">{request.job_title}</span>
-            )}
-            <span className="text-[10px] text-slate-400 font-medium">
-              {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
+            <span className="text-xs font-bold text-slate-800 block leading-tight">
+              {request.employee_name}
+            </span>
+            {request.status.toLowerCase() === "pending" &&
+              request.job_title && (
+                <span className="text-[10px] text-slate-500 font-medium block mb-0.5">
+                  {request.job_title}
+                </span>
+              )}
+            <span
+              suppressHydrationWarning
+              className="text-[10px] text-slate-400 font-medium"
+            >
+              {formatDistanceToNow(new Date(request.created_at), {
+                addSuffix: true,
+              })}
             </span>
           </div>
         </div>
@@ -70,14 +88,26 @@ export function RequestItem({ request }: RequestItemProps) {
       </div>
 
       <div className="bg-slate-50/50 rounded-xl p-3 border border-slate-100/60">
-        <p className="text-xs font-medium text-slate-600 leading-relaxed whitespace-normal break-words">{request.description}</p>
+        <p className="text-xs font-medium text-slate-600 leading-relaxed whitespace-normal break-words">
+          {request.description}
+        </p>
       </div>
 
       <div className="flex items-center justify-end space-x-2 pt-1">
-        <button type="button" onClick={handleDecline} disabled={isPending} className="px-3 py-1 text-[11px] font-bold text-slate-500 hover:text-rose-600 bg-white hover:bg-rose-50 rounded-lg border border-slate-200 transition-all shadow-xs cursor-pointer disabled:opacity-50">
+        <button
+          type="button"
+          onClick={handleDecline}
+          disabled={isPending}
+          className="px-3 py-1 text-[11px] font-bold text-slate-500 hover:text-rose-600 bg-white hover:bg-rose-50 rounded-lg border border-slate-200 transition-all shadow-xs cursor-pointer disabled:opacity-50"
+        >
           Decline
         </button>
-        <button type="button" onClick={handleApprove} disabled={isPending} className="flex items-center gap-1 px-3 py-1 text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-all shadow-xs shadow-indigo-100 cursor-pointer disabled:opacity-50">
+        <button
+          type="button"
+          onClick={handleApprove}
+          disabled={isPending}
+          className="flex items-center gap-1 px-3 py-1 text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-all shadow-xs shadow-indigo-100 cursor-pointer disabled:opacity-50"
+        >
           {isPending && <Loader2 className="w-3 h-3 animate-spin" />} Approve
         </button>
       </div>

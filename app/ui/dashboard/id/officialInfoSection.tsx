@@ -1,7 +1,7 @@
+// @/app/ui/dashboard/id/officialInfoSection.tsx
 "use client";
 
-import React from "react";
-import { FullEmployeeProfile } from "@/app/lib/employeeList/definitions";
+import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
 import { InputField, SelectField } from "./formFields";
 import { Lock, Hash, User, Mail, Calendar, Globe, Shield } from "lucide-react";
 
@@ -22,7 +22,6 @@ export default function OfficialInfoSection({
 }) {
   return (
     <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xs space-y-4">
-      {/* Card Header */}
       <div className="flex items-center justify-between pb-3 border-b border-slate-100">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
@@ -37,16 +36,22 @@ export default function OfficialInfoSection({
         </span>
       </div>
 
-      {/* Form Fields */}
       <div className="space-y-3">
-        <InputField
-          label="Employee ID"
-          id="employeeId"
-          name="employeeId"
-          icon={Hash}
-          defaultValue={profile.employee_id}
-          mono
-        />
+        {/* 👇 FIXED: Employee ID is now purely read-only to prevent DB corruption */}
+        <div className="space-y-1">
+          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <Hash className="w-3.5 h-3.5 text-slate-400" />
+            Employee ID
+          </label>
+          <input
+            id="employeeId"
+            name="employeeId"
+            defaultValue={profile.employee_id || ""}
+            readOnly
+            className="w-full text-xs sm:text-sm font-mono text-slate-500 bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 cursor-not-allowed opacity-80"
+          />
+        </div>
+
         <InputField
           label="Full Legal Name"
           id="name"
@@ -89,7 +94,7 @@ export default function OfficialInfoSection({
           icon={Globe}
           defaultValue={profile.nationality}
         />
-
+ 
         <SelectField
           label="System Role"
           id="role"
@@ -97,8 +102,10 @@ export default function OfficialInfoSection({
           icon={Shield}
           defaultValue={profile.role?.toLowerCase() || "employee"}
           options={[
-            { label: "Employee", value: "employee" },
             { label: "Admin", value: "admin" },
+            { label: "Manager", value: "manager" },
+            { label: "HR Specialist", value: "hr" },
+            { label: "Employee", value: "employee" },
           ]}
         />
       </div>

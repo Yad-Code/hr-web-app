@@ -30,8 +30,10 @@ const JOB_FAMILIES_TITLES_MAP: Record<string, string[]> = {
 
 export function CurrentPositionSection({
   profile,
+  managersList = [],
 }: {
   profile: FullEmployeeProfile;
+  managersList?: { id: string; name: string; department: string }[];
 }) {
   const [formData, setFormData] = useState({
     jobFamily: profile.jobFamily || "",
@@ -39,7 +41,6 @@ export function CurrentPositionSection({
     employmentType: profile.employmentType || "Full-Time",
     department: profile.department || "",
     branch: profile.branch || "",
-    // 👇 FIXED: Changed managerName to managerId to map to the DB action correctly
     managerId: profile.managerId || "",
     joinDate: profile.joinDate || "",
     baseSalary: profile.base_salary != null ? String(profile.base_salary) : "",
@@ -143,7 +144,6 @@ export function CurrentPositionSection({
           options={["Full-Time", "Part-Time", "Contract", "Internship"]}
         />
 
-        {/* 👇 FIXED: Converted Department to strict dropdown */}
         <SelectField
           label="Department"
           name="department"
@@ -162,7 +162,6 @@ export function CurrentPositionSection({
           placeholder="Select Department..."
         />
 
-        {/* 👇 FIXED: Converted Branch to strict dropdown */}
         <SelectField
           label="Branch / Location"
           name="branch"
@@ -179,7 +178,6 @@ export function CurrentPositionSection({
           placeholder="Select Branch..."
         />
 
-        {/* 👇 FIXED: Custom Manager Dropdown mapping to managerId */}
         <div className="space-y-1.5">
           <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
             Direct Manager
@@ -194,10 +192,12 @@ export function CurrentPositionSection({
               onChange={handleChange}
               className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-all cursor-pointer pl-9"
             >
-              <option value="">No Manager (Top Level)</option>
-              <option value="EMP-1006">Sarah Jenkins (Engineering)</option>
-              <option value="EMP-1007">Alex Studio (Design)</option>
-              <option value="EMP-1001">Admin Manager (HR)</option>
+              <option value="none">No Manager (Top Level)</option>
+              {managersList.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name} ({m.department})
+                </option>
+              ))}
             </select>
           </div>
         </div>

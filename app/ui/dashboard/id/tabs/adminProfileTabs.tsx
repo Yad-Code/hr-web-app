@@ -20,7 +20,7 @@ import {
 
 import {
   SelfAssessment,
-  Skill, 
+  Skill,
 } from "@/app/lib/employeeDashboard/performance/definitions";
 
 import ProfileForm from "../profileForm";
@@ -51,6 +51,7 @@ interface AdminProfileTabsProps {
   skills?: Skill[];
   canUpdateOfficialRecords: boolean;
   canManagePermissions: boolean;
+  managersList?: { id: string; name: string; department: string }[];
 }
 
 export default function AdminProfileTabs({
@@ -60,12 +61,12 @@ export default function AdminProfileTabs({
   documents = [],
   assessment = null,
   skills = [],
+  managersList = [],
   canUpdateOfficialRecords,
   canManagePermissions,
 }: AdminProfileTabsProps) {
   const [activeTab, setActiveTab] = useState<AdminTabType>("profile");
 
-  // Dynamically build tabs based on ABAC flags
   const tabs = [
     { id: "profile", label: "Profile Info", icon: UserPen },
     ...(canUpdateOfficialRecords
@@ -108,7 +109,10 @@ export default function AdminProfileTabs({
       <div>
         {activeTab === "profile" && <ProfileForm profile={profile} />}
         {activeTab === "job" && canUpdateOfficialRecords && (
-          <AdminJobInformationTab profile={profile} />
+          <AdminJobInformationTab
+            profile={profile}
+            managersList={managersList}
+          />
         )}
         {activeTab === "permissions" && canManagePermissions && (
           <div className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm text-center">

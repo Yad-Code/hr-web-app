@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Loader2,
 } from "lucide-react";
+
 import { UserDropdown } from "../dashboard/user-dropdown";
 import {
   getEmployeeNotifications,

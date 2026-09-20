@@ -1,15 +1,13 @@
+// @/app/(admin)/dashboard/_components/secondary-widgets.tsx
 import { auth } from "@/auth";
-import { UserMinus, Users, AlertCircle, Wallet } from "lucide-react";
+import { UserMinus, Briefcase, AlertCircle, Wallet } from "lucide-react";
 import { getSecondaryWidgetsData } from "@/app/lib/admin/dashboard/data";
 
 export async function SecondaryWidgets() {
   const session = await auth();
   if (!session?.user?.id) return null;
 
-  const { outToday, complianceAlerts, payroll } = await getSecondaryWidgetsData(session.user.id);
-
-  const pipeline = { screening: 8, interview: 3, offer: 1 };
-  const totalCandidates = pipeline.screening + pipeline.interview + pipeline.offer;
+  const { outToday, complianceAlerts, payroll, activeJobs } = await getSecondaryWidgetsData(session.user.id);
   const formatDate = (date: Date) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(date));
 
   return (
@@ -29,24 +27,19 @@ export async function SecondaryWidgets() {
           ))}
         </div>
       </div>
-
-      {/* Widget 2: Active Candidates */}
+ 
       <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex flex-col min-h-48">
         <div className="flex items-center gap-2 mb-4">
-          <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><Users className="w-4 h-4" /></div>
-          <h3 className="font-bold text-slate-900 text-sm">Active Candidates</h3>
+          <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><Briefcase className="w-4 h-4" /></div>
+          <h3 className="font-bold text-slate-900 text-sm">Active Job Postings</h3>
         </div>
-        <div className="flex-1 flex flex-col justify-center space-y-4">
-          <div className="flex h-3 rounded-full overflow-hidden w-full bg-slate-100">
-            <div style={{ width: `${(pipeline.screening / totalCandidates) * 100}%` }} className="bg-indigo-300" />
-            <div style={{ width: `${(pipeline.interview / totalCandidates) * 100}%` }} className="bg-indigo-500" />
-            <div style={{ width: `${(pipeline.offer / totalCandidates) * 100}%` }} className="bg-emerald-500" />
-          </div>
-          <div className="flex justify-between text-[11px] font-bold text-slate-500">
-            <span className="text-indigo-400">{pipeline.screening} Screening</span>
-            <span className="text-indigo-600">{pipeline.interview} Interview</span>
-            <span className="text-emerald-600">{pipeline.offer} Offer</span>
-          </div>
+        <div className="flex-1 overflow-y-auto space-y-3">
+          {activeJobs.length === 0 ? <p className="text-xs text-slate-500 font-medium">No open positions right now.</p> : activeJobs.map((job, i) => (
+            <div key={i} className="flex justify-between items-center text-xs border-l-2 border-indigo-400 pl-2">
+              <span className="font-semibold text-slate-700">{job.department}</span>
+              <span className="text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded-md">{job.count} Open</span>
+            </div>
+          ))}
         </div>
       </div>
 

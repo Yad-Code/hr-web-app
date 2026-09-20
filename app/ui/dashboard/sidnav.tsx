@@ -1,15 +1,20 @@
+// @/app/ui/dashboard/sidnav.tsx
+
 import { auth } from "@/auth";
 import NavLinks from "./nav-links";
 import { WorkspaceToggle } from "./workSpace-toggle";
 import { handleSignOut } from "@/app/lib/employeeDashboard/employee/auth-actions";
 import { Building2, LogOut } from "lucide-react";
+import { verifyAccess } from "@/app/lib/auth/access-control";
 
 export default async function SideNav() {
   const session = await auth();
-  if (!session?.user) return null; 
-  const role = session.user.role?.toLowerCase() || "employee";
-  const isAdmin = role === "admin";
-  const isManager = role === "manager" || role === "hr";
+  if (!session?.user?.id) return null;
+
+  // 👇 FIXED: True ABAC authorization checks instead of generic roles
+  const isAdmin = await verifyAccess(session.user.id, "manage_system_access");
+  const isManager = await verifyAccess(session.user.id, "manage_reports");
+
   const isManagement = isAdmin || isManager;
   const hasEmployeeView = true;
 
@@ -21,8 +26,12 @@ export default async function SideNav() {
             <Building2 className="w-6 h-6 stroke-[1.75]" />
           </div>
           <div className="text-left leading-tight">
-            <h2 className="text-base font-bold text-slate-900 tracking-tight">Comp</h2>
-            <p className="text-xs font-medium text-slate-400">HR Operations Suite</p>
+            <h2 className="text-base font-bold text-slate-900 tracking-tight">
+              Comp
+            </h2>
+            <p className="text-xs font-medium text-slate-400">
+              HR Operations Suite
+            </p>
           </div>
         </div>
 
@@ -31,7 +40,6 @@ export default async function SideNav() {
             {isManagement ? "Management" : "Workspace"}
           </span>
           <nav className="space-y-1">
-            {/* NavLinks can still accept booleans as props safely */}
             <NavLinks isAdmin={isAdmin} isManager={isManager} />
           </nav>
         </div>
@@ -45,7 +53,10 @@ export default async function SideNav() {
         />
 
         <form action={handleSignOut}>
-          <button type="submit" className="w-full flex items-center gap-4 px-3 py-2.5 rounded-xl text-left text-xs font-bold text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-all duration-150 group cursor-pointer">
+          <button
+            type="submit"
+            className="w-full flex items-center gap-4 px-3 py-2.5 rounded-xl text-left text-xs font-bold text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-all duration-150 group cursor-pointer"
+          >
             <LogOut className="w-4 h-4 text-slate-400 group-hover:text-rose-500 transition-colors stroke-2" />
             <span>Sign Out</span>
           </button>

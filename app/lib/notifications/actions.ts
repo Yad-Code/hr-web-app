@@ -23,44 +23,30 @@ interface DbNotificationRow {
   created_at: Date | string;
 }
  
-export async function getEmployeeNotifications(
-  userId: string,
-): Promise<Notification[]> {
+export async function getEmployeeNotifications(userId: string): Promise<Notification[]> {
   try { 
+    // 👇 FIXED: Added ::uuid casts
     const perfNotifs = await db`
       SELECT 
-        id,
-        user_id,
-        title,
-        description AS message,
-        LOWER(type) AS type,
-        is_read AS read,
-        created_at
+        id, user_id, title, description AS message,
+        LOWER(type) AS type, is_read AS read, created_at
       FROM performance_notifications
-      WHERE user_id = ${userId}
+      WHERE user_id = ${userId}::uuid
       ORDER BY created_at DESC
       LIMIT 10
     `;
  
     const feedbackNotifs = await db`
       SELECT 
-        id,
-        user_id,
-        CONCAT('Feedback from ', sender) AS title,
-        text AS message,
-        'feedback' AS type,
-        is_read AS read,
-        created_at
+        id, user_id, CONCAT('Feedback from ', sender) AS title,
+        text AS message, 'feedback' AS type, is_read AS read, created_at
       FROM user_feedback
-      WHERE user_id = ${userId} AND is_read = false
+      WHERE user_id = ${userId}::uuid AND is_read = false
       ORDER BY created_at DESC
       LIMIT 5
     `;
  
-    const rawRows = [
-      ...perfNotifs,
-      ...feedbackNotifs,
-    ] as unknown as DbNotificationRow[];
+    const rawRows = [...perfNotifs, ...feedbackNotifs] as unknown as DbNotificationRow[];
 
     const combined: Notification[] = rawRows.map((item) => ({
       id: item.id,
@@ -72,10 +58,7 @@ export async function getEmployeeNotifications(
       created_at: new Date(item.created_at).toISOString(),
     }));
  
-    combined.sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    );
+    combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
     return combined.slice(0, 10);
   } catch (error) {
@@ -84,7 +67,6 @@ export async function getEmployeeNotifications(
   }
 }
 
- 
 function mapTypeToCategory(type: string): Notification["type"] {
   switch (type?.toLowerCase()) {
     case "assessment":
@@ -103,18 +85,9 @@ function mapTypeToCategory(type: string): Notification["type"] {
  
 export async function markNotificationAsRead(notificationId: string) {
   try {
-    await db`
-      UPDATE performance_notifications 
-      SET is_read = true 
-      WHERE id = ${notificationId}
-    `;
-
-    await db`
-      UPDATE user_feedback 
-      SET is_read = true 
-      WHERE id = ${notificationId}
-    `;
-
+    // 👇 FIXED: Added ::uuid casts
+    await db`UPDATE performance_notifications SET is_read = true WHERE id = ${notificationId}::uuid`;
+    await db`UPDATE user_feedback SET is_read = true WHERE id = ${notificationId}::uuid`;
     return { success: true };
   } catch (error) {
     console.error("Error updating notification read status:", error);
@@ -124,18 +97,9 @@ export async function markNotificationAsRead(notificationId: string) {
  
 export async function markAllNotificationsAsRead(userId: string) {
   try {
-    await db`
-      UPDATE performance_notifications 
-      SET is_read = true 
-      WHERE user_id = ${userId}
-    `;
-
-    await db`
-      UPDATE user_feedback 
-      SET is_read = true 
-      WHERE user_id = ${userId}
-    `;
-
+    // 👇 FIXED: Added ::uuid casts
+    await db`UPDATE performance_notifications SET is_read = true WHERE user_id = ${userId}::uuid`;
+    await db`UPDATE user_feedback SET is_read = true WHERE user_id = ${userId}::uuid`;
     return { success: true };
   } catch (error) {
     console.error("Error marking all notifications as read:", error);

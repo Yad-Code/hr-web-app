@@ -5,7 +5,7 @@ import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { userId } = body;
+    const { userId, status = "Active" } = body;
 
     if (!userId) {
       return NextResponse.json(
@@ -13,11 +13,14 @@ export async function POST(request: Request) {
         { status: 401 },
       );
     }
+
+    // Ensure status is strictly mapped to prevent injection
+    const safeStatus = status === "Offline" ? "Offline" : "Active";
  
     await db`
       UPDATE users 
-      SET status = 'Active', last_seen_at = CURRENT_TIMESTAMP 
-      WHERE id = ${userId}
+      SET status = ${safeStatus}, last_seen_at = CURRENT_TIMESTAMP 
+      WHERE id = ${userId}::uuid
     `;
 
     return NextResponse.json({ success: true });

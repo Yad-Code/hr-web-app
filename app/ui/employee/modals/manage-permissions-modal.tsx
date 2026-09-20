@@ -49,7 +49,7 @@ const actionLabels: Record<string, string> = {
   edit_personal_profile: "Edit Personal Profile",
   submit_requests: "Submit Leave Requests",
   view_payroll: "View Personal Payslips",
-  view_directory: "View Company Directory",
+  view_directory: "View Directory & Presence",
   view_policies: "Access Company Policies",
   create_records: "Create System Records",
   update_records: "Update System Records",
@@ -110,11 +110,11 @@ export default function ManagePermissionsModal({
     startTransition(async () => {
       const res = await grantPermission(formData);
       if (res.success) {
-        toast.success("Permission granted successfully!"); // 👈 TOAST SUCCESS
+        toast.success("Permission granted successfully!");
         const updated = await getUserPermissions(employee.id);
         setActivePermissions(updated as unknown as PermissionRecord[]);
       } else {
-        toast.error(res.error || "Failed to grant permission."); // 👈 TOAST ERROR
+        toast.error(res.error || "Failed to grant permission.");
       }
     });
   };
@@ -123,12 +123,12 @@ export default function ManagePermissionsModal({
     startTransition(async () => {
       const res = await revokePermission(recordId);
       if (res.success) {
-        toast.success("Permission revoked."); // 👈 TOAST SUCCESS
+        toast.success("Permission revoked.");
         setActivePermissions((prev) =>
           prev.filter((p) => p.record_id !== recordId),
         );
       } else {
-        toast.error(res.error || "Failed to revoke permission."); // 👈 TOAST ERROR
+        toast.error(res.error || "Failed to revoke permission.");
       }
     });
   };
@@ -319,6 +319,17 @@ export default function ManagePermissionsModal({
                       name="actionName"
                       className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white cursor-pointer"
                     >
+                      <optgroup label="Access & Visibility">
+                        <option value="view_directory">
+                          View Directory & Presence
+                        </option>
+                      </optgroup>
+                      {/* 👇 FIXED: Added manage_system_access here so it can be scoped to a Team */}
+                      <optgroup label="Security & Administration">
+                        <option value="manage_system_access">
+                          Manage System Access
+                        </option>
+                      </optgroup>
                       <optgroup label="Data & Reporting">
                         <option value="create_records">
                           Create System Records
@@ -353,7 +364,6 @@ export default function ManagePermissionsModal({
                   </div>
                 </div>
 
-                {/* 👇 FIXED: Select Dropdowns for Branch and Department */}
                 {selectedScope === "branch" && (
                   <div className="space-y-1.5 animate-fadeIn">
                     <label className="text-[11px] font-bold text-slate-600">
@@ -421,7 +431,6 @@ export default function ManagePermissionsModal({
             </div>
           )}
 
-          {/* PUBLIC PERMISSIONS TAB */}
           {activeTab === "public" && (
             <div className="space-y-6 animate-fadeIn">
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
@@ -451,6 +460,9 @@ export default function ManagePermissionsModal({
                       className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-purple-500/20 bg-white cursor-pointer"
                     >
                       <optgroup label="System & Security">
+                        <option value="manage_system">
+                          Full System Administrator
+                        </option>
                         <option value="manage_security_policies">
                           Manage Security Policies
                         </option>
@@ -463,7 +475,7 @@ export default function ManagePermissionsModal({
                       </optgroup>
                       <optgroup label="Basic Global Access">
                         <option value="view_directory">
-                          View Company Directory
+                          View Global Company Directory
                         </option>
                         <option value="view_policies">
                           Access Company Policies
