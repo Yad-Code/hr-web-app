@@ -174,8 +174,8 @@ export async function updateEmployeeDetails(
         UPDATE users 
         SET 
           employee_id = ${employeeId},
-          name = ${name}
-          email = ${email}
+          name = ${name},
+          email = ${email},
           department = ${department},
           branch = ${branch}, 
           base_salary = ${baseSalary},
@@ -198,10 +198,10 @@ export async function updateEmployeeDetails(
           public_org = ${publicOrg}, 
           private_org = ${privateOrg}, 
           insurance = ${insurance},
-          subscription = ${subscription},
+          subscription = ${subscription}
         WHERE id = ${targetUserId}::uuid
       `;
-    } else { 
+    } else {
       await sql`
         UPDATE users 
         SET 
@@ -241,16 +241,17 @@ export async function addDocumentAction(
   try {
     const session = await auth();
     const actorId = session?.user?.id;
-    if (!actorId) throw new Error("Unauthorized");
+    if (!actorId) return { success: false, error: "Unauthorized" };
 
     const requiredAction =
       actorId === userId ? "edit_personal_profile" : "create_records";
     const isAuthorized = await verifyAccess(actorId, requiredAction, userId);
 
     if (!isAuthorized) {
-      throw new Error(
-        "Forbidden: You do not have scoped permission to add documents.",
-      );
+      return {
+        success: false,
+        error: "Forbidden: You do not have scoped permission to add documents.",
+      };
     }
 
     const cleanUrl = newDoc.file_url.split("?")[0];
@@ -259,27 +260,20 @@ export async function addDocumentAction(
       !cleanUrl.startsWith("https://") ||
       !cleanUrl.includes(".vercel-storage.com")
     ) {
-      throw new Error(
-        "Security Exception: Invalid or untrusted document source.",
-      );
+      return {
+        success: false,
+        error: "Security Exception: Invalid or untrusted document source.",
+      };
     }
 
     const fileExtension = cleanUrl.split(".").pop() || "pdf";
 
     await sql`
       INSERT INTO employee_documents (
-        user_id, 
-        document_type, 
-        file_name, 
-        file_extension, 
-        file_url
+        user_id, document_type, file_name, file_extension, file_url
       )
       VALUES (
-        ${userId}::uuid, 
-        ${newDoc.category}, 
-        ${newDoc.title}, 
-        ${fileExtension}, 
-        ${newDoc.file_url}
+        ${userId}::uuid, ${newDoc.category}, ${newDoc.title}, ${fileExtension}, ${newDoc.file_url}
       )
     `;
 
@@ -287,7 +281,11 @@ export async function addDocumentAction(
     return { success: true };
   } catch (error) {
     console.error("Failed to add document:", error);
-    throw error;
+    // 👇 FIXED: Return a safe error state
+    return {
+      success: false,
+      error: "Database error occurred while adding document.",
+    };
   }
 }
 
@@ -295,16 +293,18 @@ export async function deleteDocumentAction(documentId: string, userId: string) {
   try {
     const session = await auth();
     const actorId = session?.user?.id;
-    if (!actorId) throw new Error("Unauthorized");
+    if (!actorId) return { success: false, error: "Unauthorized" };
 
     const requiredAction =
       actorId === userId ? "edit_personal_profile" : "delete_records";
     const isAuthorized = await verifyAccess(actorId, requiredAction, userId);
 
     if (!isAuthorized) {
-      throw new Error(
-        "Forbidden: You do not have scoped permission to delete this document.",
-      );
+      return {
+        success: false,
+        error:
+          "Forbidden: You do not have scoped permission to delete this document.",
+      };
     }
 
     await sql`
@@ -316,7 +316,10 @@ export async function deleteDocumentAction(documentId: string, userId: string) {
     return { success: true };
   } catch (error) {
     console.error("Failed to delete document:", error);
-    throw error;
+    return {
+      success: false,
+      error: "Database error occurred while deleting document.",
+    };
   }
 }
 

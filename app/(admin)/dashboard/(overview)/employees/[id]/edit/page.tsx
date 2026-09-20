@@ -74,21 +74,16 @@ export default async function AdminEmployeeEditPage({
     );
   }
 
-  // mock data
-  const currentCycle = "Q3 2026";
-  //
+  const today = new Date();
+  const currentCycle = `Q${Math.floor(today.getMonth() / 3) + 1} ${today.getFullYear()}`;
 
-  const managersList = await getManagersDropdown();
+  const managersList = await getManagersDropdown(actorId);
 
-  // Then fetch the remaining profile tabs safely
-  const [educationHistory, languageHistory, documents, assessment, skills] =
-    await Promise.all([
-      getEducationData(profile.id),
-      getLanguageData(profile.id),
-      getEmployeeDocumentsData(profile.id),
-      getEmployeeSelfAssessment(profile.id, currentCycle),
-      getEmployeeSkills(profile.id),
-    ]);
+  const educationHistory = await getEducationData(profile.id);
+  const languageHistory = await getLanguageData(profile.id);
+  const documents = await getEmployeeDocumentsData(profile.id);
+  const assessment = await getEmployeeSelfAssessment(profile.id, currentCycle);
+  const skills = await getEmployeeSkills(profile.id);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 p-2 sm:p-4 text-left select-none animate-fadeIn">
