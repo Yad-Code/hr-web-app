@@ -23,7 +23,7 @@ export async function verifyAccess(
 
     if (perms.length === 0) return false;
     if (perms.some((p) => p.scope === "global")) return true;
-
+    
     const targetQuery = await db`
       SELECT branch, department, manager_id FROM users WHERE id = ${targetUserId}::uuid
     `;

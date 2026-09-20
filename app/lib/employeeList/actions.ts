@@ -32,7 +32,6 @@ export async function uploadProfilePicture(formData: FormData) {
       return { success: false, error: "User identifier is missing." };
     }
 
-    // 👇 2. Dynamic ABAC Security Check
     const requiredAction =
       actorId === targetUserId ? "edit_personal_profile" : "update_records";
     const isAuthorized = await verifyAccess(
@@ -52,8 +51,13 @@ export async function uploadProfilePicture(formData: FormData) {
       return { success: false, error: "No image file provided." };
     }
 
-    if (!file.type.startsWith("image/")) {
-      return { success: false, error: "Selected file must be an image." };
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
+      return {
+        success: false,
+        error:
+          "Security Exception: Only JPG, PNG, WEBP, or GIF files are permitted.",
+      };
     }
 
     if (file.size > 4 * 1024 * 1024) {
@@ -154,14 +158,22 @@ export async function updateEmployeeDetails(
     const rawManagerId = formData.get("managerId")?.toString();
     const managerId = rawManagerId === "none" ? null : rawManagerId;
 
+    if (managerId === targetUserId) {
+      return { 
+        success: false, 
+        message: "Hierarchy Error: An employee cannot be assigned as their own manager." 
+      };
+    }
+    
     const joinDate = formData.get("joinDate")?.toString() || null;
     const publicOrg = formData.get("publicOrg")?.toString() || null;
     const privateOrg = formData.get("privateOrg")?.toString() || null;
     const insurance = formData.get("insurance")?.toString() || null;
     const subscription = formData.get("subscription")?.toString() || null;
 
-    const rawSalary = formData.get("baseSalary");
-    const baseSalary = rawSalary ? Number(rawSalary) : null;
+    const rawSalary = formData.get("baseSalary")?.toString();
+    const cleanSalary = rawSalary ? rawSalary.replace(/[^0-9.]/g, "") : null;
+    const baseSalary = cleanSalary ? Number(cleanSalary) : null;
 
     const canUpdateOfficialRecords = await verifyAccess(
       actorId,
@@ -339,7 +351,6 @@ export async function deleteEmployeeAction(targetUserId: string) {
       };
     }
 
-    // Dynamic Security Check: Can this user delete records for this specific target?
     const isAuthorized = await verifyAccess(
       actorId,
       "delete_records",
@@ -354,8 +365,16 @@ export async function deleteEmployeeAction(targetUserId: string) {
       };
     }
 
-    // Delete the user (Cascading deletes in DB will handle their related records)
-    await sql`DELETE FROM users WHERE id = ${targetUserId}::uuid`;
+    await sql`DELETE FROM user_permissions WHERE user_id = ${targetUserId}::uuid`;
+
+    await sql`
+      UPDATE users 
+      SET 
+        status = 'Terminated',
+        role = 'archived',
+        manager_id = NULL
+      WHERE id = ${targetUserId}::uuid
+    `;
 
     revalidatePath(`/dashboard/employees`);
     return { success: true };

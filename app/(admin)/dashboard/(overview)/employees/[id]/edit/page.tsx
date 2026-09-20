@@ -32,15 +32,13 @@ export default async function AdminEmployeeEditPage({
 
   const actorId = session.user.id;
   const { id: targetId } = await params;
-
-  // 1. Core Access Check
+ 
   const requiredAction =
     actorId === targetId ? "edit_personal_profile" : "update_records";
   const isAuthorized = await verifyAccess(actorId, requiredAction, targetId);
 
   if (!isAuthorized) redirect("/my-profile");
-
-  // 2. Resolve Specific ABAC Flags for UI Rendering
+ 
   const canUpdateOfficialRecords = await verifyAccess(
     actorId,
     "update_records",

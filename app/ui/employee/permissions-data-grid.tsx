@@ -10,12 +10,12 @@ import { deleteEmployeeAction } from "@/app/lib/employeeList/actions";
 
 interface PermissionsDataGridProps {
   employees: Employee[];
-  canDelete?: boolean; // 👈 FIXED: Added the prop
+  canDelete?: boolean;
 }
 
 export default function PermissionsDataGrid({
   employees,
-  canDelete = false, // 👈 FIXED: Default fallback
+  canDelete = false,
 }: PermissionsDataGridProps) {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
     null,
@@ -24,8 +24,8 @@ export default function PermissionsDataGrid({
     "private" | "standard" | "public"
   >("standard");
   const [isModalOpen, setIsModalOpen] = useState(false);
-
   const [isPending, startTransition] = useTransition();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const openModal = (
     employee: Employee,
@@ -42,13 +42,15 @@ export default function PermissionsDataGrid({
         `Are you absolutely sure you want to permanently delete ${name} from the system?`,
       )
     ) {
+      setDeletingId(id);
       startTransition(async () => {
         const res = await deleteEmployeeAction(id);
         if (!res.success) {
-          toast.error(res.error || "Failed to delete employee."); // 👈 FIXED: Replaced alert with toast
+          toast.error(res.error || "Failed to delete employee.");
         } else {
           toast.success("Employee permanently deleted.");
         }
+        setDeletingId(null);
       });
     }
   };
@@ -77,7 +79,6 @@ export default function PermissionsDataGrid({
               <th className="px-5 py-4 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
                 Public Access
               </th>
-              {/* 👇 FIXED: Conditionally render the Action header */}
               {canDelete && (
                 <th className="px-5 py-4 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-right">
                   Action
@@ -129,16 +130,16 @@ export default function PermissionsDataGrid({
                     <Globe className="w-3.5 h-3.5 text-slate-400" /> Public
                   </button>
                 </td>
-                {/* 👇 FIXED: Conditionally render the Delete button cell */}
+
                 {canDelete && (
                   <td className="px-5 py-3 text-right">
                     <button
-                      onClick={() => handleDelete(emp.id, emp.name)}
-                      disabled={isPending}
+                      onClick={() => handleDelete(emp.id, emp.name)} 
+                      disabled={isPending && deletingId === emp.id}
                       title={`Delete ${emp.name}`}
                       className="inline-flex p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 disabled:opacity-50 cursor-pointer"
-                    >
-                      {isPending ? (
+                    > 
+                      {isPending && deletingId === emp.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <Trash2 className="w-4 h-4" />
