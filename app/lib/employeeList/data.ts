@@ -1,6 +1,8 @@
 // @/app/lib/employeeList/data.ts
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
+import { auth } from "@/auth";  
+import { verifyAccess } from "@/app/lib/auth/access-control";
 
 export async function getDirectoryEmployees(actorId: string) {
   try {
@@ -62,6 +64,10 @@ export async function getProfileById(
 ): Promise<FullEmployeeProfile | null> {
   if (!id) return null;
 
+  const session = await auth();
+  const actorId = session?.user?.id;
+  if (!actorId) return null;
+  
   try {
     const users = await db`
       SELECT u.*, m.name as fetched_manager_name 
@@ -90,15 +96,16 @@ export async function getProfileById(
       current_address: user.current_address || "",
       date_of_birth: user.date_of_birth || null,
       age: user.age || null,
-      gender: user.gender || "N/A",
-      nationality: user.nationality || "N/A",
-      marital_status: user.marital_status || "Single",
-      blood_group: user.blood_group || "Unknown",
-      department: user.department || "General",
-      branch: user.branch || "Main Branch",
-      role: user.role || "employee",
-      status: user.status || "Active",
-      base_salary: user.base_salary ? Number(user.base_salary) : 3500.0,
+
+      gender: user.gender || null,
+      nationality: user.nationality || null,
+      marital_status: user.marital_status || null,
+      blood_group: user.blood_group || null,
+      department: user.department || null,
+      branch: user.branch || null,
+      role: user.role || null,
+      status: user.status || null,
+      base_salary: user.base_salary ? Number(user.base_salary) : 0,
       image_url: user.image_url || null,
       jobTitle: user.job_title || null,
       jobFamily: user.job_family || null,
@@ -108,9 +115,9 @@ export async function getProfileById(
       joinDate: user.join_date
         ? new Date(user.join_date).toISOString().split("T")[0]
         : null,
-      shift_start: user.shift_start || "09:00:00",
-      shift_end: user.shift_end || "17:00:00",
-      shift_type: user.shift_type || "Standard (Mon - Fri)",
+      shift_start: user.shift_start || null,
+      shift_end: user.shift_end || null,
+      shift_type: user.shift_type || null,
       publicOrg: user.public_org || null,
       privateOrg: user.private_org || null,
       insurance: user.insurance || null,
@@ -118,7 +125,7 @@ export async function getProfileById(
       last_seen_text: user.status === "Active" ? "Online" : "Offline",
       history: historyRows.map((row) => ({
         title: row.title,
-        company: row.company || "Company",
+        company: row.company || null,
         period: row.period,
       })),
     };
@@ -128,18 +135,41 @@ export async function getProfileById(
   }
 }
 
-export async function getManagersDropdown() {
+export async function getManagersDropdown(actorId: string) {
+  if (!actorId) return [];
+
   try {
     const managers = await db`
-      SELECT id, name, department 
-      FROM users  
-      WHERE role IN ('manager', 'admin', 'hr') AND status = 'Active'
-      ORDER BY name ASC
+      WITH params AS (
+        SELECT ${actorId}::uuid AS actor_id
+      ),
+      auth_users AS (
+        SELECT DISTINCT u.id FROM users u
+        CROSS JOIN params
+        JOIN user_permissions up ON up.user_id = params.actor_id
+        JOIN permissions p ON p.id = up.permission_id
+        WHERE p.action = 'view_directory'
+          AND (
+            up.scope = 'global' OR
+            (up.scope = 'branch' AND u.branch = up.target_branch) OR
+            (up.scope = 'department' AND u.department = up.target_department) OR
+            (up.scope = 'team' AND u.manager_id = params.actor_id)
+          )
+      )
+      SELECT DISTINCT u.id, u.name, u.department 
+      FROM users u 
+      JOIN user_permissions up ON up.user_id = u.id
+      JOIN permissions p ON p.id = up.permission_id
+      WHERE u.status = 'Active' 
+        AND p.action IN ('approve_leaves', 'start_reviews', 'manage_system')
+        AND u.id IN (SELECT id FROM auth_users)
+      ORDER BY u.name ASC
     `;
+
     return managers.map((m) => ({
       id: String(m.id),
       name: String(m.name),
-      department: String(m.department),
+      department: m.department ? String(m.department) : "Unassigned",
     }));
   } catch (error) {
     console.error("Failed to fetch managers:", error);

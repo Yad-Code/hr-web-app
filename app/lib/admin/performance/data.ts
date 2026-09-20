@@ -2,7 +2,10 @@
 
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { auth } from "@/auth";
-import { verifyAccess } from "@/app/lib/auth/access-control";
+import {
+  verifyAccess,
+  verifyFeatureAccess,
+} from "@/app/lib/auth/access-control";
 import {
   SelfAssessment,
   ReviewRow,
@@ -44,7 +47,7 @@ const authUsersCTE = (actorId: string) => db`
     CROSS JOIN params
     JOIN user_permissions up ON up.user_id = params.actor_id
     JOIN permissions p ON p.id = up.permission_id
-    WHERE p.action IN ('view_dashboard', 'start_reviews', 'log_feedback')
+   WHERE p.action = 'view_dashboard'
       AND (
         up.scope = 'global' OR
         (up.scope = 'branch' AND u.branch = up.target_branch) OR
@@ -57,62 +60,58 @@ const authUsersCTE = (actorId: string) => db`
 
 export async function getPerformanceDashboardData(actorId: string) {
   try {
-    const isGlobalAdmin = await verifyAccess(actorId, "manage_system", actorId);
+    const isGlobalAdmin = await verifyFeatureAccess(actorId, "manage_system");
 
-    const [
-      feedbackRes,
-      requestsRes,
-      kpiRes,
-      reviewsRes,
-      goalsRes,
-      meetingsRes,
-    ] = await Promise.all([
-      db<FeedbackRow[]>`
-        ${authUsersCTE(actorId)}
-        SELECT uf.id, uf.type, uf.text, uf.sender, uf.role, uf.date, u.name as recipient_name, u.image_url as recipient_image
-        FROM user_feedback uf JOIN users u ON uf.user_id = u.id
-        WHERE u.id IN (SELECT id FROM auth_users)
-        ORDER BY uf.date DESC LIMIT 5
-      `,
-      db<FeedbackRequestRow[]>`
-        ${authUsersCTE(actorId)}
-        SELECT pn.id, pn.title, pn.description, pn.created_at 
-        FROM performance_notifications pn JOIN users u ON pn.user_id = u.id
-        WHERE pn.type = 'Feedback Request' AND pn.is_read = false 
-        AND u.id IN (SELECT id FROM auth_users)
-        ORDER BY pn.created_at DESC LIMIT 5
-      `,
-      db`
-        ${authUsersCTE(actorId)}
-        SELECT 
-          (SELECT ROUND(AVG(rating), 1) FROM performance_reviews WHERE user_id IN (SELECT id FROM auth_users)) as avg_rating,
-          (SELECT COUNT(*) FROM performance_reviews WHERE status = 'Completed' AND user_id IN (SELECT id FROM auth_users)) as completed_reviews,
-          (SELECT COUNT(*) FROM performance_reviews WHERE status != 'Completed' AND user_id IN (SELECT id FROM auth_users)) as pending_reviews,
-          (SELECT COUNT(*) FROM user_goals WHERE status = 'In Progress' AND user_id IN (SELECT id FROM auth_users)) as active_goals,
-          (SELECT COUNT(*) FROM self_assessments WHERE submitted = true AND user_id IN (SELECT id FROM auth_users)) as submitted_assessments
-      `,
-      db<ReviewRow[]>`
-        ${authUsersCTE(actorId)}
-        SELECT pr.id, pr.period, pr.date, pr.reviewer, pr.rating, pr.status, u.name as employee_name, COALESCE(u.department, 'General') as department, u.image_url
-        FROM performance_reviews pr JOIN users u ON pr.user_id = u.id
-        WHERE u.id IN (SELECT id FROM auth_users)
-        ORDER BY pr.date DESC LIMIT 5
-      `,
-      db<GoalRow[]>`
-        ${authUsersCTE(actorId)}
-        SELECT ug.id, ug.title, ug.progress, ug.priority, ug.due_date, ug.status, u.name as employee_name
-        FROM user_goals ug JOIN users u ON ug.user_id = u.id
-        WHERE ug.status != 'Completed' AND u.id IN (SELECT id FROM auth_users)
-        ORDER BY ug.due_date ASC LIMIT 5
-      `,
-      db<MeetingRow[]>`
-        ${authUsersCTE(actorId)}
-        SELECT m.id, m.meeting_date, m.topic, m.status, u.name as employee_name, COALESCE(u.department, 'General') as department
-        FROM one_on_one_meetings m JOIN users u ON m.employee_id = u.id
-        WHERE m.status != 'Completed' AND u.id IN (SELECT id FROM auth_users)
-        ORDER BY m.meeting_date ASC LIMIT 5
-      `,
-    ]);
+    const feedbackRes = await db<FeedbackRow[]>`
+      ${authUsersCTE(actorId)}
+      SELECT uf.id, uf.type, uf.text, uf.sender, uf.role, uf.date, u.name as recipient_name, u.image_url as recipient_image
+      FROM user_feedback uf JOIN users u ON uf.user_id = u.id
+      WHERE u.id IN (SELECT id FROM auth_users)
+      ORDER BY uf.date DESC LIMIT 5
+    `;
+
+    const requestsRes = await db<FeedbackRequestRow[]>`
+      ${authUsersCTE(actorId)}
+      SELECT pn.id, pn.title, pn.description, pn.created_at 
+      FROM performance_notifications pn JOIN users u ON pn.user_id = u.id
+      WHERE pn.type = 'Feedback Request' AND pn.is_read = false 
+      AND u.id IN (SELECT id FROM auth_users)
+      ORDER BY pn.created_at DESC LIMIT 5
+    `;
+
+    const kpiRes = await db`
+      ${authUsersCTE(actorId)}
+      SELECT 
+        (SELECT ROUND(AVG(rating), 1) FROM performance_reviews WHERE user_id IN (SELECT id FROM auth_users)) as avg_rating,
+        (SELECT COUNT(*) FROM performance_reviews WHERE status = 'Completed' AND user_id IN (SELECT id FROM auth_users)) as completed_reviews,
+        (SELECT COUNT(*) FROM performance_reviews WHERE status != 'Completed' AND user_id IN (SELECT id FROM auth_users)) as pending_reviews,
+        (SELECT COUNT(*) FROM user_goals WHERE status = 'In Progress' AND user_id IN (SELECT id FROM auth_users)) as active_goals,
+        (SELECT COUNT(*) FROM self_assessments WHERE submitted = true AND user_id IN (SELECT id FROM auth_users)) as submitted_assessments
+    `;
+
+    const reviewsRes = await db<ReviewRow[]>`
+      ${authUsersCTE(actorId)}
+      SELECT pr.id, pr.period, pr.date, pr.reviewer, pr.rating, pr.status, u.name as employee_name, COALESCE(u.department, 'General') as department, u.image_url
+      FROM performance_reviews pr JOIN users u ON pr.user_id = u.id
+      WHERE u.id IN (SELECT id FROM auth_users)
+      ORDER BY pr.date DESC LIMIT 5
+    `;
+
+    const goalsRes = await db<GoalRow[]>`
+      ${authUsersCTE(actorId)}
+      SELECT ug.id, ug.title, ug.progress, ug.priority, ug.due_date, ug.status, u.name as employee_name
+      FROM user_goals ug JOIN users u ON ug.user_id = u.id
+      WHERE ug.status != 'Completed' AND u.id IN (SELECT id FROM auth_users)
+      ORDER BY ug.due_date ASC LIMIT 5
+    `;
+
+    const meetingsRes = await db<MeetingRow[]>`
+      ${authUsersCTE(actorId)}
+      SELECT m.id, m.meeting_date, m.topic, m.status, u.name as employee_name, COALESCE(u.department, 'General') as department
+      FROM one_on_one_meetings m JOIN users u ON m.employee_id = u.id
+      WHERE m.status != 'Completed' AND u.id IN (SELECT id FROM auth_users)
+      ORDER BY m.meeting_date ASC LIMIT 5
+    `;
 
     const today = new Date();
     const kpiStats: PerformanceKpiData = {
@@ -147,7 +146,7 @@ export async function getAdminUpcomingSyncs(): Promise<MeetingRow[]> {
 
     return await db<MeetingRow[]>`
       ${authUsersCTE(actorId)}
-      SELECT m.id, m.meeting_date, m.topic, m.status, u.name AS employee_name, COALESCE(u.department, 'General') AS department
+      SELECT m.id, m.meeting_date, m.topic, m.status, u.name AS employee_name, u.department AS department
       FROM one_on_one_meetings m JOIN users u ON m.employee_id = u.id
       WHERE m.meeting_date >= CURRENT_DATE AND u.id IN (SELECT id FROM auth_users)
       ORDER BY m.meeting_date ASC LIMIT 5
@@ -166,7 +165,7 @@ export async function getAllAdminMeetings(): Promise<MeetingRow[]> {
 
     return await db<MeetingRow[]>`
       ${authUsersCTE(actorId)}
-      SELECT m.id, m.meeting_date, m.topic, m.status, u.name AS employee_name, COALESCE(u.department, 'General') AS department
+      SELECT m.id, m.meeting_date, m.topic, m.status, u.name AS employee_name, u.department AS department
       FROM one_on_one_meetings m JOIN users u ON m.employee_id = u.id
       WHERE u.id IN (SELECT id FROM auth_users)
       ORDER BY m.meeting_date DESC
@@ -188,7 +187,7 @@ export async function getMeetingDetailsById(
     const rows = await db<AdminMeetingDetail[]>`
       SELECT 
         m.id, m.employee_id, m.manager_id, m.meeting_date, m.topic, m.notes, m.action_items, m.status, m.created_at,
-        emp.name AS employee_name, emp.email AS employee_email, COALESCE(emp.department, 'General') AS department,
+        emp.name AS employee_name, emp.email AS employee_email, emp.department AS department,
         mgr.name AS manager_name
       FROM one_on_one_meetings m
       JOIN users emp ON m.employee_id = emp.id
@@ -220,7 +219,7 @@ export async function getEmployeesList(): Promise<EmployeeOption[]> {
 
     return await db<EmployeeOption[]>`
       ${authUsersCTE(actorId)}
-      SELECT id, name, COALESCE(department, 'General') AS department 
+      SELECT id, name, department AS department 
       FROM users 
       WHERE id IN (SELECT id FROM auth_users)
       ORDER BY name ASC
@@ -290,7 +289,7 @@ export async function getAllGoals(): Promise<GoalRow[]> {
 
     return await db<GoalRow[]>`
       ${authUsersCTE(actorId)}
-      SELECT ug.id, ug.title, ug.progress, ug.priority, ug.due_date, ug.status, u.name as employee_name, COALESCE(u.department, 'General') as department
+      SELECT ug.id, ug.title, ug.progress, ug.priority, ug.due_date, ug.status, u.name as employee_name, u.department as department
       FROM user_goals ug JOIN users u ON ug.user_id = u.id
       WHERE u.id IN (SELECT id FROM auth_users)
       ORDER BY CASE WHEN ug.status = 'In Progress' THEN 1 WHEN ug.status = 'Pending' THEN 2 ELSE 3 END, ug.due_date ASC
@@ -330,7 +329,7 @@ export async function getAllReviews(): Promise<ReviewRow[]> {
 
     return await db<ReviewRow[]>`
       ${authUsersCTE(actorId)}
-      SELECT pr.id, pr.period, pr.date, pr.reviewer, pr.rating, pr.status, u.name as employee_name, COALESCE(u.department, 'General') as department, u.image_url
+      SELECT pr.id, pr.period, pr.date, pr.reviewer, pr.rating, pr.status, u.name as employee_name, u.department as department, u.image_url
       FROM performance_reviews pr JOIN users u ON pr.user_id = u.id
       WHERE u.id IN (SELECT id FROM auth_users)
       ORDER BY pr.date DESC
@@ -350,7 +349,7 @@ export async function getReviewDetailsById(
     if (!actorId) return null;
 
     const rows = await db<AdminReviewDetail[]>`
-      SELECT pr.*, u.name as employee_name, COALESCE(u.department, 'General') as department, u.job_title, u.image_url
+      SELECT pr.*, u.name as employee_name, u.department as department, u.job_title, u.image_url
       FROM performance_reviews pr JOIN users u ON pr.user_id = u.id
       WHERE pr.id = ${id}::uuid
     `;

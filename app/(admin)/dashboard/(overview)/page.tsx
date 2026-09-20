@@ -1,13 +1,15 @@
-// @/app/(admin)/dashboard/page.tsx
+// @/app/(admin)/dashboard/(overview)/page.tsx
 
 import { Suspense } from "react";
+import { redirect } from "next/navigation";  
 import AdminCardsWrapper from "./_components/cards-wrapper";
 import AdminChartWrapper from "./_components/chart-wrapper";
 import { QuickOperationsWidget } from "./_components/quick-operations";
 import { SecondaryWidgets } from "./_components/secondary-widgets";
 import { lusitana } from "@/app/ui/fonts";
 import { auth } from "@/auth";
-import { verifyAccess } from "@/app/lib/auth/access-control";
+import { verifyFeatureAccess } from "@/app/lib/auth/access-control"; 
+
 import {
   RetentionEngagementChartSkeleton,
   EmployeeActivitySkeleton,
@@ -17,12 +19,19 @@ import {
 export default async function Page() {
   const session = await auth();
   if (!session?.user?.id) return null;
+ 
+  const canViewDashboard = await verifyFeatureAccess(
+    session.user.id,
+    "view_dashboard",
+  );
+  if (!canViewDashboard) {
+    redirect("/my-profile");
+  }
 
-  // ABAC Dynamic UI check
-  const hasGlobalView = await verifyAccess(
+  // ABAC Dynamic UI check for the header title
+  const hasGlobalView = await verifyFeatureAccess(
     session.user.id,
     "manage_system",
-    session.user.id,
   );
 
   return (

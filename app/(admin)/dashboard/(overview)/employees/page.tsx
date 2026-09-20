@@ -1,7 +1,7 @@
 // @/app/(admin)/dashboard/(overview)/employees/page.tsx
 import { Suspense } from "react";
 import { auth } from "@/auth";
-import { verifyAccess } from "@/app/lib/auth/access-control";
+import { verifyFeatureAccess } from "@/app/lib/auth/access-control";
 import { EmployeeSearchListClient } from "./EmployeeSearchList";
 import { EmployeeSearchListSkeleton } from "@/app/ui/employee/skeleton";
 import { getDirectoryEmployees } from "@/app/lib/employeeList/data";
@@ -18,9 +18,12 @@ export default async function EmployeesStatusPage() {
     session.user.id,
   );
 
-  const canDelete = await verifyAccess(session.user.id, "delete_records");
-  const canManageAccess = await verifyAccess(
-    session.user.id, 
+  const canDelete = await verifyFeatureAccess(
+    session.user.id,
+    "delete_records",
+  );
+  const canManageAccess = await verifyFeatureAccess(
+    session.user.id,
     "manage_system_access",
   );
 
@@ -37,7 +40,7 @@ export default async function EmployeesStatusPage() {
         </p>
       </div>
 
-      <Suspense fallback={<EmployeeSearchListSkeleton />}> 
+      <Suspense fallback={<EmployeeSearchListSkeleton />}>
         <EmployeeSearchListClient
           initialEmployees={employees}
           canDelete={canDelete}

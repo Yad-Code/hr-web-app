@@ -173,54 +173,47 @@ export async function updateEmployeeDetails(
       await sql`
         UPDATE users 
         SET 
-          employee_id = COALESCE(${employeeId}, employee_id),
-          name = COALESCE(${name}, name),
-          email = COALESCE(${email}, email),
-          department = COALESCE(${department}, department),
-          branch = COALESCE(${branch}, branch),
-          base_salary = COALESCE(${baseSalary}, base_salary),
-          date_of_birth = COALESCE(${dateOfBirth}, date_of_birth),
-          gender = COALESCE(${gender}, gender),
-          nationality = COALESCE(${nationality}, nationality),
-          status = COALESCE(${status}, status),
-          role = COALESCE(${role}, role),
-          preferred_name = COALESCE(${preferredName}, preferred_name),
-          marital_status = COALESCE(${maritalStatus}, marital_status),
-          blood_group = COALESCE(${bloodGroup}, blood_group),
-          personal_email = COALESCE(${personalEmail}, personal_email),
-          personal_phone = COALESCE(${personalPhone}, personal_phone),
-          current_address = COALESCE(${currentAddress}, current_address),
-          job_title = COALESCE(${jobTitle}, job_title),
-          job_family = COALESCE(${jobFamily}, job_family),
-          employment_type = COALESCE(${employmentType}, employment_type),
+          employee_id = ${employeeId},
+          name = ${name}
+          email = ${email}
+          department = ${department},
+          branch = ${branch}, 
+          base_salary = ${baseSalary},
+          date_of_birth = ${dateOfBirth},
+          gender = ${gender},
+          nationality = ${nationality},
+          status = ${status}, 
+          role = ${role},
+          preferred_name = ${preferredName}, 
+          marital_status = ${maritalStatus}, 
+          blood_group = ${bloodGroup}, 
+          personal_email = ${personalEmail}, 
+          personal_phone = ${personalPhone}, 
+          current_address = ${currentAddress}, 
+          job_title = ${jobTitle}, 
+          job_family = ${jobFamily}, 
+          employment_type = ${employmentType}, 
           manager_id = CASE WHEN ${hasManagerId}::boolean THEN ${managerId ? managerId : null}::uuid ELSE manager_id END,
-          join_date = COALESCE(${joinDate}, join_date),
-          public_org = COALESCE(${publicOrg}, public_org),
-          private_org = COALESCE(${privateOrg}, private_org),
-          insurance = COALESCE(${insurance}, insurance),
-          subscription = COALESCE(${subscription}, subscription)
+          join_date = ${joinDate},
+          public_org = ${publicOrg}, 
+          private_org = ${privateOrg}, 
+          insurance = ${insurance},
+          subscription = ${subscription},
         WHERE id = ${targetUserId}::uuid
       `;
-    } else {
-      // Standard employee editing their own profile
+    } else { 
       await sql`
         UPDATE users 
         SET 
-          employee_id = COALESCE(${employeeId}, employee_id),
-          name = COALESCE(${name}, name),
-          email = COALESCE(${email}, email),
-          department = COALESCE(${department}, department),
-          branch = COALESCE(${branch}, branch),
-          date_of_birth = COALESCE(${dateOfBirth}, date_of_birth),
-          gender = COALESCE(${gender}, gender),
-          nationality = COALESCE(${nationality}, nationality),
-          status = COALESCE(${status}, status),
-          preferred_name = COALESCE(${preferredName}, preferred_name),
-          marital_status = COALESCE(${maritalStatus}, marital_status),
-          blood_group = COALESCE(${bloodGroup}, blood_group),
-          personal_email = COALESCE(${personalEmail}, personal_email),
-          personal_phone = COALESCE(${personalPhone}, personal_phone),
-          current_address = COALESCE(${currentAddress}, current_address)
+          preferred_name = ${preferredName},
+          personal_email = ${personalEmail},
+          personal_phone = ${personalPhone},
+          current_address = ${currentAddress},
+          date_of_birth = ${dateOfBirth},
+          gender = ${gender},
+          nationality = ${nationality},
+          marital_status = ${maritalStatus},
+          blood_group = ${bloodGroup}
         WHERE id = ${targetUserId}::uuid
       `;
     }
@@ -250,7 +243,6 @@ export async function addDocumentAction(
     const actorId = session?.user?.id;
     if (!actorId) throw new Error("Unauthorized");
 
-    // 👇 5. Dynamic ABAC Check for Documents
     const requiredAction =
       actorId === userId ? "edit_personal_profile" : "create_records";
     const isAuthorized = await verifyAccess(actorId, requiredAction, userId);
@@ -262,6 +254,16 @@ export async function addDocumentAction(
     }
 
     const cleanUrl = newDoc.file_url.split("?")[0];
+
+    if (
+      !cleanUrl.startsWith("https://") ||
+      !cleanUrl.includes(".vercel-storage.com")
+    ) {
+      throw new Error(
+        "Security Exception: Invalid or untrusted document source.",
+      );
+    }
+
     const fileExtension = cleanUrl.split(".").pop() || "pdf";
 
     await sql`
@@ -295,7 +297,6 @@ export async function deleteDocumentAction(documentId: string, userId: string) {
     const actorId = session?.user?.id;
     if (!actorId) throw new Error("Unauthorized");
 
-    // 👇 6. Dynamic ABAC Check for Deleting Documents
     const requiredAction =
       actorId === userId ? "edit_personal_profile" : "delete_records";
     const isAuthorized = await verifyAccess(actorId, requiredAction, userId);
@@ -307,7 +308,8 @@ export async function deleteDocumentAction(documentId: string, userId: string) {
     }
 
     await sql`
-      DELETE FROM employee_documents WHERE id = ${documentId}::uuid
+      DELETE FROM employee_documents 
+      WHERE id = ${documentId}::uuid AND user_id = ${userId}::uuid
     `;
 
     revalidatePath(`/dashboard/employees/${userId}`);
@@ -324,6 +326,14 @@ export async function deleteEmployeeAction(targetUserId: string) {
     const actorId = session?.user?.id;
     if (!actorId) {
       return { success: false, error: "Unauthorized" };
+    }
+
+    if (actorId === targetUserId) {
+      return {
+        success: false,
+        error:
+          "Security Exception: You cannot delete your own active account. Have another admin perform this action.",
+      };
     }
 
     // Dynamic Security Check: Can this user delete records for this specific target?

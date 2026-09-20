@@ -1,4 +1,5 @@
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
+import { cache } from "react";
 
 /**
  * Universal Access Control Gateway
@@ -8,8 +9,10 @@ import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 export async function verifyAccess(
   actorId: string,
   actionName: string,
-  targetUserId?: string,
+  targetUserId: string,
 ): Promise<boolean> {
+  if (!actorId || !actionName || !targetUserId) return false;
+
   try {
     const perms = await db`
       SELECT up.scope, up.target_branch, up.target_department
@@ -20,8 +23,6 @@ export async function verifyAccess(
 
     if (perms.length === 0) return false;
     if (perms.some((p) => p.scope === "global")) return true;
-    if (!targetUserId) return true;
-    if (actorId === targetUserId) return true;
 
     const targetQuery = await db`
       SELECT branch, department, manager_id FROM users WHERE id = ${targetUserId}::uuid
@@ -35,6 +36,9 @@ export async function verifyAccess(
     const actor = actorQuery[0];
 
     for (const perm of perms) {
+      if (perm.scope === "self" && actorId === targetUserId) {
+        return true;
+      }
       if (perm.scope === "team" && targetUser.manager_id === actorId) {
         return true;
       }
@@ -55,20 +59,30 @@ export async function verifyAccess(
   }
 }
 
+const getCachedUserFeatures = cache(async (actorId: string) => {
+  try {
+    const result = await db`
+      SELECT p.action 
+      FROM user_permissions up
+      JOIN permissions p ON p.id = up.permission_id
+      WHERE up.user_id = ${actorId}::uuid
+    `;
+    // Store as a Set for instant O(1) lookups
+    return new Set(result.map((row) => row.action));
+  } catch (error) {
+    console.error("Failed to fetch user features:", error);
+    return new Set();
+  }
+});
+
 export async function verifyFeatureAccess(actorId: string, action: string) {
   if (!actorId || !action) {
     return false;
   }
 
   try {
-    const result = await db`
-      SELECT 1 FROM user_permissions up
-      JOIN permissions p ON p.id = up.permission_id
-      WHERE up.user_id = ${actorId}::uuid AND p.action = ${action}
-      LIMIT 1
-    `;
-    
-    return result?.length > 0;
+    const userFeatures = await getCachedUserFeatures(actorId);
+    return userFeatures.has(action);
   } catch (error) {
     console.error("Feature access check failed:", error);
     return false;

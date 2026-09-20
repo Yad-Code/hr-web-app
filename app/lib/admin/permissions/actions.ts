@@ -4,13 +4,15 @@
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
-import { verifyAccess } from "@/app/lib/auth/access-control";
+import {
+  verifyAccess,
+  verifyFeatureAccess,
+} from "@/app/lib/auth/access-control";
 
 export async function getUserPermissions(targetUserId: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
-  // 👇 FIXED: Passed targetUserId so a manager can only view permissions of their own scoped team
   const isAuthorized = await verifyAccess(
     session.user.id,
     "manage_system_access",
@@ -49,7 +51,6 @@ export async function grantPermission(formData: FormData) {
 
   const userId = formData.get("userId") as string;
 
-  // 👇 FIXED: Passed userId to ensure the actor is authorized to modify this specific employee
   const isAuthorized = await verifyAccess(
     session.user.id,
     "manage_system_access",
@@ -64,8 +65,21 @@ export async function grantPermission(formData: FormData) {
 
   const actionName = formData.get("actionName") as string;
   const scope = formData.get("scope") as string;
+ 
+  if (scope === "global" || actionName === "manage_system") {
+    const isSuperAdmin = await verifyFeatureAccess(
+      session.user.id,
+      "manage_system",
+    );
+    if (!isSuperAdmin) {
+      return {
+        success: false,
+        error:
+          "Security Exception: You cannot grant Global Enterprise privileges.",
+      };
+    }
+  }
 
-  // 👇 FIXED: Strictly nullify branch/department data if the scope doesn't explicitly require it
   const targetBranch =
     scope === "branch"
       ? (formData.get("targetBranch") as string) || null
@@ -106,10 +120,9 @@ export async function revokePermission(recordId: string) {
     return { success: false, error: "Unauthorized" };
   }
 
-  try {
-    // 👇 FIXED: We must fetch the target record FIRST to know WHO we are revoking from
+  try { 
     const targetRecord = await db`
-      SELECT up.user_id, p.action 
+      SELECT up.user_id, p.action, up.scope 
       FROM user_permissions up
       JOIN permissions p ON up.permission_id = p.id
       WHERE up.id = ${recordId}::uuid
@@ -119,9 +132,8 @@ export async function revokePermission(recordId: string) {
       return { success: false, error: "Permission record not found." };
     }
 
-    const { user_id, action } = targetRecord[0];
+    const { user_id, action, scope } = targetRecord[0];
 
-    // 👇 FIXED: Now we securely check if the current user has authority over the target user
     const isAuthorized = await verifyAccess(
       currentUserId,
       "manage_system_access",
@@ -134,6 +146,20 @@ export async function revokePermission(recordId: string) {
         error:
           "Forbidden: You lack permission to revoke access from this employee.",
       };
+ 
+    if (scope === "global" || action === "manage_system") {
+      const isSuperAdmin = await verifyFeatureAccess(
+        currentUserId,
+        "manage_system",
+      );
+      if (!isSuperAdmin) {
+        return {
+          success: false,
+          error:
+            "Security Exception: You cannot revoke Global Enterprise privileges.",
+        };
+      }
+    }
 
     if (
       String(user_id) === currentUserId &&
