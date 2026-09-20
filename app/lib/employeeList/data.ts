@@ -3,7 +3,7 @@ import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
 
 export async function getDirectoryEmployees(actorId: string) {
-  try { 
+  try {
     const adminCheck = await db`
       SELECT 1 FROM user_permissions up
       JOIN permissions p ON p.id = up.permission_id
@@ -38,7 +38,9 @@ export async function getDirectoryEmployees(actorId: string) {
     const employees = users.map((user) => ({
       id: String(user.id),
       name: String(user.name),
-      preferred_name: user.preferred_name ? String(user.preferred_name) : undefined,
+      preferred_name: user.preferred_name
+        ? String(user.preferred_name)
+        : undefined,
       email: String(user.email),
       department: user.department ? String(user.department) : undefined,
       branch: user.branch ? String(user.branch) : undefined,
@@ -55,7 +57,9 @@ export async function getDirectoryEmployees(actorId: string) {
   }
 }
 
-export async function getProfileById(id: string): Promise<FullEmployeeProfile | null> {
+export async function getProfileById(
+  id: string,
+): Promise<FullEmployeeProfile | null> {
   if (!id) return null;
 
   try {
@@ -101,7 +105,9 @@ export async function getProfileById(id: string): Promise<FullEmployeeProfile | 
       employmentType: user.employment_type || null,
       managerName: user.fetched_manager_name || null,
       managerId: user.manager_id || null,
-      joinDate: user.join_date ? new Date(user.join_date).toISOString().split("T")[0] : null,
+      joinDate: user.join_date
+        ? new Date(user.join_date).toISOString().split("T")[0]
+        : null,
       shift_start: user.shift_start || "09:00:00",
       shift_end: user.shift_end || "17:00:00",
       shift_type: user.shift_type || "Standard (Mon - Fri)",
@@ -126,14 +132,14 @@ export async function getManagersDropdown() {
   try {
     const managers = await db`
       SELECT id, name, department 
-      FROM users 
-      WHERE role IN ('manager', 'admin') AND status = 'Active'
+      FROM users  
+      WHERE role IN ('manager', 'admin', 'hr') AND status = 'Active'
       ORDER BY name ASC
     `;
-    return managers.map(m => ({ 
-      id: String(m.id), 
-      name: String(m.name), 
-      department: String(m.department) 
+    return managers.map((m) => ({
+      id: String(m.id),
+      name: String(m.name),
+      department: String(m.department),
     }));
   } catch (error) {
     console.error("Failed to fetch managers:", error);

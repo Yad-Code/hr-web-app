@@ -78,21 +78,17 @@ export default async function AdminEmployeeEditPage({
   const currentCycle = "Q3 2026";
   //
 
-  const [
-    educationHistory,
-    languageHistory,
-    documents,
-    assessment,
-    skills,
-    managersList,
-  ] = await Promise.all([
-    getEducationData(profile.id),
-    getLanguageData(profile.id),
-    getEmployeeDocumentsData(profile.id),
-    getEmployeeSelfAssessment(profile.id, currentCycle),
-    getEmployeeSkills(profile.id),
-    getManagersDropdown(), // 👈 FIXED: Fetch the real managers
-  ]);
+  const managersList = await getManagersDropdown();
+
+  // Then fetch the remaining profile tabs safely
+  const [educationHistory, languageHistory, documents, assessment, skills] =
+    await Promise.all([
+      getEducationData(profile.id),
+      getLanguageData(profile.id),
+      getEmployeeDocumentsData(profile.id),
+      getEmployeeSelfAssessment(profile.id, currentCycle),
+      getEmployeeSkills(profile.id),
+    ]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 p-2 sm:p-4 text-left select-none animate-fadeIn">
@@ -128,7 +124,7 @@ export default async function AdminEmployeeEditPage({
           documents={documents}
           assessment={assessment}
           skills={skills}
-          managersList={managersList}  
+          managersList={managersList}
           canUpdateOfficialRecords={canUpdateOfficialRecords}
           canManagePermissions={canManagePermissions}
         />
