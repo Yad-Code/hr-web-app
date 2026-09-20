@@ -1,8 +1,6 @@
-// app/lib/employeeDashboard/employee/data.ts
-
+// @/app/lib/employeeDashboard/employee/data.ts
 import { auth } from "@/auth";
 import { sql } from "@/app/lib/employeeDashboard/employee/db";
-
 import { Employee } from "@/app/lib/employeeList/definitions";
 import { formatDistanceToNow } from "date-fns";
 
@@ -47,6 +45,8 @@ export async function getProfileData(email: string) {
       name: user.name,
       preferred_name: user.preferred_name || user.name,
       jobTitle: user.job_title || null,
+      jobFamily: user.job_family || null,
+      employmentType: user.employment_type || null,
       department: user.department || "General",
       branch: user.branch || "Main Branch",
       date_of_birth: user.date_of_birth || null,
@@ -63,6 +63,13 @@ export async function getProfileData(email: string) {
       status: user.status || "Active",
       image_url: user.image_url || null,
       managerName: user.fetched_manager_name || null,
+      managerId: user.manager_id || null,  
+      joinDate: user.join_date || null,
+      base_salary: user.base_salary || null,
+      publicOrg: user.public_org || null,
+      privateOrg: user.private_org || null,
+      insurance: user.insurance || null,
+      subscription: user.subscription || null,
     };
   } catch (error) {
     console.error("Failed to fetch employee profile:", error);
@@ -75,7 +82,7 @@ export async function fetchEmployeeStatusList(): Promise<Employee[]> {
     const session = await auth();
     if (!session?.user?.id) return [];
 
-    // 👇 FIXED: Securely deriving privileges from the NextAuth role instead of deleted boolean
+    // 👇 FIXED: Deriving access directly from the secure session role
     const role = session.user.role?.toLowerCase() || "employee";
     const canViewAll = role === "admin" || role === "hr" || role === "manager";
     const currentUserId = session.user.id;
@@ -165,7 +172,6 @@ export async function fetchPendingAdminRequests() {
         u.image_url AS employee_image
       FROM leave_requests r
       JOIN users u ON r.user_id = u.id
-      -- ONLY SHOW PENDING IF IT IS NOT AN EXCHANGE, OR IF THE HELPER ALREADY ACCEPTED
       WHERE r.status ILIKE 'pending' AND (r.type != 'exchange' OR r.helper_status = 'Accepted')
       ORDER BY r.created_at DESC
     `;
@@ -198,7 +204,6 @@ export function getFormattedTime(): string {
   const ampm = hours >= 12 ? "PM" : "AM";
   hours = hours % 12 || 12;
   const formattedHours = String(hours).padStart(2, "0");
-
   return `${formattedHours}:${minutes} ${ampm}`;
 }
 
@@ -207,23 +212,17 @@ export function calculateWorkHours(checkIn: string, checkOut: string): string {
     const cleanStr = timeStr.replace(/\u202f/g, " ").trim();
     const match = cleanStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
     if (!match) return 0;
-
     let h = parseInt(match[1], 10);
     const m = parseInt(match[2], 10);
     const period = match[3].toUpperCase();
-
     if (period === "PM" && h < 12) h += 12;
     if (period === "AM" && h === 12) h = 0;
-
     return h * 60 + m;
   };
-
   const startMins = parseMins(checkIn);
   const endMins = parseMins(checkOut);
   let diff = endMins - startMins;
-
   if (diff < 0) diff += 24 * 60;
-
   const hours = Math.floor(diff / 60);
   const mins = diff % 60;
   return `${hours}h ${mins}m`;
@@ -237,8 +236,7 @@ export async function getTodayAttendance(
     const records = await sql<AttendanceRecord[]>`
       SELECT id, user_id, date::text, check_in, check_out, work_hours, status, work_location
       FROM attendance 
-      WHERE user_id = ${userId}::uuid 
-        AND date = ${date}::date
+      WHERE user_id = ${userId}::uuid AND date = ${date}::date
       LIMIT 1
     `;
     return records[0] || null;
@@ -273,8 +271,7 @@ export async function updateCheckOut(
   try {
     await sql`
       UPDATE attendance 
-      SET check_out = ${checkOutTime},
-          work_hours = ${workHours}
+      SET check_out = ${checkOutTime}, work_hours = ${workHours}
       WHERE id = ${id}::uuid
     `;
   } catch (error) {

@@ -1,14 +1,19 @@
+// @/app/lib/employeeDashboard/performance/data.ts
 import { sql } from "@/app/lib/employeeDashboard/employee/db";
-
+import { auth } from "@/auth";
 import { PerformanceKpiData } from "@/app/lib/employeeDashboard/performance/definitions";
 
-export async function getPerformanceKPIs(
-  isAdmin: boolean,
-  managerName: string,
-): Promise<PerformanceKpiData> {
+export async function getPerformanceKPIs(): Promise<PerformanceKpiData> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const userId = session.user.id;
+  const role = session.user.role?.toLowerCase() || "employee";
+  const canViewAll = role === "admin" || role === "hr";
+
   let avgResult, reviewsCount, goalsCount, selfCount;
 
-  if (isAdmin) {
+  if (canViewAll) {
     [[avgResult], [reviewsCount], [goalsCount], [selfCount]] =
       await Promise.all([
         sql`SELECT COALESCE(ROUND(AVG(rating), 1), 0.0) as avg_rating FROM performance_reviews`,
@@ -16,13 +21,13 @@ export async function getPerformanceKPIs(
         sql`SELECT COUNT(*) FILTER (WHERE status = 'In Progress') as active FROM user_goals`,
         sql`SELECT COUNT(*) as submitted FROM self_assessments WHERE submitted = true`,
       ]);
-  } else {
+  } else { 
     [[avgResult], [reviewsCount], [goalsCount], [selfCount]] =
       await Promise.all([
-        sql`SELECT COALESCE(ROUND(AVG(pr.rating), 1), 0.0) as avg_rating FROM performance_reviews pr JOIN users u ON pr.user_id = u.id WHERE u.manager_name = ${managerName}`,
-        sql`SELECT COUNT(*) FILTER (WHERE pr.status = 'Completed') as completed, COUNT(*) FILTER (WHERE pr.status = 'Pending' OR pr.status = 'Scheduled') as pending FROM performance_reviews pr JOIN users u ON pr.user_id = u.id WHERE u.manager_name = ${managerName}`,
-        sql`SELECT COUNT(*) FILTER (WHERE ug.status = 'In Progress') as active FROM user_goals ug JOIN users u ON ug.user_id = u.id WHERE u.manager_name = ${managerName}`,
-        sql`SELECT COUNT(*) as submitted FROM self_assessments sa JOIN users u ON sa.user_id = u.id WHERE sa.submitted = true AND u.manager_name = ${managerName}`,
+        sql`SELECT COALESCE(ROUND(AVG(pr.rating), 1), 0.0) as avg_rating FROM performance_reviews pr JOIN users u ON pr.user_id = u.id WHERE u.manager_id = ${userId}::uuid`,
+        sql`SELECT COUNT(*) FILTER (WHERE pr.status = 'Completed') as completed, COUNT(*) FILTER (WHERE pr.status = 'Pending' OR pr.status = 'Scheduled') as pending FROM performance_reviews pr JOIN users u ON pr.user_id = u.id WHERE u.manager_id = ${userId}::uuid`,
+        sql`SELECT COUNT(*) FILTER (WHERE ug.status = 'In Progress') as active FROM user_goals ug JOIN users u ON ug.user_id = u.id WHERE u.manager_id = ${userId}::uuid`,
+        sql`SELECT COUNT(*) as submitted FROM self_assessments sa JOIN users u ON sa.user_id = u.id WHERE sa.submitted = true AND u.manager_id = ${userId}::uuid`,
       ]);
   }
 
