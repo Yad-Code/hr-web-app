@@ -36,17 +36,21 @@ export interface EmployeeOption {
 }
 
 const authUsersCTE = (actorId: string) => db`
-  WITH auth_users AS (
+  WITH params AS (
+    SELECT ${actorId}::uuid AS actor_id
+  ),
+  auth_users AS (
     SELECT DISTINCT u.id FROM users u
-    JOIN user_permissions up ON up.user_id = ${actorId}::uuid
+    CROSS JOIN params
+    JOIN user_permissions up ON up.user_id = params.actor_id
     JOIN permissions p ON p.id = up.permission_id
     WHERE p.action IN ('view_dashboard', 'start_reviews', 'log_feedback')
       AND (
         up.scope = 'global' OR
         (up.scope = 'branch' AND u.branch = up.target_branch) OR
         (up.scope = 'department' AND u.department = up.target_department) OR
-        (up.scope = 'team' AND u.manager_id = ${actorId}::uuid) OR
-        (up.scope = 'self' AND u.id = ${actorId}::uuid)
+        (up.scope = 'team' AND u.manager_id = params.actor_id) OR
+        (up.scope = 'self' AND u.id = params.actor_id)
       )
   )
 `;
@@ -337,7 +341,9 @@ export async function getAllReviews(): Promise<ReviewRow[]> {
   }
 }
 
-export async function getReviewDetailsById(id: string): Promise<AdminReviewDetail | null> {
+export async function getReviewDetailsById(
+  id: string,
+): Promise<AdminReviewDetail | null> {
   try {
     const session = await auth();
     const actorId = session?.user?.id;
@@ -352,7 +358,11 @@ export async function getReviewDetailsById(id: string): Promise<AdminReviewDetai
     if (!rows.length) return null;
 
     // ABAC Security Check: Can this user view this specific employee's dashboard?
-    const isAuthorized = await verifyAccess(actorId, 'view_dashboard', rows[0].user_id);
+    const isAuthorized = await verifyAccess(
+      actorId,
+      "view_dashboard",
+      rows[0].user_id,
+    );
     if (!isAuthorized) return null;
 
     return rows[0];

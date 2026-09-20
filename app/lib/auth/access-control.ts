@@ -56,6 +56,10 @@ export async function verifyAccess(
 }
 
 export async function verifyFeatureAccess(actorId: string, action: string) {
+  if (!actorId || !action) {
+    return false;
+  }
+
   try {
     const result = await db`
       SELECT 1 FROM user_permissions up
@@ -63,7 +67,8 @@ export async function verifyFeatureAccess(actorId: string, action: string) {
       WHERE up.user_id = ${actorId}::uuid AND p.action = ${action}
       LIMIT 1
     `;
-    return result.length > 0;
+    
+    return result?.length > 0;
   } catch (error) {
     console.error("Feature access check failed:", error);
     return false;
