@@ -1047,23 +1047,33 @@ VALUES
 
     await db`
       INSERT INTO permissions (action, description) VALUES
+      -- Personal Actions
       ('edit_personal_profile', 'Can edit own personal details and avatar'),
       ('submit_requests', 'Can submit time-off and WFH requests'),
       ('view_payroll', 'Can view own payslips and salary data'),
       
-      ('view_directory', 'Can view global company directory'),
+      -- Global Visibility
       ('view_policies', 'Can view global company policies'),
+      ('view_directory', 'Can view employee directory and presence data'),
+      ('view_dashboard', 'Can view analytics and summary dashboards'),
       
+      -- Core Data Operations
       ('create_records', 'Can add new data records to the system'),
-      ('update_records', 'Can modify existing data records'),
+      ('update_records', 'Can modify existing data records'), 
       ('delete_records', 'Can delete data records from the system'),
       ('export_system_data', 'Can export data grids to Excel/CSV'),
       ('manage_reports', 'Can create, save, and edit reports'),
       
+      -- HR & Performance
+      ('approve_leaves', 'Can approve or deny time-off requests'),
+      ('start_reviews', 'Can initiate performance review cycles'),
+      ('log_feedback', 'Can log continuous feedback for employees'),
+      
+      -- System Security
       ('manage_security_policies', 'Full administrative access to security settings'),
       ('manage_user_credentials', 'Can view or change user passwords'),
-      ('manage_system_access', 'Can modify user permissions and roles'),
-      ('manage_system', 'administrator access to view all global dashboards and override data')
+      ('manage_system_access', 'Can modify user permissions and scopes'),
+      ('manage_system', 'Administrator access to view all dashboards and override data')
     `;
 
     await db`
@@ -1074,21 +1084,31 @@ VALUES
       ON CONFLICT DO NOTHING
     `;
 
+// For Managers (Team Scope)
     await db`
       INSERT INTO user_permissions (user_id, permission_id, scope)
       SELECT u.id, p.id, 'team'::access_scope
       FROM users u CROSS JOIN permissions p
       WHERE u.role = 'manager'  
-      AND p.action IN ('create_records', 'update_records', 'export_system_data', 'manage_reports', 'view_directory', 'manage_system_access')
+      AND p.action IN (
+        'create_records', 'update_records', 'export_system_data', 'manage_reports', 
+        'view_directory', 'manage_system_access',
+        'view_dashboard', 'approve_leaves', 'start_reviews', 'log_feedback' 
+      )
       ON CONFLICT DO NOTHING
     `;
 
+    // For HR (Branch Scope)
     await db`
       INSERT INTO user_permissions (user_id, permission_id, scope, target_branch)
       SELECT u.id, p.id, 'branch'::access_scope, u.branch
       FROM users u CROSS JOIN permissions p
       WHERE u.role = 'hr' 
-      AND p.action IN ('create_records', 'update_records', 'export_system_data', 'manage_reports')
+      AND p.action IN (
+        'create_records', 'update_records', 'export_system_data', 'manage_reports',
+        'view_directory', 'manage_system_access',
+        'view_dashboard', 'approve_leaves', 'start_reviews', 'log_feedback' 
+      )
       ON CONFLICT DO NOTHING
     `;
 

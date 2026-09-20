@@ -323,13 +323,17 @@ export default function ManagePermissionsModal({
                         <option value="view_directory">
                           View Directory & Presence
                         </option>
+                        <option value="view_dashboard">
+                          View Analytics & Dashboard
+                        </option>
                       </optgroup>
-                      {/* 👇 FIXED: Added manage_system_access here so it can be scoped to a Team */}
+
                       <optgroup label="Security & Administration">
                         <option value="manage_system_access">
                           Manage System Access
                         </option>
                       </optgroup>
+
                       <optgroup label="Data & Reporting">
                         <option value="create_records">
                           Create System Records
@@ -344,6 +348,18 @@ export default function ManagePermissionsModal({
                           Export System Data
                         </option>
                         <option value="manage_reports">Manage Reports</option>
+                      </optgroup>
+
+                      <optgroup label="HR & Performance">
+                        <option value="approve_leaves">
+                          Approve Time-Off Requests
+                        </option>
+                        <option value="start_reviews">
+                          Initiate Performance Reviews
+                        </option>
+                        <option value="log_feedback">
+                          Log Continuous Feedback
+                        </option>
                       </optgroup>
                     </select>
                   </div>

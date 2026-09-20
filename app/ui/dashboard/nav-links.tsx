@@ -87,23 +87,36 @@ const links = {
 };
 
 interface NavLinksProps {
-  isAdmin: boolean;
-  isManager: boolean;
+  permissions?: {
+    dashboard: boolean;
+    directory: boolean;
+    attendance: boolean;
+    performance: boolean;
+    adminOnly: boolean;
+  };
 }
-
-export default function NavLinks({ isAdmin, isManager }: NavLinksProps) {
+export default function NavLinks({ permissions }: NavLinksProps) {
   const pathname = usePathname();
 
   let activeLinks = pathname.startsWith("/dashboard")
     ? links.admin
     : links.employee;
- 
-  if (isManager && !isAdmin && pathname.startsWith("/dashboard")) {
-    activeLinks = activeLinks.filter(
-      (link) => link.name !== "Payroll" && link.name !== "Settings",
-    );
-  }
 
+  if (pathname.startsWith("/dashboard") && permissions) {
+    activeLinks = activeLinks.filter((link) => {
+      if (link.name === "Dashboard") return permissions.dashboard;
+      if (link.name === "Employee Directory") return permissions.directory;
+      if (link.name === "Time & Requests") return permissions.attendance;
+      if (link.name === "Performance") return permissions.performance;
+      
+      // Lock sensitive settings and financial data behind super-admin only
+      if (link.name === "Payroll" || link.name === "Recruitment" || link.name === "Settings") {
+        return permissions.adminOnly;
+      }
+      return false;
+    });
+  }
+  
   return (
     <>
       {activeLinks.map((link) => {

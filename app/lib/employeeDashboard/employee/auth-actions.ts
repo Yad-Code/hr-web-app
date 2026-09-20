@@ -17,7 +17,7 @@ const LoginSchema = z.object({
 });
 
 async function getUser(email: string) {
-  try { 
+  try {
     const userResult = await sql`
       SELECT id, name, email, password_hash, role, image_url
       FROM users 
@@ -43,9 +43,12 @@ export async function verifyUserCredentials(email: string, password: string) {
   const user = await getUser(cleanEmail);
   if (!user) return null;
 
-  const passwordsMatch = await bcrypt.compare(cleanPassword, user.password_hash);
+  const passwordsMatch = await bcrypt.compare(
+    cleanPassword,
+    user.password_hash,
+  );
 
-  if (passwordsMatch) { 
+  if (passwordsMatch) {
     // 👇 Provide only strict identity fields, no booleans
     return {
       id: user.id,
@@ -63,7 +66,10 @@ export async function handleSignOut() {
   await signOut({ redirectTo: "/login" });
 }
 
-export async function authenticate(prevState: string | undefined, formData: FormData) {
+export async function authenticate(
+  _prevState: string | undefined,
+  formData: FormData,
+) {
   try {
     const rawFields = Object.fromEntries(formData.entries());
     const validatedFields = LoginSchema.safeParse(rawFields);
@@ -74,9 +80,20 @@ export async function authenticate(prevState: string | undefined, formData: Form
 
     const { email, password } = validatedFields.data;
     const user = await getUser(email);
- 
-    // 👇 Route based on the role string
-    const destination = user?.role === "admin" || user?.role === "manager" ? "/dashboard" : "/my-profile";
+
+    if (!user) {
+      return "Invalid credentials.";
+    }
+
+    const dashCheck = await sql`
+      SELECT 1 FROM user_permissions up
+      JOIN permissions p ON p.id = up.permission_id
+      WHERE up.user_id = ${user.id}::uuid AND p.action = 'view_dashboard'
+      LIMIT 1
+    `;
+
+    const canViewDashboard = dashCheck.length > 0;
+    const destination = canViewDashboard ? "/dashboard" : "/my-profile";
 
     await signIn("credentials", {
       email,
@@ -86,10 +103,27 @@ export async function authenticate(prevState: string | undefined, formData: Form
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
-        case "CredentialsSignin": return "Invalid credentials.";
-        default: return "Something went wrong.";
+        case "CredentialsSignin":
+          return "Invalid credentials.";
+        default:
+          return "Something went wrong.";
       }
     }
     throw error;
+  }
+}
+
+export async function verifyFeatureAccess(actorId: string, action: string) {
+  try {
+    const result = await sql`
+      SELECT 1 FROM user_permissions up
+      JOIN permissions p ON p.id = up.permission_id
+      WHERE up.user_id = ${actorId}::uuid AND p.action = ${action}
+      LIMIT 1
+    `;
+    return result.length > 0;
+  } catch (error) {
+    console.error("Feature access check failed:", error);
+    return false;
   }
 }

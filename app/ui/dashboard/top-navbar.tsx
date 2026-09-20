@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Loader2,
 } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { UserDropdown } from "./user-dropdown";
 import {
   getEmployeeNotifications,
@@ -32,9 +33,8 @@ interface TopNavbarProps {
 }
 
 export default function TopNavbar({ user }: TopNavbarProps) {
-  // 👇 Safely derive management status from the role string
-  const role = user.role?.toLowerCase() || "employee";
-  const isManagement = role === "admin" || role === "manager" || role === "hr";
+  const pathname = usePathname(); 
+  const isManagement = pathname.startsWith("/dashboard"); 
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);

@@ -1,22 +1,35 @@
-// @/app/ui/dashboard/sidnav.tsx
-
 import { auth } from "@/auth";
 import NavLinks from "./nav-links";
 import { WorkspaceToggle } from "./workSpace-toggle";
 import { handleSignOut } from "@/app/lib/employeeDashboard/employee/auth-actions";
-import { Building2, LogOut } from "lucide-react";
-import { verifyAccess } from "@/app/lib/auth/access-control";
+import { Building2, LogOut } from "lucide-react"; 
+import { verifyFeatureAccess } from "@/app/lib/employeeDashboard/employee/auth-actions";
 
 export default async function SideNav() {
   const session = await auth();
   if (!session?.user?.id) return null;
 
-  // 👇 FIXED: True ABAC authorization checks instead of generic roles
-  const isAdmin = await verifyAccess(session.user.id, "manage_system_access");
-  const isManager = await verifyAccess(session.user.id, "manage_reports");
-
-  const isManagement = isAdmin || isManager;
-  const hasEmployeeView = true;
+  // 👇 FIXED: Check specific features individually
+  const canViewDashboard = await verifyFeatureAccess(
+    session.user.id,
+    "view_dashboard",
+  );
+  const canViewDirectory = await verifyFeatureAccess(
+    session.user.id,
+    "view_directory",
+  );
+  const canManageTime = await verifyFeatureAccess(
+    session.user.id,
+    "approve_leaves",
+  );
+  const canManagePerf = await verifyFeatureAccess(
+    session.user.id,
+    "start_reviews",
+  );
+  const isSuperAdmin = await verifyFeatureAccess(
+    session.user.id,
+    "manage_system",
+  );
 
   return (
     <div className="flex h-full flex-col justify-between bg-white border-r border-slate-100 p-4 w-full">
@@ -37,19 +50,29 @@ export default async function SideNav() {
 
         <div className="flex flex-col">
           <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase px-3 mb-3">
-            {isManagement ? "Management" : "Workspace"}
+            {canViewDashboard ? "Management" : "Workspace"}
           </span>
           <nav className="space-y-1">
-            <NavLinks isAdmin={isAdmin} isManager={isManager} />
+            {/* 👇 FIXED: Pass the granular permissions object */}
+            <NavLinks
+              permissions={{
+                dashboard: canViewDashboard,
+                directory: canViewDirectory,
+                attendance: canManageTime,
+                performance: canManagePerf,
+                adminOnly: isSuperAdmin,
+              }}
+            />
           </nav>
         </div>
       </div>
 
       <div className="pt-4 border-t border-slate-50 space-y-3 flex flex-col">
+        {/* Pass the baseline dashboard access to the toggle */}
         <WorkspaceToggle
-          isAdmin={isAdmin}
-          isManager={isManager}
-          hasEmployeeView={hasEmployeeView}
+          isAdmin={isSuperAdmin}
+          isManager={canViewDashboard}
+          hasEmployeeView={true}
         />
 
         <form action={handleSignOut}>
