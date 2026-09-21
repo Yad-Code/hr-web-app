@@ -159,6 +159,7 @@ export function EmployeeSearchListClient({
         <PermissionsDataGrid
           employees={filteredEmployees}
           canDelete={canDelete}
+          canManageAccess={canManageAccess}
         />
       ) : (
         <div className="grid grid-cols-1 gap-3">

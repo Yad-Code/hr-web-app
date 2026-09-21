@@ -1,8 +1,7 @@
 // @/app/lib/employeeList/data.ts
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
-import { auth } from "@/auth";  
-import { verifyAccess } from "@/app/lib/auth/access-control";
+import { auth } from "@/auth";   
 
 export async function getDirectoryEmployees(actorId: string) {
   try {

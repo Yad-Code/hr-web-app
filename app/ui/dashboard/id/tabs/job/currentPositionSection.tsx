@@ -59,34 +59,33 @@ export function CurrentPositionSection({
     setError(null);
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    setError(null);
-  };
-
-  const validateFields = () => {
-    if (formData.baseSalary !== "") {
-      const salary = parseFloat(formData.baseSalary);
+  // 👇 FIXED: Validates the immediate user input rather than waiting for async state updates
+  const validateFields = (name: string, value: string) => {
+    if (name === "baseSalary" && value !== "") {
+      const salary = parseFloat(value);
       if (isNaN(salary) || salary < 0) {
         setError("Validation Error: Basic salary cannot be negative.");
         return false;
       }
     }
-
-    if (formData.joinDate) {
-      const selectedDate = new Date(formData.joinDate);
+    if (name === "joinDate" && value !== "") {
+      const selectedDate = new Date(value);
       const today = new Date();
       if (selectedDate > today) {
         setError("Validation Error: Join date cannot be set in the future.");
         return false;
       }
     }
-
     setError(null);
     return true;
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    validateFields(name, value);
   };
 
   const availableJobTitles = formData.jobFamily
@@ -207,10 +206,7 @@ export function CurrentPositionSection({
           name="joinDate"
           type="date"
           value={formData.joinDate}
-          onChange={(e) => {
-            handleChange(e);
-            validateFields();
-          }}
+          onChange={handleChange}
           icon={Calendar}
         />
         <InputField
@@ -218,10 +214,7 @@ export function CurrentPositionSection({
           name="baseSalary"
           type="number"
           value={formData.baseSalary}
-          onChange={(e) => {
-            handleChange(e);
-            validateFields();
-          }}
+          onChange={handleChange}
           icon={DollarSign}
           placeholder="1340000"
         />

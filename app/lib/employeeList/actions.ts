@@ -123,7 +123,6 @@ export async function updateEmployeeDetails(
       requiredAction,
       targetUserId,
     );
-
     if (!isAuthorized) {
       return {
         success: false,
@@ -132,80 +131,70 @@ export async function updateEmployeeDetails(
       };
     }
 
-    const employeeId = formData.get("employeeId")?.toString() || null;
-    const name = formData.get("name")?.toString() || null;
-    const email = formData.get("email")?.toString() || null;
-    const preferredName = formData.get("preferredName")?.toString() || null;
-    const gender = formData.get("gender")?.toString() || null;
-    const nationality = formData.get("nationality")?.toString() || null;
-    const maritalStatus = formData.get("maritalStatus")?.toString() || null;
-    const bloodGroup = formData.get("bloodGroup")?.toString() || null;
-    const personalEmail = formData.get("personalEmail")?.toString() || null;
-    const personalPhone = formData.get("personalPhone")?.toString() || null;
-    const currentAddress = formData.get("currentAddress")?.toString() || null;
-    const dateOfBirth = formData.get("dateOfBirth")?.toString() || null;
-
-    const department = formData.get("department")?.toString() || null;
-    const branch = formData.get("branch")?.toString() || null;
-    const status = formData.get("status")?.toString() || null;
-    const role = formData.get("role")?.toString() || null;
-
-    const jobTitle = formData.get("jobTitle")?.toString() || null;
-    const jobFamily = formData.get("jobFamily")?.toString() || null;
-    const employmentType = formData.get("employmentType")?.toString() || null;
-
-    const hasManagerId = formData.has("managerId");
-    const rawManagerId = formData.get("managerId")?.toString();
-    const managerId = rawManagerId === "none" ? null : rawManagerId;
-
-    if (managerId === targetUserId) {
-      return { 
-        success: false, 
-        message: "Hierarchy Error: An employee cannot be assigned as their own manager." 
-      };
-    }
-    
-    const joinDate = formData.get("joinDate")?.toString() || null;
-    const publicOrg = formData.get("publicOrg")?.toString() || null;
-    const privateOrg = formData.get("privateOrg")?.toString() || null;
-    const insurance = formData.get("insurance")?.toString() || null;
-    const subscription = formData.get("subscription")?.toString() || null;
-
-    const rawSalary = formData.get("baseSalary")?.toString();
-    const cleanSalary = rawSalary ? rawSalary.replace(/[^0-9.]/g, "") : null;
-    const baseSalary = cleanSalary ? Number(cleanSalary) : null;
-
     const canUpdateOfficialRecords = await verifyAccess(
       actorId,
       "update_records",
       targetUserId,
     );
 
-    if (canUpdateOfficialRecords) {
+    // 👇 FIXED: Read the hidden form flag to determine which SQL query to run
+    const isJobForm = formData.get("isJobForm") === "true";
+
+    if (isJobForm) {
+      if (!canUpdateOfficialRecords) {
+        return {
+          success: false,
+          message:
+            "Forbidden: You do not have permission to update official job records.",
+        };
+      }
+
+      // 1. Extract ONLY Job Information Fields
+      const department = formData.get("department")?.toString() || null;
+      const branch = formData.get("branch")?.toString() || null;
+      const status = formData.get("status")?.toString() || null;
+      const role = formData.get("role")?.toString() || null;
+      const jobTitle = formData.get("jobTitle")?.toString() || null;
+      const jobFamily = formData.get("jobFamily")?.toString() || null;
+      const employmentType = formData.get("employmentType")?.toString() || null;
+
+      const rawManagerId = formData.get("managerId")?.toString();
+      const managerId =
+        !rawManagerId || rawManagerId === "none" || rawManagerId.trim() === ""
+          ? null
+          : rawManagerId;
+
+      if (managerId === targetUserId) {
+        return {
+          success: false,
+          message:
+            "Hierarchy Error: An employee cannot be assigned as their own manager.",
+        };
+      }
+
+      const joinDate = formData.get("joinDate")?.toString() || null;
+      const publicOrg = formData.get("publicOrg")?.toString() || null;
+      const privateOrg = formData.get("privateOrg")?.toString() || null;
+      const insurance = formData.get("insurance")?.toString() || null;
+      const subscription = formData.get("subscription")?.toString() || null;
+
+      const rawSalary = formData.get("baseSalary")?.toString();
+      const cleanSalary = rawSalary ? rawSalary.replace(/[^0-9.]/g, "") : null;
+      const baseSalary = cleanSalary ? Number(cleanSalary) : null;
+
+      // 👇 FIXED: Dedicated SQL update for Job Information to prevent NOT NULL database crashes
       await sql`
         UPDATE users 
         SET 
-          employee_id = ${employeeId},
-          name = ${name},
-          email = ${email},
           department = ${department},
           branch = ${branch}, 
           base_salary = ${baseSalary},
-          date_of_birth = ${dateOfBirth},
-          gender = ${gender},
-          nationality = ${nationality},
           status = ${status}, 
           role = ${role},
-          preferred_name = ${preferredName}, 
-          marital_status = ${maritalStatus}, 
-          blood_group = ${bloodGroup}, 
-          personal_email = ${personalEmail}, 
-          personal_phone = ${personalPhone}, 
-          current_address = ${currentAddress}, 
           job_title = ${jobTitle}, 
           job_family = ${jobFamily}, 
           employment_type = ${employmentType}, 
-          manager_id = CASE WHEN ${hasManagerId}::boolean THEN ${managerId ? managerId : null}::uuid ELSE manager_id END,
+          manager_id = ${managerId}::uuid,
           join_date = ${joinDate},
           public_org = ${publicOrg}, 
           private_org = ${privateOrg}, 
@@ -214,20 +203,62 @@ export async function updateEmployeeDetails(
         WHERE id = ${targetUserId}::uuid
       `;
     } else {
-      await sql`
-        UPDATE users 
-        SET 
-          preferred_name = ${preferredName},
-          personal_email = ${personalEmail},
-          personal_phone = ${personalPhone},
-          current_address = ${currentAddress},
-          date_of_birth = ${dateOfBirth},
-          gender = ${gender},
-          nationality = ${nationality},
-          marital_status = ${maritalStatus},
-          blood_group = ${bloodGroup}
-        WHERE id = ${targetUserId}::uuid
-      `;
+      // 2. Extract ONLY Personal Profile Fields
+      const employeeId = formData.get("employeeId")?.toString() || null;
+      const name = formData.get("name")?.toString() || null;
+      const email = formData.get("email")?.toString() || null;
+      const preferredName = formData.get("preferredName")?.toString() || null;
+      const gender = formData.get("gender")?.toString() || null;
+      const nationality = formData.get("nationality")?.toString() || null;
+      const maritalStatus = formData.get("maritalStatus")?.toString() || null;
+      const bloodGroup = formData.get("bloodGroup")?.toString() || null;
+      const personalEmail = formData.get("personalEmail")?.toString() || null;
+      const personalPhone = formData.get("personalPhone")?.toString() || null;
+      const currentAddress = formData.get("currentAddress")?.toString() || null;
+      const dateOfBirth = formData.get("dateOfBirth")?.toString() || null;
+
+      if (canUpdateOfficialRecords) {
+        if (!name || !email) {
+          return {
+            success: false,
+            message: "Validation Error: Name and Email are required fields.",
+          };
+        }
+
+        // 👇 FIXED: Dedicated SQL update for Personal Data
+        await sql`
+          UPDATE users 
+          SET 
+            employee_id = ${employeeId},
+            name = ${name},
+            email = ${email},
+            preferred_name = ${preferredName}, 
+            gender = ${gender},
+            nationality = ${nationality},
+            marital_status = ${maritalStatus}, 
+            blood_group = ${bloodGroup}, 
+            personal_email = ${personalEmail}, 
+            personal_phone = ${personalPhone}, 
+            current_address = ${currentAddress}, 
+            date_of_birth = ${dateOfBirth}
+          WHERE id = ${targetUserId}::uuid
+        `;
+      } else {
+        await sql`
+          UPDATE users 
+          SET 
+            preferred_name = ${preferredName},
+            gender = ${gender},
+            nationality = ${nationality},
+            marital_status = ${maritalStatus},
+            blood_group = ${bloodGroup},
+            personal_email = ${personalEmail},
+            personal_phone = ${personalPhone},
+            current_address = ${currentAddress},
+            date_of_birth = ${dateOfBirth}
+          WHERE id = ${targetUserId}::uuid
+        `;
+      }
     }
 
     revalidatePath(`/dashboard/employees/${targetUserId}`);
@@ -268,14 +299,16 @@ export async function addDocumentAction(
 
     const cleanUrl = newDoc.file_url.split("?")[0];
 
-    if (
-      !cleanUrl.startsWith("https://") ||
-      !cleanUrl.includes(".vercel-storage.com")
-    ) {
-      return {
-        success: false,
-        error: "Security Exception: Invalid or untrusted document source.",
-      };
+    try {
+      const urlObj = new URL(cleanUrl);
+      if (!urlObj.hostname.endsWith(".vercel-storage.com")) {
+        return {
+          success: false,
+          error: "Security Exception: Invalid or untrusted document origin.",
+        };
+      }
+    } catch {
+      return { success: false, error: "Invalid URL provided." };
     }
 
     const fileExtension = cleanUrl.split(".").pop() || "pdf";
@@ -367,14 +400,7 @@ export async function deleteEmployeeAction(targetUserId: string) {
 
     await sql`DELETE FROM user_permissions WHERE user_id = ${targetUserId}::uuid`;
 
-    await sql`
-      UPDATE users 
-      SET 
-        status = 'Terminated',
-        role = 'archived',
-        manager_id = NULL
-      WHERE id = ${targetUserId}::uuid
-    `;
+    await sql`UPDATE users SET manager_id = NULL WHERE manager_id = ${targetUserId}::uuid`;
 
     revalidatePath(`/dashboard/employees`);
     return { success: true };
