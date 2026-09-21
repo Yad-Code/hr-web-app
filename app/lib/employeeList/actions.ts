@@ -136,8 +136,7 @@ export async function updateEmployeeDetails(
       "update_records",
       targetUserId,
     );
-
-    // 👇 FIXED: Read the hidden form flag to determine which SQL query to run
+ 
     const isJobForm = formData.get("isJobForm") === "true";
 
     if (isJobForm) {
@@ -148,12 +147,10 @@ export async function updateEmployeeDetails(
             "Forbidden: You do not have permission to update official job records.",
         };
       }
-
-      // 1. Extract ONLY Job Information Fields
+ 
       const department = formData.get("department")?.toString() || null;
       const branch = formData.get("branch")?.toString() || null;
-      const status = formData.get("status")?.toString() || null;
-      const role = formData.get("role")?.toString() || null;
+      const status = formData.get("status")?.toString() || null; 
       const jobTitle = formData.get("jobTitle")?.toString() || null;
       const jobFamily = formData.get("jobFamily")?.toString() || null;
       const employmentType = formData.get("employmentType")?.toString() || null;
@@ -180,17 +177,16 @@ export async function updateEmployeeDetails(
 
       const rawSalary = formData.get("baseSalary")?.toString();
       const cleanSalary = rawSalary ? rawSalary.replace(/[^0-9.]/g, "") : null;
-      const baseSalary = cleanSalary ? Number(cleanSalary) : null;
+      const baseSalary = cleanSalary ? Number(cleanSalary) : null; 
 
-      // 👇 FIXED: Dedicated SQL update for Job Information to prevent NOT NULL database crashes
+      
       await sql`
         UPDATE users 
         SET 
           department = ${department},
           branch = ${branch}, 
           base_salary = ${baseSalary},
-          status = ${status}, 
-          role = ${role},
+          status = ${status},  
           job_title = ${jobTitle}, 
           job_family = ${jobFamily}, 
           employment_type = ${employmentType}, 
