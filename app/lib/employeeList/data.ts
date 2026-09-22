@@ -1,7 +1,7 @@
 // @/app/lib/employeeList/data.ts
 import { sql as db } from "@/app/lib/employeeDashboard/employee/db";
 import { FullEmployeeProfile } from "@/app/lib/employee/definitions";
-import { auth } from "@/auth";   
+import { auth } from "@/auth";
 
 export async function getDirectoryEmployees(actorId: string) {
   try {
@@ -30,7 +30,7 @@ export async function getDirectoryEmployees(actorId: string) {
           )
       )
       SELECT 
-        id, name, preferred_name, email, department, branch, role, status, image_url
+        id, name, preferred_name, email, department, branch, role, status, image_url, manager_id
       FROM users 
       WHERE id IN (SELECT id FROM auth_users)
       ORDER BY name ASC
@@ -49,6 +49,7 @@ export async function getDirectoryEmployees(actorId: string) {
       status: String(user.status),
       image_url: user.image_url ? String(user.image_url) : null,
       last_seen_text: user.status === "Active" ? "Online" : "Offline",
+      manager_id: user.manager_id ? String(user.manager_id) : null,
     }));
 
     return { employees, hasAdminView };
@@ -66,7 +67,7 @@ export async function getProfileById(
   const session = await auth();
   const actorId = session?.user?.id;
   if (!actorId) return null;
-  
+
   try {
     const users = await db`
       SELECT u.*, m.name as fetched_manager_name 

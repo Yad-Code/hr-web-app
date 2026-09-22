@@ -11,26 +11,29 @@ import {
   Table,
   LayoutList,
   Filter,
-} from "lucide-react"; 
+} from "lucide-react";
 import { Employee } from "@/app/lib/employeeList/definitions";
 import ManagePermissionsModal from "@/app/ui/employee/modals/manage-permissions-modal";
 import PermissionsDataGrid from "@/app/ui/employee/permissions-data-grid";
 
 interface EmployeeSearchListClientProps {
   initialEmployees: Employee[];
+  managersList?: { id: string; name: string; department: string }[];
   canDelete?: boolean;
   canManageAccess?: boolean;
 }
 
 export function EmployeeSearchListClient({
   initialEmployees,
+  managersList = [],
   canDelete = false,
   canManageAccess = false,
 }: EmployeeSearchListClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("All");
-  const [viewMode, setViewMode] = useState<"table" | "list">("list");
+  const [selectedManager, setSelectedManager] = useState("All");
 
+  const [viewMode, setViewMode] = useState<"table" | "list">("list");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
     null,
@@ -51,12 +54,14 @@ export function EmployeeSearchListClient({
       employee.email.toLowerCase().includes(query) ||
       employee.department?.toLowerCase().includes(query);
 
-    // 👇 FIXED: Apply the dropdown filter logic
     const matchesDepartment =
       selectedDepartment === "All" ||
       employee.department === selectedDepartment;
 
-    return matchesSearch && matchesDepartment;
+    const matchesManager =
+      selectedManager === "All" || employee.manager_id === selectedManager;
+
+    return matchesSearch && matchesDepartment && matchesManager;
   });
 
   const activeCount = initialEmployees.filter(
@@ -66,7 +71,6 @@ export function EmployeeSearchListClient({
   return (
     <div className="w-full space-y-6">
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-2 sm:pr-4 rounded-2xl border border-slate-200/80 shadow-xs">
-        {/* 👇 FIXED: Grouped Search and Dropdown Filter together */}
         <div className="flex flex-col sm:flex-row items-center w-full md:w-auto flex-1 gap-2 px-2">
           <div className="relative w-full sm:max-w-xs flex-1">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -99,6 +103,22 @@ export function EmployeeSearchListClient({
               {departments.map((dept) => (
                 <option key={dept as string} value={dept as string}>
                   {dept === "All" ? "All Departments" : dept}
+                </option>
+              ))}
+            </select>
+            <Filter className="w-3 h-3 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+
+          <div className="relative w-full sm:w-auto shrink-0 border-t sm:border-t-0 sm:border-l border-slate-100 pt-2 sm:pt-0 sm:pl-3">
+            <select
+              value={selectedManager}
+              onChange={(e) => setSelectedManager(e.target.value)}
+              className="w-full sm:w-auto px-4 py-2 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer transition-all hover:bg-slate-100 appearance-none pr-9"
+            >
+              <option value="All">All Managers</option>
+              {managersList.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
                 </option>
               ))}
             </select>
